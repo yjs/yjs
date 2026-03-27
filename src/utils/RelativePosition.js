@@ -1,20 +1,10 @@
-import {
-  writeID,
-  readID,
-  compareIDs,
-  getState,
-  findRootTypeKey,
-  Item,
-  createID,
-  ContentType,
-  followRedone,
-  getItem,
-  StructStore, ID, Doc, YType, noAttributionsManager, // eslint-disable-line
-} from '../internals.js'
-
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as error from 'lib0/error'
+
+import { Item, followRedone, ContentType } from '../structs/Item.js'
+import { writeID, readID, compareIDs, findRootTypeKey, createID } from './ID.js'
+import { noAttributionsManager } from './attribution-manager-helpers.js'
 
 /**
  * A relative position is based on the Yjs model and is not affected by document changes.
@@ -261,7 +251,7 @@ export const decodeRelativePosition = uint8Array => readRelativePosition(decodin
  * @param {ID} id
  */
 const getItemWithOffset = (store, id) => {
-  const item = getItem(store, id)
+  const item = store.getItem(id)
   const diff = id.clock - item.id.clock
   return {
     item, diff
@@ -296,7 +286,7 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
   let type = null
   let index = 0
   if (rightID !== null) {
-    if (getState(store, rightID.client) <= rightID.clock) {
+    if (store.getClock(rightID.client) <= rightID.clock) {
       return null
     }
     const res = followUndoneDeletions ? followRedone(store, rightID) : getItemWithOffset(store, rightID)
@@ -317,11 +307,11 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     if (tname !== null) {
       type = doc.get(tname)
     } else if (typeID !== null) {
-      if (getState(store, typeID.client) <= typeID.clock) {
+      if (store.getClock(typeID.client) <= typeID.clock) {
         // type does not exist yet
         return null
       }
-      const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: getItem(store, typeID) }
+      const { item } = followUndoneDeletions ? followRedone(store, typeID) : { item: store.getItem(typeID) }
       if (item instanceof Item && item.content instanceof ContentType) {
         type = item.content.type
       } else {

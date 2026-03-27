@@ -1,3 +1,4 @@
+import * as Y from '../src/index.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as encoding from 'lib0/encoding'
@@ -5,13 +6,10 @@ import * as decoding from 'lib0/decoding'
 import * as syncProtocol from '@y/protocols/sync'
 import * as object from 'lib0/object'
 import * as map from 'lib0/map'
-import * as Y from '../src/index.js'
 import * as math from 'lib0/math'
 import * as list from 'lib0/list'
 import * as delta from 'lib0/delta'
-import {
-  createIdSet, createIdMap, addToIdSet, encodeIdMap
-} from '../src/internals.js'
+import { createIdSet, createIdMap, encodeIdMap } from '../src/utils/ids.js'
 
 export * from '../src/index.js'
 
@@ -121,14 +119,14 @@ export class TestYInstance extends Y.Doc {
     if (!this.tc.onlineConns.has(this)) {
       this.tc.onlineConns.add(this)
       const encoder = encoding.createEncoder()
-      syncProtocol.writeSyncStep1(encoder, this)
+      syncProtocol.writeSyncStep1(encoder, /** @type {any} */ (this))
       // publish SyncStep1
       broadcastMessage(this, encoding.toUint8Array(encoder))
       this.tc.onlineConns.forEach(remoteYInstance => {
         if (remoteYInstance !== this) {
           // remote instance sends instance to this instance
           const encoder = encoding.createEncoder()
-          syncProtocol.writeSyncStep1(encoder, remoteYInstance)
+          syncProtocol.writeSyncStep1(encoder, /** @type {any} */ (remoteYInstance))
           this._receive(encoding.toUint8Array(encoder), remoteYInstance)
         }
       })
@@ -202,7 +200,7 @@ export class TestConnector {
       const encoder = encoding.createEncoder()
       // console.log('receive (' + sender.userID + '->' + receiver.userID + '):\n', syncProtocol.stringifySyncMessage(decoding.createDecoder(m), receiver))
       // do not publish data created when this function is executed (could be ss2 or update message)
-      syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, receiver, receiver.tc)
+      syncProtocol.readSyncMessage(decoding.createDecoder(m), encoder, /** @type {any} */ (receiver), receiver.tc)
       if (encoding.length(encoder) > 0) {
         // send reply message
         sender._receive(encoding.toUint8Array(encoder), receiver)
@@ -319,7 +317,7 @@ export const compareIdSets = (idSet1, idSet2) => {
     t.assert(items2 !== undefined && items1.length === items2.length)
     for (let i = 0; i < items1.length; i++) {
       const di1 = items1[i]
-      const di2 = /** @type {Array<import('../src/utils/IdSet.js').IdRange>} */ (items2)[i]
+      const di2 = /** @type {Array<import('../src/utils/ids.js').IdRange>} */ (items2)[i]
       t.assert(di1.clock === di2.clock && di1.len === di2.len)
     }
   }
@@ -382,7 +380,7 @@ export const compareIdmaps = (idmap1, idmap2) => {
     t.assert(items2 !== undefined && items1.length === items2.length)
     for (let i = 0; i < items1.length; i++) {
       const di1 = items1[i]
-      const di2 = /** @type {Array<import('../src/utils/IdMap.js').AttrRange<T>>} */ (items2)[i]
+      const di2 = /** @type {Array<import('../src/utils/ids.js').AttrRange<T>>} */ (items2)[i]
       t.assert(di1.clock === di2.clock && di1.len === di2.len && _idmapAttrsEqual(di1.attrs, di2.attrs))
     }
   }
@@ -403,7 +401,7 @@ export const createRandomIdSet = (gen, clients, clockRange) => {
     const client = prng.uint32(gen, 0, clients - 1)
     const clockStart = prng.uint32(gen, 0, clockRange)
     const len = prng.uint32(gen, 0, clockRange - clockStart)
-    addToIdSet(idset, client, clockStart, len)
+    idset.add(client, clockStart, len)
   }
   if (idset.clients.size === clients && clients > 1 && prng.bool(gen)) {
     idset.clients.delete(prng.uint32(gen, 0, clients))
@@ -509,8 +507,8 @@ export const compare = users => {
 export const compareItemIDs = (a, b) => a === b || (a !== null && b != null && Y.compareIDs(a.id, b.id))
 
 /**
- * @param {import('../src/internals.js').StructStore} ss1
- * @param {import('../src/internals.js').StructStore} ss2
+ * @param {StructStore} ss1
+ * @param {StructStore} ss2
  */
 export const compareStructStores = (ss1, ss2) => {
   t.assert(ss1.clients.size === ss2.clients.size)

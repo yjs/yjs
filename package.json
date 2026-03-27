@@ -15,7 +15,7 @@
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
     "dist": "npm run clean && (tsc --skipLibCheck --noEmit false|| true)",
     "release": "npm test && PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && np",
-    "lint": "markdownlint README.md && standard && tsc --skipLibCheck",
+    "lint": "markdownlint README.md && standard && tsc --skipLibCheck && npx dpdm --exit-code circular:1 --warning false --tree false src/index.js",
     "debug": "npm run gentesthtml && 0serve -o test.html",
     "debug:node": "node --inspect-brk tests/index.js",
     "trace-deopt": "clear && node --trace-deopt ./tests/index.js",
@@ -26,10 +26,6 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "default": "./src/index.js"
-    },
-    "./internals": {
-      "types": "./dist/src/internals.d.ts",
-      "default": "./src/internals.js"
     },
     "./meta": {
       "types": "./dist/src/utils/meta.d.ts",
@@ -81,11 +77,12 @@
   "devDependencies": {
     "@types/node": "^22.14.1",
     "@y/protocols": "^1.0.6-rc.1",
+    "@y/y": ".",
+    "dpdm": "^4.0.1",
     "markdownlint": "^0.40.0",
     "markdownlint-cli": "^0.45.0",
     "standard": "^17.1.2",
-    "typescript": "^5.9.3",
-    "@y/y": "."
+    "typescript": "^5.9.3"
   },
   "engines": {
     "npm": ">=8.0.0",

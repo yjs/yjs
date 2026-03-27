@@ -3,8 +3,7 @@
 export default [{
   input: {
     yjs: './src/index.js',
-    testHelper: './tests/testHelper.js',
-    internals: './src/internals.js'
+    testHelper: './tests/testHelper.js'
   },
   output: {
     dir: 'dist',

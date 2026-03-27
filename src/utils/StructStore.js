@@ -1,21 +1,12 @@
-import {
-  GC,
-  splitItem,
-  createDeleteSetFromStructStore,
-  createIdSet,
-  Transaction, ID, Item, // eslint-disable-line
-  Skip,
-  createID,
-  splitStruct
-} from '../internals.js'
-
-import * as math from 'lib0/math'
-import * as error from 'lib0/error'
+import { Skip } from '../structs/Skip.js'
+import { createID } from './ID.js'
+import { createDeleteSetFromStructStore, createIdSet } from './ids.js'
+import { findIndexSS } from './transaction-helpers.js'
 
 export class StructStore {
   constructor () {
     /**
-     * @type {Map<number,Array<GC|Item>>}
+     * @type {Map<number,Array<GC|Item|Skip>>}
      */
     this.clients = new Map()
     // this.ds = new IdSet()
@@ -32,6 +23,90 @@ export class StructStore {
 
   get ds () {
     return createDeleteSetFromStructStore(this)
+  }
+
+  /**
+   * @param {GC|Item|Skip} struct
+   * @function
+   */
+  add (struct) {
+    let structs = this.clients.get(struct.id.client)
+    if (structs === undefined) {
+      structs = []
+      this.clients.set(struct.id.client, structs)
+    } else {
+      const lastStruct = structs[structs.length - 1]
+      if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
+        // this replaces an integrated skip
+        let index = findIndexSS(structs, struct.id.clock)
+        const skip = structs[index]
+        const diffStart = struct.id.clock - skip.id.clock
+        const diffEnd = skip.id.clock + skip.length - struct.id.clock - struct.length
+        if (diffStart > 0) {
+          structs.splice(index++, 0, new Skip(createID(struct.id.client, skip.id.clock), diffStart))
+        }
+        if (diffEnd > 0) {
+          structs.splice(index + 1, 0, new Skip(createID(struct.id.client, struct.id.clock + struct.length), diffEnd))
+        }
+        structs[index] = struct
+        this.skips.delete(struct.id.client, struct.id.clock, struct.length)
+        return
+      }
+    }
+    structs.push(struct)
+  }
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   *
+   * @param {ID} id
+   * @return {GC|Item}
+   */
+  get (id) {
+    const structs = /** @type {Array<GC|Item>} */ (this.clients.get(id.client))
+    return structs[findIndexSS(structs, id.clock)]
+  }
+
+  /**
+   * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
+   *
+   * @param {ID} id
+   * @return {Item}
+   */
+  getItem (id) {
+    const structs = /** @type {Array<GC|Item>} */ (this.clients.get(id.client))
+    return /** @type {Item} */ (structs[findIndexSS(structs, id.clock)])
+  }
+
+  /**
+   * Get the next expected clock for a specific client.
+   *
+   * @param {number} client
+   * @return {number}
+   *
+   * @public
+   * @function
+   */
+  getClock (client) {
+    const structs = this.clients.get(client)
+    if (structs === undefined) {
+      return 0
+    }
+    const lastStruct = structs[structs.length - 1]
+    return lastStruct.id.clock + lastStruct.length
+  }
+
+  /**
+   * Perform a binary search on a sorted array
+   * @param {ID} id
+   * @return {{ structs: Array<GC|Item|Skip>, index: number }}
+   *
+   * @function
+   */
+  getIndex (id) {
+    const structs = this.clients.get(id.client) || []
+    const index = findIndexSS(structs, id.clock)
+    return { structs, index }
   }
 }
 
@@ -59,23 +134,6 @@ export const getStateVector = store => {
 
 /**
  * @param {StructStore} store
- * @param {number} client
- * @return {number}
- *
- * @public
- * @function
- */
-export const getState = (store, client) => {
-  const structs = store.clients.get(client)
-  if (structs === undefined) {
-    return 0
-  }
-  const lastStruct = structs[structs.length - 1]
-  return lastStruct.id.clock + lastStruct.length
-}
-
-/**
- * @param {StructStore} store
  *
  * @private
  * @function
@@ -90,200 +148,4 @@ export const integrityCheck = store => {
       }
     }
   })
-}
-
-/**
- * @param {StructStore} store
- * @param {GC|Item} struct
- *
- * @private
- * @function
- */
-export const addStruct = (store, struct) => {
-  let structs = store.clients.get(struct.id.client)
-  if (structs === undefined) {
-    structs = []
-    store.clients.set(struct.id.client, structs)
-  } else {
-    const lastStruct = structs[structs.length - 1]
-    if (lastStruct.id.clock + lastStruct.length !== struct.id.clock) {
-      // this replaces an integrated skip
-      let index = findIndexSS(structs, struct.id.clock)
-      const skip = structs[index]
-      const diffStart = struct.id.clock - skip.id.clock
-      const diffEnd = skip.id.clock + skip.length - struct.id.clock - struct.length
-      if (diffStart > 0) {
-        structs.splice(index++, 0, new Skip(createID(struct.id.client, skip.id.clock), diffStart))
-      }
-      if (diffEnd > 0) {
-        structs.splice(index + 1, 0, new Skip(createID(struct.id.client, struct.id.clock + struct.length), diffEnd))
-      }
-      structs[index] = struct
-      store.skips.delete(struct.id.client, struct.id.clock, struct.length)
-      return
-    }
-  }
-  structs.push(struct)
-}
-
-/**
- * Perform a binary search on a sorted array
- * @param {Array<Item|GC>} structs
- * @param {number} clock
- * @return {number}
- *
- * @private
- * @function
- */
-export const findIndexSS = (structs, clock) => {
-  let left = 0
-  let right = structs.length - 1
-  let mid = structs[right]
-  let midclock = mid.id.clock
-  if (midclock === clock) {
-    return right
-  }
-  // @todo does it even make sense to pivot the search?
-  // If a good split misses, it might actually increase the time to find the correct item.
-  // Currently, the only advantage is that search with pivoting might find the item on the first try.
-  let midindex = math.floor((clock / (midclock + mid.length - 1)) * right) // pivoting the search
-  while (left <= right) {
-    mid = structs[midindex]
-    midclock = mid.id.clock
-    if (midclock <= clock) {
-      if (clock < midclock + mid.length) {
-        return midindex
-      }
-      left = midindex + 1
-    } else {
-      right = midindex - 1
-    }
-    midindex = math.floor((left + right) / 2)
-  }
-  // Always check state before looking for a struct in StructStore
-  // Therefore the case of not finding a struct is unexpected
-  throw error.unexpectedCase()
-}
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
- * @param {StructStore} store
- * @param {ID} id
- * @return {GC|Item}
- *
- * @private
- * @function
- */
-export const find = (store, id) => {
-  /**
-   * @type {Array<GC|Item>}
-   */
-  // @ts-ignore
-  const structs = store.clients.get(id.client)
-  return structs[findIndexSS(structs, id.clock)]
-}
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- * @private
- * @function
- */
-export const getItem = /** @type {function(StructStore,ID):Item} */ (find)
-
-/**
- * @param {Transaction?} transaction
- * @param {Array<Item|GC>} structs
- * @param {number} clock
- */
-export const findIndexCleanStart = (transaction, structs, clock) => {
-  const index = findIndexSS(structs, clock)
-  const struct = structs[index]
-  if (struct.id.clock < clock) {
-    structs.splice(index + 1, 0, splitStruct(transaction, struct, clock - struct.id.clock))
-    return index + 1
-  }
-  return index
-}
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
- * @param {Transaction} transaction
- * @param {ID} id
- * @return {Item}
- *
- * @private
- * @function
- */
-export const getItemCleanStart = (transaction, id) => {
-  const structs = /** @type {Array<Item>} */ (transaction.doc.store.clients.get(id.client))
-  return structs[findIndexCleanStart(transaction, structs, id.clock)]
-}
-
-/**
- * Expects that id is actually in store. This function throws or is an infinite loop otherwise.
- *
- * @param {Transaction} transaction
- * @param {StructStore} store
- * @param {ID} id
- * @return {Item}
- *
- * @private
- * @function
- */
-export const getItemCleanEnd = (transaction, store, id) => {
-  /**
-   * @type {Array<Item>}
-   */
-  // @ts-ignore
-  const structs = store.clients.get(id.client)
-  const index = findIndexSS(structs, id.clock)
-  const struct = structs[index]
-  if (id.clock !== struct.id.clock + struct.length - 1 && struct.constructor !== GC) {
-    structs.splice(index + 1, 0, splitItem(transaction, struct, id.clock - struct.id.clock + 1))
-  }
-  return struct
-}
-
-/**
- * Replace `item` with `newitem` in store
- * @param {Transaction} tr
- * @param {GC|Item} struct
- * @param {GC|Item} newStruct
- *
- * @private
- * @function
- */
-export const replaceStruct = (tr, struct, newStruct) => {
-  const structs = /** @type {Array<GC|Item>} */ (tr.doc.store.clients.get(struct.id.client))
-  structs[findIndexSS(structs, struct.id.clock)] = newStruct
-  tr._mergeStructs.push(newStruct)
-}
-
-/**
- * Iterate over a range of structs
- *
- * @param {Transaction} transaction
- * @param {Array<Item|GC>} structs
- * @param {number} clockStart Inclusive start
- * @param {number} len
- * @param {function(GC|Item):void} f
- *
- * @function
- */
-export const iterateStructs = (transaction, structs, clockStart, len, f) => {
-  if (len === 0) {
-    return
-  }
-  const clockEnd = clockStart + len
-  let index = findIndexCleanStart(transaction, structs, clockStart)
-  let struct
-  do {
-    struct = structs[index++]
-    if (clockEnd < struct.id.clock + struct.length) {
-      findIndexCleanStart(transaction, structs, clockEnd)
-    }
-    f(struct)
-  } while (index < structs.length && structs[index].id.clock < clockEnd)
 }

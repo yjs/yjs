@@ -1,10 +1,6 @@
 import * as error from 'lib0/error'
 import * as encoding from 'lib0/encoding'
 
-import {
-  ID // eslint-disable-line
-} from '../internals.js'
-
 export class IdSetEncoderV1 {
   constructor () {
     this.restEncoder = encoding.createEncoder()

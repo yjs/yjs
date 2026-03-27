@@ -5,10 +5,16 @@ import * as error from 'lib0/error'
 import * as f from 'lib0/function'
 import * as logging from 'lib0/logging'
 import * as map from 'lib0/map'
-import * as math from 'lib0/math'
 import * as string from 'lib0/string'
 
+import { readIdSet, writeIdSet, createIdSet, intersectSets } from './ids.js'
+
+import { createID } from './ID.js'
+import { IdSetEncoderV1, IdSetEncoderV2, UpdateEncoderV1, UpdateEncoderV2 } from './UpdateEncoder.js'
+import { UpdateDecoderV1, UpdateDecoderV2 } from './UpdateDecoder.js'
+import { GC } from '../structs/GC.js'
 import {
+  Item,
   ContentAny,
   ContentBinary,
   ContentDeleted,
@@ -17,32 +23,12 @@ import {
   ContentFormat,
   ContentJSON,
   ContentString,
-  ContentType,
-  createID,
-  decodeStateVector,
-  IdSetEncoderV1,
-  IdSetEncoderV2,
-  GC,
-  Item,
-  mergeIdSets,
-  readIdSet,
-  readItemContent,
-  Skip,
-  UpdateDecoderV1,
-  UpdateDecoderV2,
-  UpdateEncoderV1,
-  UpdateEncoderV2,
-  writeIdSet,
-  createIdSet,
-  Doc,
-  applyUpdate,
-  applyUpdateV2,
-  readBlockSet,
-  writeBlockSet,
-  encodeStateAsUpdateV2
-} from '../internals.js'
-
-import * as idset from './IdSet.js'
+  ContentType
+} from '../structs/Item.js'
+import {
+  readItemContent
+} from '../ytype.js'
+import { Skip } from '../structs/Skip.js'
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
@@ -184,12 +170,6 @@ export class LazyStructWriter {
 }
 
 /**
- * @param {Array<Uint8Array<ArrayBuffer>>} updates
- * @return {Uint8Array<ArrayBuffer>}
- */
-export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1)
-
-/**
  * @param {Uint8Array} update
  * @param {typeof IdSetEncoderV1 | typeof IdSetEncoderV2} YEncoder
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} YDecoder
@@ -294,7 +274,7 @@ export const createContentIdsFromUpdate = update => createContentIdsFromUpdateV2
  *
  * @param {Item | GC | Skip} left
  * @param {number} diff
- * @return {Item | GC}
+ * @return {Item | GC | Skip}
  */
 export const sliceStruct = (left, diff) => {
   if (left.constructor === GC) {
@@ -320,88 +300,6 @@ export const sliceStruct = (left, diff) => {
 }
 
 /**
- *
- * This function works similarly to `readUpdateV2`.
- *
- * @param {Array<Uint8Array<ArrayBuffer>>} updates
- * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
- * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
- * @return {Uint8Array<ArrayBuffer>}
- */
-export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
-  if (updates.length === 1) {
-    return updates[0]
-  } else if (updates.length === 0) {
-    return encodeStateAsUpdateV2(new Doc(), new Uint8Array([0]), new YEncoder())
-  }
-  const updateDecoders = updates.map(update => new YDecoder(decoding.createDecoder(update)))
-  const blocksets = updateDecoders.map(dec => readBlockSet(dec))
-
-  const mergedBlockset = blocksets[0]
-  for (let i = 1; i < blocksets.length; i++) {
-    mergedBlockset.insertInto(blocksets[i])
-  }
-  const updateEncoder = new YEncoder()
-  writeBlockSet(updateEncoder, mergedBlockset)
-  const dss = updateDecoders.map(decoder => readIdSet(decoder))
-  const ds = mergeIdSets(dss)
-  writeIdSet(updateEncoder, ds)
-  return updateEncoder.toUint8Array()
-}
-
-/**
- * @deprecated
- * @param {Uint8Array} update
- * @param {Uint8Array} sv
- * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
- * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
- */
-export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
-  const state = decodeStateVector(sv)
-  const encoder = new YEncoder()
-  const lazyStructWriter = new LazyStructWriter(encoder)
-  const decoder = new YDecoder(decoding.createDecoder(update))
-  const reader = new LazyStructReader(decoder, false)
-  while (reader.curr) {
-    const curr = reader.curr
-    const currClient = curr.id.client
-    const svClock = state.get(currClient) || 0
-    if (reader.curr.constructor === Skip) {
-      // the first written struct shouldn't be a skip
-      reader.next()
-      continue
-    }
-    if (curr.id.clock + curr.length > svClock) {
-      writeStructToLazyStructWriter(lazyStructWriter, curr, math.max(svClock - curr.id.clock, 0), 0)
-      reader.next()
-      while (reader.curr && reader.curr.id.client === currClient) {
-        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0, 0)
-        reader.next()
-      }
-    } else {
-      // read until something new comes up
-      while (reader.curr && reader.curr.id.client === currClient && reader.curr.id.clock + reader.curr.length <= svClock) {
-        reader.next()
-      }
-    }
-  }
-  finishLazyStructWriting(lazyStructWriter)
-  // write ds
-  const ds = readIdSet(decoder)
-  writeIdSet(encoder, ds)
-  return encoder.toUint8Array()
-}
-
-/**
- * @deprecated
- * @todo remove this in favor of intersectupdate
- *
- * @param {Uint8Array<ArrayBuffer>} update
- * @param {Uint8Array<ArrayBuffer>} sv
- */
-export const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1)
-
-/**
  * @param {LazyStructWriter} lazyWriter
  */
 const flushLazyStructWriter = lazyWriter => {
@@ -414,11 +312,11 @@ const flushLazyStructWriter = lazyWriter => {
 
 /**
  * @param {LazyStructWriter} lazyWriter
- * @param {Item | GC} struct
+ * @param {Item | GC | Skip} struct
  * @param {number} offset
  * @param {number} offsetEnd
  */
-const writeStructToLazyStructWriter = (lazyWriter, struct, offset, offsetEnd) => {
+export const writeStructToLazyStructWriter = (lazyWriter, struct, offset, offsetEnd) => {
   // flush curr if we start another client
   if (lazyWriter.written > 0 && lazyWriter.currClient !== struct.id.client) {
     flushLazyStructWriter(lazyWriter)
@@ -440,7 +338,7 @@ const writeStructToLazyStructWriter = (lazyWriter, struct, offset, offsetEnd) =>
  *
  * @param {LazyStructWriter} lazyWriter
  */
-const finishLazyStructWriting = (lazyWriter) => {
+export const finishLazyStructWriting = (lazyWriter) => {
   flushLazyStructWriter(lazyWriter)
 
   // this is a fresh encoder because we called flushCurr
@@ -541,7 +439,7 @@ const createObfuscator = ({ formatting = true, subdocs = true, name = true } = {
             const c = /** @type {ContentDoc} */ (content)
             if (subdocs) {
               c.opts = {}
-              c.doc.guid = i + ''
+              c.guid = i + ''
             }
             break
           }
@@ -662,7 +560,7 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
   finishLazyStructWriting(lazyStructWriter)
   // Filter the delete set to only include entries in contentIds.deletes
   const ds = readIdSet(decoder)
-  const filteredDs = idset.intersectSets(ds, deletes)
+  const filteredDs = intersectSets(ds, deletes)
   writeIdSet(encoder, filteredDs)
   return encoder.toUint8Array()
 }
@@ -676,23 +574,3 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
  */
 export const intersectUpdateWithContentIds = (update, contentIds) =>
   intersectUpdateWithContentIdsV2(update, contentIds, UpdateDecoderV1, UpdateEncoderV1)
-
-/**
- * @param {Uint8Array} update
- * @param {import('./Doc.js').DocOpts} opts
- */
-export const createDocFromUpdate = (update, opts = {}) => {
-  const ydoc = new Doc(opts)
-  applyUpdate(ydoc, update)
-  return ydoc
-}
-
-/**
- * @param {Uint8Array} update
- * @param {import('./Doc.js').DocOpts} opts
- */
-export const createDocFromUpdateV2 = (update, opts = {}) => {
-  const ydoc = new Doc(opts)
-  applyUpdateV2(ydoc, update)
-  return ydoc
-}

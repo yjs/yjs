@@ -1,11 +1,5 @@
-import {
-  AbstractStruct,
-  addStruct,
-  addStructToIdSet,
-  addToIdSet,
-  createID,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction // eslint-disable-line
-} from '../internals.js'
+import { AbstractStruct, addStructToIdSet } from './AbstractStruct.js'
+import { createID } from '../utils/ID.js'
 
 export const structGCRefNumber = 0
 
@@ -20,7 +14,7 @@ export class GC extends AbstractStruct {
   delete () {}
 
   /**
-   * @param {GC} right
+   * @param {GC | Skip | Item} right
    * @return {boolean}
    */
   mergeWith (right) {
@@ -40,9 +34,9 @@ export class GC extends AbstractStruct {
       this.id.clock += offset
       this.length -= offset
     }
-    addToIdSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
+    transaction.deleteSet.add(this.id.client, this.id.clock, this.length)
     addStructToIdSet(transaction.insertSet, this)
-    addStruct(transaction.doc.store, this)
+    transaction.doc.store.add(this)
   }
 
   /**
@@ -53,15 +47,6 @@ export class GC extends AbstractStruct {
   write (encoder, offset, offsetEnd) {
     encoder.writeInfo(structGCRefNumber)
     encoder.writeLen(this.length - offset - offsetEnd)
-  }
-
-  /**
-   * @param {Transaction} _transaction
-   * @param {StructStore} _store
-   * @return {null | number}
-   */
-  getMissing (_transaction, _store) {
-    return null
   }
 
   /**
@@ -78,3 +63,13 @@ export class GC extends AbstractStruct {
     return other
   }
 }
+
+/**
+ * @type {0}
+ */
+GC.prototype.ref = structGCRefNumber
+
+/**
+ * @type {false}
+ */
+GC.prototype.isItem = false

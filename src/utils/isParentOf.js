@@ -1,9 +1,7 @@
-import { Item } from '../internals.js' // eslint-disable-line
-
 /**
  * Check if `parent` is a parent of `child`.
  *
- * @param {import('../ytype.js').YType} parent
+ * @param {YType} parent
  * @param {Item|null} child
  * @return {Boolean} Whether `parent` is a parent of `child`.
  *
@@ -15,7 +13,7 @@ export const isParentOf = (parent, child) => {
     if (child.parent === parent) {
       return true
     }
-    child = /** @type {import('../ytype.js').YType} */ (child.parent)._item
+    child = /** @type {YType} */ (child.parent)._item
   }
   return false
 }

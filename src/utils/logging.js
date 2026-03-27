@@ -1,7 +1,3 @@
-import {
-  YType // eslint-disable-line
-} from '../internals.js'
-
 /**
  * Convenient helper to log type information.
  *

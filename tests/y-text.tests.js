@@ -3,7 +3,8 @@ import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
-import { createIdMapFromIdSet, noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from '../src/internals.js'
+import { createIdMapFromIdSet } from '../src/utils/ids.js'
+import { noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from '../src/utils/AttributionManager.js'
 
 const { init, compare } = Y
 

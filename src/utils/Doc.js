@@ -2,22 +2,16 @@
  * @module Y
  */
 
-import {
-  StructStore,
-  transact,
-  applyUpdate,
-  ContentDoc, Item, Transaction, // eslint-disable-line
-  encodeStateAsUpdate
-} from '../internals.js'
-
-import { YType } from '../ytype.js'
 import { ObservableV2 } from 'lib0/observable'
 import * as random from 'lib0/random'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
 import * as promise from 'lib0/promise'
 
-export const generateNewClientId = random.uint32
+import { StructStore } from './StructStore.js'
+import { transact, generateNewClientId } from './Transaction.js'
+import { YType } from '../ytype.js'
+import { $ydoc } from './schemas.js'
 
 /**
  * @typedef {Object} DocOpts
@@ -179,12 +173,11 @@ export class Doc extends ObservableV2 {
    * @template T
    * @param {function(Transaction):T} f The function that should be executed as a transaction
    * @param {any} [origin] Origin of who started the transaction. Will be stored on transaction.origin
+   * @param {boolean} [local]
    * @return T
-   *
-   * @public
    */
-  transact (f, origin = null) {
-    return transact(this, f, origin)
+  transact (f, origin = null, local = true) {
+    return transact(this, f, origin, local)
   }
 
   /**
@@ -238,29 +231,22 @@ export class Doc extends ObservableV2 {
     if (item !== null) {
       this._item = null
       const content = /** @type {ContentDoc} */ (item.content)
-      content.doc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
-      content.doc._item = item
+      /**
+       * new content doc which replaces the new one
+       */
+      const contentDoc = new Doc({ guid: this.guid, ...content.opts, shouldLoad: false })
+      content.doc = contentDoc
+      contentDoc._item = item
       transact(/** @type {any} */ (item).parent.doc, transaction => {
-        const doc = content.doc
         if (!item.deleted) {
-          transaction.subdocsAdded.add(doc)
+          transaction.subdocsAdded.add(contentDoc)
         }
         transaction.subdocsRemoved.add(this)
       }, null, true)
     }
-    // @ts-ignore
-    this.emit('destroyed', [true]) // DEPRECATED!
     this.emit('destroy', [this])
     super.destroy()
   }
 }
 
-/**
- * @param {Doc} ydoc
- * @param {DocOpts} [opts]
- */
-export const cloneDoc = (ydoc, opts) => {
-  const clone = new Doc(opts)
-  applyUpdate(clone, encodeStateAsUpdate(ydoc))
-  return clone
-}
+Doc.prototype.$type = $ydoc

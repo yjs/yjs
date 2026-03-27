@@ -1,15 +1,3 @@
-import {
-  createID,
-  readItemContent,
-  findIndexCleanStart,
-  Skip,
-  createIdSet,
-  sliceStruct,
-  IdRange,
-  GC, Item, ID,
-  writeStructs
-} from '../internals.js'
-
 import * as decoding from 'lib0/decoding'
 import * as binary from 'lib0/binary'
 import * as map from 'lib0/map'
@@ -17,6 +5,16 @@ import * as array from 'lib0/array'
 import * as math from 'lib0/math'
 import * as encoding from 'lib0/encoding'
 import * as number from 'lib0/number'
+
+import { createID, ID } from './ID.js'
+import { Item } from '../structs/Item.js'
+import { readItemContent } from '../ytype.js'
+import { findIndexCleanStart } from './transaction-helpers.js'
+import { Skip } from '../structs/Skip.js'
+import { createIdSet, IdRange } from './ids.js'
+import { sliceStruct } from './updates.js'
+import { GC } from '../structs/GC.js'
+import { writeStructs } from './encoding-helpers.js'
 
 /**
  * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder The decoder object to read data from.
@@ -31,7 +29,7 @@ export const readBlockSet = (decoder) => {
   for (let i = 0; i < numOfStateUpdates; i++) {
     const numberOfBlocks = decoding.readVarUint(decoder.restDecoder)
     /**
-     * @type {Array<GC|Item>}
+     * @type {Array<GC|Item|Skip>}
      */
     const refs = new Array(numberOfBlocks)
     const client = decoder.readClient()
@@ -99,12 +97,12 @@ export const writeBlockSet = (encoder, blocks) => {
 
 class BlockRange {
   /**
-   * @param {Array<Item|GC>} refs
+   * @param {Array<Item|GC|Skip>} refs
    */
   constructor (refs) {
     this.i = 0
     /**
-     * @type {Array<Item | GC>}
+     * @type {Array<Item | GC | Skip>}
      */
     this.refs = refs
   }
@@ -203,12 +201,12 @@ export class BlockSet {
         } else {
           // requires more computation because we need to filter duplicates
           /**
-           * @type {Array<GC|Item>}
+           * @type {Array<GC|Item|Skip>}
            */
           const result = []
           let nextExpectedClock = leftRanges[0].id.clock
           /**
-           * @param {Item|GC} block
+           * @param {Item|GC|Skip} block
            */
           const addToResult = block => {
             result.push(block)
@@ -217,11 +215,11 @@ export class BlockSet {
           let li = 0
           let ri = 0
           /**
-           * @type {Item|GC|undefined}
+           * @type {Item|GC|Skip|undefined}
            */
           let lblock = leftRanges[li]
           /**
-           * @type {Item|GC|undefined}
+           * @type {Item|GC|Skip|undefined}
            */
           let rblock = rightRanges[ri]
           const applyLeft = () => {

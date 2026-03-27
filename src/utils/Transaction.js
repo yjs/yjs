@@ -1,26 +1,21 @@
-import {
-  getState,
-  writeStructsFromTransaction,
-  writeIdSet,
-  getStateVector,
-  findIndexSS,
-  callEventHandlerListeners,
-  createIdSet,
-  Item,
-  generateNewClientId,
-  createID,
-  iterateStructsByIdSet,
-  ContentFormat,
-  IdSet, UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractStruct, YEvent, Doc // eslint-disable-line
-} from '../internals.js'
-
-import { YType } from '../ytype.js' // eslint-disable-line
 import * as error from 'lib0/error'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
-import * as set from 'lib0/set'
 import * as logging from 'lib0/logging'
 import { callAll } from 'lib0/function'
+
+import { ContentFormat } from '../structs/Item.js'
+import { getStateVector } from './StructStore.js'
+import { callEventHandlerListeners } from './EventHandler.js'
+import { createIdSet, iterateStructsByIdSet } from './ids.js'
+import { GC } from '../structs/GC.js'
+import { YEvent } from './YEvent.js'
+import { writeUpdateMessageFromTransaction } from './encoding-helpers.js'
+import { UpdateEncoderV1, UpdateEncoderV2 } from './UpdateEncoder.js'
+import { findIndexSS, updateCurrentAttributes, cleanupFormattingGap, tryGcDeleteSet, tryMerge, tryToMergeWithLefts, cleanupContextlessFormattingGap } from './transaction-helpers.js'
+import * as random from 'lib0/random'
+
+export const generateNewClientId = random.uint53
 
 /**
  * A transaction is created for every change on the Yjs model. It is possible
@@ -171,246 +166,6 @@ export class Transaction {
 }
 
 /**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Transaction} transaction
- * @return {boolean} Whether data was written.
- */
-export const writeUpdateMessageFromTransaction = (encoder, transaction) => {
-  if (transaction.deleteSet.clients.size === 0 && transaction.insertSet.clients.size === 0) {
-    return false
-  }
-  writeStructsFromTransaction(encoder, transaction)
-  writeIdSet(encoder, transaction.deleteSet)
-  return true
-}
-
-/**
- * @param {Transaction} transaction
- *
- * @private
- * @function
- */
-export const nextID = transaction => {
-  const y = transaction.doc
-  return createID(y.clientID, getState(y.store, y.clientID))
-}
-
-/**
- * If `type.parent` was added in current transaction, `type` technically
- * did not change, it was just added and we should not fire events for `type`.
- *
- * @param {Transaction} transaction
- * @param {YType} type
- * @param {string|null} parentSub
- */
-export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
-  const item = type._item
-  if (item === null || (!item.deleted && !transaction.insertSet.hasId(item.id))) {
-    map.setIfUndefined(transaction.changed, type, set.create).add(parentSub)
-  }
-}
-
-/**
- * @param {Array<AbstractStruct>} structs
- * @param {number} pos
- * @return {number} # of merged structs
- */
-const tryToMergeWithLefts = (structs, pos) => {
-  let right = structs[pos]
-  let left = structs[pos - 1]
-  let i = pos
-  for (; i > 0; right = left, left = structs[--i - 1]) {
-    if (left.deleted === right.deleted && left.constructor === right.constructor) {
-      if (left.mergeWith(right)) {
-        if (right instanceof Item && right.parentSub !== null && /** @type {YType} */ (right.parent)._map.get(right.parentSub) === right) {
-          /** @type {YType} */ (right.parent)._map.set(right.parentSub, /** @type {Item} */ (left))
-        }
-        continue
-      }
-    }
-    break
-  }
-  const merged = pos - i
-  if (merged) {
-    // remove all merged structs from the array
-    structs.splice(pos + 1 - merged, merged)
-  }
-  return merged
-}
-
-/**
- * @param {Transaction} tr
- * @param {IdSet} ds
- * @param {function(Item):boolean} gcFilter
- */
-const tryGcDeleteSet = (tr, ds, gcFilter) => {
-  for (const [client, _deleteItems] of ds.clients.entries()) {
-    const deleteItems = _deleteItems.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (tr.doc.store.clients.get(client))
-    for (let di = deleteItems.length - 1; di >= 0; di--) {
-      const deleteItem = deleteItems[di]
-      const endDeleteItemClock = deleteItem.clock + deleteItem.len
-      for (
-        let si = findIndexSS(structs, deleteItem.clock), struct = structs[si];
-        si < structs.length && struct.id.clock < endDeleteItemClock;
-        struct = structs[++si]
-      ) {
-        const struct = structs[si]
-        if (deleteItem.clock + deleteItem.len <= struct.id.clock) {
-          break
-        }
-        if (struct instanceof Item && struct.deleted && !struct.keep && gcFilter(struct)) {
-          struct.gc(tr, false)
-        }
-      }
-    }
-  }
-}
-
-/**
- * @param {IdSet} ds
- * @param {StructStore} store
- */
-const tryMerge = (ds, store) => {
-  // try to merge deleted / gc'd items
-  // merge from right to left for better efficiency and so we don't miss any merge targets
-  ds.clients.forEach((_deleteItems, client) => {
-    const deleteItems = _deleteItems.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
-    for (let di = deleteItems.length - 1; di >= 0; di--) {
-      const deleteItem = deleteItems[di]
-      // start with merging the item next to the last deleted item
-      const mostRightIndexToCheck = math.min(structs.length - 1, 1 + findIndexSS(structs, deleteItem.clock + deleteItem.len - 1))
-      for (
-        let si = mostRightIndexToCheck, struct = structs[si];
-        si > 0 && struct.id.clock >= deleteItem.clock;
-        struct = structs[si]
-      ) {
-        si -= 1 + tryToMergeWithLefts(structs, si)
-      }
-    }
-  })
-}
-
-/**
- * @param {Transaction} tr
- * @param {IdSet} idset
- * @param {function(Item):boolean} gcFilter
- */
-export const tryGc = (tr, idset, gcFilter) => {
-  tryGcDeleteSet(tr, idset, gcFilter)
-  tryMerge(idset, tr.doc.store)
-}
-
-/**
- * @param {Transaction} transaction
- * @param {Item | null} item
- */
-const cleanupContextlessFormattingGap = (transaction, item) => {
-  if (!transaction.doc.cleanupFormatting) return 0
-  // iterate until item.right is null or content
-  while (item && item.right && (item.right.deleted || !item.right.countable)) {
-    item = item.right
-  }
-  const attrs = new Set()
-  // iterate back until a content item is found
-  while (item && (item.deleted || !item.countable)) {
-    if (!item.deleted && item.content.constructor === ContentFormat) {
-      const key = /** @type {ContentFormat} */ (item.content).key
-      if (attrs.has(key)) {
-        item.delete(transaction)
-        transaction.cleanUps.add(item.id.client, item.id.clock, item.length)
-      } else {
-        attrs.add(key)
-      }
-    }
-    item = item.left
-  }
-}
-
-/**
- * @param {Map<string,any>} currentAttributes
- * @param {ContentFormat} format
- *
- * @private
- * @function
- */
-const updateCurrentAttributes = (currentAttributes, { key, value }) => {
-  if (value === null) {
-    currentAttributes.delete(key)
-  } else {
-    currentAttributes.set(key, value)
-  }
-}
-
-/**
- * Call this function after string content has been deleted in order to
- * clean up formatting Items.
- *
- * @param {Transaction} transaction
- * @param {Item} start
- * @param {Item|null} curr exclusive end, automatically iterates to the next Content Item
- * @param {Map<string,any>} startAttributes
- * @param {Map<string,any>} currAttributes
- * @return {number} The amount of formatting Items deleted.
- *
- * @function
- */
-export const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
-  if (!transaction.doc.cleanupFormatting) return 0
-  /**
-   * @type {Item|null}
-   */
-  let end = start
-  /**
-   * @type {Map<string,ContentFormat>}
-   */
-  const endFormats = map.create()
-  while (end && (!end.countable || end.deleted)) {
-    if (!end.deleted && end.content.constructor === ContentFormat) {
-      const cf = /** @type {ContentFormat} */ (end.content)
-      endFormats.set(cf.key, cf)
-    }
-    end = end.right
-  }
-  let cleanups = 0
-  let reachedCurr = false
-  while (start !== end) {
-    if (curr === start) {
-      reachedCurr = true
-    }
-    if (!start.deleted) {
-      const content = start.content
-      switch (content.constructor) {
-        case ContentFormat: {
-          const { key, value } = /** @type {ContentFormat} */ (content)
-          const startAttrValue = startAttributes.get(key) ?? null
-          if (endFormats.get(key) !== content || startAttrValue === value) {
-            // Either this format is overwritten or it is not necessary because the attribute already existed.
-            start.delete(transaction)
-            transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
-            cleanups++
-            if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
-              if (startAttrValue === null) {
-                currAttributes.delete(key)
-              } else {
-                currAttributes.set(key, startAttrValue)
-              }
-            }
-          }
-          if (!reachedCurr && !start.deleted) {
-            updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content))
-          }
-          break
-        }
-      }
-    }
-    start = /** @type {Item} */ (start.right)
-  }
-  return cleanups
-}
-
-/**
  * This function is experimental and subject to change / be removed.
  *
  * Ideally, we don't need this function at all. Formatting attributes should be cleaned up
@@ -447,50 +202,6 @@ export const cleanupYTextFormatting = type => {
     }
   })
   return res
-}
-
-/**
- * This will be called by the transaction once the event handlers are called to potentially cleanup
- * formatting attributes.
- *
- * @param {Transaction} transaction
- */
-export const cleanupYTextAfterTransaction = transaction => {
-  /**
-   * @type {Set<YType>}
-   */
-  const needFullCleanup = new Set()
-  // check if another formatting item was inserted
-  const doc = transaction.doc
-  iterateStructsByIdSet(transaction, transaction.insertSet, (item) => {
-    if (
-      !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
-    ) {
-      needFullCleanup.add(/** @type {any} */ (item).parent)
-    }
-  })
-  // cleanup in a new transaction
-  transact(doc, (t) => {
-    iterateStructsByIdSet(transaction, transaction.deleteSet, item => {
-      if (item instanceof GC || !(/** @type {YType} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YType} */ (item.parent))) {
-        return
-      }
-      const parent = /** @type {YType} */ (item.parent)
-      if (item.content.constructor === ContentFormat) {
-        needFullCleanup.add(parent)
-      } else {
-        // If no formatting attribute was inserted or deleted, we can make due with contextless
-        // formatting cleanups.
-        // Contextless: it is not necessary to compute currentAttributes for the affected position.
-        cleanupContextlessFormattingGap(t, item)
-      }
-    })
-    // If a formatting item was inserted, we simply clean the whole type.
-    // We need to compute currentAttributes for the current position anyway.
-    for (const yText of needFullCleanup) {
-      cleanupYTextFormatting(yText)
-    }
-  })
 }
 
 /**
@@ -622,12 +333,57 @@ const cleanupTransactions = (transactionCleanups, i) => {
 }
 
 /**
+ * This will be called by the transaction once the event handlers are called to potentially cleanup
+ * formatting attributes.
+ *
+ * @param {Transaction} transaction
+ */
+export const cleanupYTextAfterTransaction = transaction => {
+  /**
+   * @type {Set<YType>}
+   */
+  const needFullCleanup = new Set()
+  // check if another formatting item was inserted
+  const doc = transaction.doc
+  iterateStructsByIdSet(transaction, transaction.insertSet, (item) => {
+    if (
+      !item.deleted && /** @type {Item} */ (item).content.constructor === ContentFormat && item.constructor !== GC
+    ) {
+      needFullCleanup.add(/** @type {any} */ (item).parent)
+    }
+  })
+  // cleanup in a new transaction
+  transact(doc, (t) => {
+    iterateStructsByIdSet(transaction, transaction.deleteSet, item => {
+      if (item instanceof GC || !(/** @type {YType} */ (item.parent)._hasFormatting) || needFullCleanup.has(/** @type {YType} */ (item.parent))) {
+        return
+      }
+      const parent = /** @type {YType} */ (item.parent)
+      if (item.content.constructor === ContentFormat) {
+        needFullCleanup.add(parent)
+      } else {
+        // If no formatting attribute was inserted or deleted, we can make due with contextless
+        // formatting cleanups.
+        // Contextless: it is not necessary to compute currentAttributes for the affected position.
+        cleanupContextlessFormattingGap(t, item)
+      }
+    })
+    // If a formatting item was inserted, we simply clean the whole type.
+    // We need to compute currentAttributes for the current position anyway.
+    for (const yText of needFullCleanup) {
+      cleanupYTextFormatting(yText)
+    }
+  })
+}
+
+/**
  * Implements the functionality of `y.transact(()=>{..})`
  *
  * @template T
  * @param {Doc} doc
  * @param {function(Transaction):T} f
  * @param {any} [origin=true]
+ * @param {boolean} [local=true]
  * @return {T}
  *
  * @function

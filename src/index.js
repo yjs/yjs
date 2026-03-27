@@ -1,132 +1,29 @@
 /** eslint-env browser */
 
-export {
-  Doc,
-  Transaction,
-  YType as Type,
-  YEvent,
-  Item,
-  AbstractStruct,
-  GC,
-  Skip,
-  ContentBinary,
-  ContentDeleted,
-  ContentDoc,
-  ContentEmbed,
-  ContentFormat,
-  ContentJSON,
-  ContentAny,
-  ContentString,
-  ContentType,
-  getTypeChildren,
-  createRelativePositionFromTypeIndex,
-  createRelativePositionFromJSON,
-  createAbsolutePositionFromRelativePosition,
-  compareRelativePositions,
-  AbsolutePosition,
-  RelativePosition,
-  ID,
-  createID,
-  compareIDs,
-  getState,
-  Snapshot,
-  createSnapshot,
-  cleanupYTextFormatting,
-  snapshot,
-  emptySnapshot,
-  findRootTypeKey,
-  findIndexSS,
-  getItem,
-  getItemCleanStart,
-  getItemCleanEnd,
-  typeMapGetSnapshot,
-  typeMapGetAllSnapshot,
-  createDocFromSnapshot,
-  applyUpdate,
-  applyUpdateV2,
-  readUpdate,
-  readUpdateV2,
-  encodeStateAsUpdate,
-  encodeStateAsUpdateV2,
-  encodeStateVector,
-  UndoManager,
-  decodeSnapshot,
-  encodeSnapshot,
-  decodeSnapshotV2,
-  encodeSnapshotV2,
-  decodeStateVector,
-  logUpdate,
-  logUpdateV2,
-  decodeUpdate,
-  decodeUpdateV2,
-  relativePositionToJSON,
-  isParentOf,
-  equalSnapshots,
-  tryGc,
-  transact,
-  logType,
-  mergeUpdates,
-  mergeUpdatesV2,
-  encodeStateVectorFromUpdate,
-  encodeStateVectorFromUpdateV2,
-  encodeRelativePosition,
-  decodeRelativePosition,
-  diffUpdate,
-  diffUpdateV2,
-  convertUpdateFormatV1ToV2,
-  convertUpdateFormatV2ToV1,
-  obfuscateUpdate,
-  obfuscateUpdateV2,
-  UpdateEncoderV1,
-  UpdateEncoderV2,
-  UpdateDecoderV1,
-  UpdateDecoderV2,
-  snapshotContainsUpdate,
-  // idset
-  IdSet,
-  equalIdSets,
-  createDeleteSetFromStructStore,
-  IdMap,
-  createIdMap,
-  createContentAttribute,
-  createInsertSetFromStructStore,
-  diffIdMap,
-  diffIdSet,
-  ContentAttribute,
-  encodeIdMap,
-  createIdMapFromIdSet,
-  TwosetAttributionManager,
-  noAttributionsManager,
-  AbstractAttributionManager,
-  iterateStructsByIdSet,
-  createAttributionManagerFromDiff,
-  DiffAttributionManager,
-  createAttributionManagerFromSnapshots,
-  SnapshotAttributionManager,
-  createIdSet,
-  mergeIdSets,
-  cloneDoc,
-  createContentIdsFromUpdate,
-  createContentIdsFromUpdateV2,
-  insertIntoIdMap,
-  insertIntoIdSet,
-  mergeIdMaps,
-  readIdMap,
-  readIdSet,
-  decodeIdMap,
-  diffDocsToDelta,
-  getPathTo,
-  Attributions,
-  filterIdMap,
-  undoContentIds,
-  intersectUpdateWithContentIds,
-  intersectUpdateWithContentIdsV2,
-  createDocFromUpdate,
-  createDocFromUpdateV2,
-  $ytype,
-  $ytypeAny,
-  $attributionManager
-} from './internals.js'
+// Order matters: follows internals.js ordering to avoid circular dependency issues
+
+export { IdSet, equalIdSets, createDeleteSetFromStructStore, createInsertSetFromStructStore, diffIdSet, createIdSet, mergeIdSets, insertIntoIdSet, iterateStructsByIdSet, readIdSet, IdMap, createIdMap, createContentAttribute, ContentAttribute, diffIdMap, encodeIdMap, createIdMapFromIdSet, insertIntoIdMap, mergeIdMaps, readIdMap, decodeIdMap, filterIdMap } from './utils/ids.js'
+export { Doc } from './utils/Doc.js'
+export { UpdateDecoderV1, UpdateDecoderV2 } from './utils/UpdateDecoder.js'
+export { UpdateEncoderV1, UpdateEncoderV2 } from './utils/UpdateEncoder.js'
+export { applyUpdate, applyUpdateV2, readUpdate, readUpdateV2, encodeStateAsUpdate, encodeStateAsUpdateV2, encodeStateVector, decodeStateVector, diffUpdate, diffUpdateV2, mergeUpdates, mergeUpdatesV2, createDocFromUpdate, createDocFromUpdateV2, cloneDoc } from './utils/encoding.js'
+export { ID, createID, compareIDs, findRootTypeKey } from './utils/ID.js'
+export { isParentOf } from './utils/isParentOf.js'
+export { logType } from './utils/logging.js'
+export { createRelativePositionFromTypeIndex, createRelativePositionFromJSON, createAbsolutePositionFromRelativePosition, compareRelativePositions, AbsolutePosition, RelativePosition, relativePositionToJSON, encodeRelativePosition, decodeRelativePosition } from './utils/RelativePosition.js'
+export { Snapshot, createSnapshot, snapshot, emptySnapshot, createDocFromSnapshot, decodeSnapshot, encodeSnapshot, decodeSnapshotV2, encodeSnapshotV2, equalSnapshots, snapshotContainsUpdate } from './utils/Snapshot.js'
+export { findIndexSS, getItemCleanStart, getItemCleanEnd, tryGc } from './utils/transaction-helpers.js'
+export { Transaction, transact, cleanupYTextFormatting } from './utils/Transaction.js'
+export { UndoManager, undoContentIds } from './utils/UndoManager.js'
+export { logUpdate, logUpdateV2, decodeUpdate, decodeUpdateV2, encodeStateVectorFromUpdate, encodeStateVectorFromUpdateV2, convertUpdateFormatV1ToV2, convertUpdateFormatV2ToV1, obfuscateUpdate, obfuscateUpdateV2, createContentIdsFromUpdate, createContentIdsFromUpdateV2, intersectUpdateWithContentIds, intersectUpdateWithContentIdsV2 } from './utils/updates.js'
+export { YEvent, getPathTo } from './utils/YEvent.js'
+export { TwosetAttributionManager, noAttributionsManager, AbstractAttributionManager, createAttributionManagerFromDiff, DiffAttributionManager, createAttributionManagerFromSnapshots, SnapshotAttributionManager, Attributions, $attributionManager } from './utils/AttributionManager.js'
+export { diffDocsToDelta } from './utils/delta-helpers.js'
+export { YType as Type, getTypeChildren, typeMapGetSnapshot, typeMapGetAllSnapshot, $ytype, $ytypeAny } from './ytype.js'
+export { AbstractStruct } from './structs/AbstractStruct.js'
+export { GC } from './structs/GC.js'
+export { Item, ContentBinary, ContentDeleted, ContentDoc, ContentEmbed, ContentFormat, ContentJSON, ContentAny, ContentString, ContentType } from './structs/Item.js'
+export { Skip } from './structs/Skip.js'
 
 export * from './utils/meta.js'
 

@@ -1,12 +1,7 @@
-import {
-  AbstractStruct,
-  addStruct,
-  addToIdSet,
-  UpdateEncoderV1, UpdateEncoderV2, StructStore, Transaction, // eslint-disable-line
-  createID
-} from '../internals.js'
-
 import * as encoding from 'lib0/encoding'
+
+import { AbstractStruct } from './AbstractStruct.js'
+import { createID } from '../utils/ID.js'
 
 export const structSkipRefNumber = 10
 
@@ -41,8 +36,9 @@ export class Skip extends AbstractStruct {
       this.id.clock += offset
       this.length -= offset
     }
-    addToIdSet(transaction.doc.store.skips, this.id.client, this.id.clock, this.length)
-    addStruct(transaction.doc.store, this)
+    const store = transaction.doc.store
+    store.skips.add(this.id.client, this.id.clock, this.length)
+    store.add(this)
   }
 
   /**
@@ -56,15 +52,6 @@ export class Skip extends AbstractStruct {
   }
 
   /**
-   * @param {Transaction} _transaction
-   * @param {StructStore} _store
-   * @return {null | number}
-   */
-  getMissing (_transaction, _store) {
-    return null
-  }
-
-  /**
    * @param {number} diff
    */
   splice (diff) {
@@ -73,3 +60,13 @@ export class Skip extends AbstractStruct {
     return other
   }
 }
+
+/**
+ * @type {10}
+ */
+Skip.prototype.ref = structSkipRefNumber
+
+/**
+ * @type {false}
+ */
+Skip.prototype.isItem = false

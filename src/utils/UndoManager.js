@@ -1,21 +1,17 @@
-import {
-  mergeIdSets,
-  iterateStructsByIdSet,
-  keepItem,
-  transact,
-  createID,
-  redoItem,
-  isParentOf,
-  followRedone,
-  getItemCleanStart,
-  YEvent, Transaction, Doc, Item, GC, IdSet, YType, // eslint-disable-line
-  diffIdSet
-} from '../internals.js'
-
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
 import * as logging from 'lib0/logging'
 import { ObservableV2 } from 'lib0/observable'
+
+import { mergeIdSets, iterateStructsByIdSet, diffIdSet } from './ids.js'
+import { Item, followRedone } from '../structs/Item.js'
+
+import { transact } from './Transaction.js'
+import { createID } from './ID.js'
+import { isParentOf } from './isParentOf.js'
+import { getItemCleanStart } from './transaction-helpers.js'
+import { Doc } from './Doc.js'
+import { YType } from '../ytype.js'
 
 export class StackItem {
   /**
@@ -404,4 +400,143 @@ export const undoContentIds = (ydoc, contentIds, opts = {}) => {
   const um = new UndoManager(ydoc, opts)
   um.undoStack.push(new StackItem(diffIdSet(contentIds.inserts, contentIds.deletes), diffIdSet(contentIds.deletes, contentIds.inserts)))
   um.undo()
+}
+
+/**
+ * @param {Array<StackItem>} stack
+ * @param {ID} id
+ */
+const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => s.deletes.hasId(id))
+
+/**
+ * Redoes the effect of this operation.
+ *
+ * @param {Transaction} transaction The Yjs instance.
+ * @param {Item} item
+ * @param {Set<Item>} redoitems
+ * @param {IdSet} itemsToDelete
+ * @param {boolean} ignoreRemoteMapChanges
+ * @param {import('../utils/UndoManager.js').UndoManager} um
+ *
+ * @return {Item|null}
+ *
+ * @private
+ */
+export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
+  const doc = transaction.doc
+  const store = doc.store
+  const ownClientID = doc.clientID
+  const redone = item.redone
+  if (redone !== null) {
+    return getItemCleanStart(transaction, redone)
+  }
+  let parentItem = /** @type {YType} */ (item.parent)._item
+  /**
+   * @type {Item|null}
+   */
+  let left = null
+  /**
+   * @type {Item|null}
+   */
+  let right
+  // make sure that parent is redone
+  if (parentItem !== null && parentItem.deleted === true) {
+    // try to undo parent if it will be undone anyway
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) === null)) {
+      return null
+    }
+    while (parentItem.redone !== null) {
+      parentItem = getItemCleanStart(transaction, parentItem.redone)
+    }
+  }
+  /**
+   * @type {YType}
+   */
+  const parentType = /** @type {YType} */ (parentItem === null ? item.parent : /** @type {ContentType} */ (parentItem.content).type)
+
+  if (item.parentSub === null) {
+    // Is an array item. Insert at the old position
+    left = item.left
+    right = item
+    // find next cloned_redo items
+    while (left !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let leftTrace = left
+      // trace redone until parent matches
+      while (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item !== parentItem) {
+        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
+      }
+      if (leftTrace !== null && /** @type {YType} */ (leftTrace.parent)._item === parentItem) {
+        left = leftTrace
+        break
+      }
+      left = left.left
+    }
+    while (right !== null) {
+      /**
+       * @type {Item|null}
+       */
+      let rightTrace = right
+      // trace redone until parent matches
+      while (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item !== parentItem) {
+        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
+      }
+      if (rightTrace !== null && /** @type {YType} */ (rightTrace.parent)._item === parentItem) {
+        right = rightTrace
+        break
+      }
+      right = right.right
+    }
+  } else {
+    right = null
+    if (item.right && !ignoreRemoteMapChanges) {
+      left = item
+      // Iterate right while right is in itemsToDelete
+      // If it is intended to delete right while item is redone, we can expect that item should replace right.
+      while (left !== null && left.right !== null && (left.right.redone || itemsToDelete.hasId(left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
+        left = left.right
+        // follow redone
+        while (left.redone) left = getItemCleanStart(transaction, left.redone)
+      }
+      if (left && left.right !== null) {
+        // It is not possible to redo this item because it conflicts with a
+        // change from another client
+        return null
+      }
+    } else {
+      left = parentType._map.get(item.parentSub) || null
+    }
+  }
+  const nextClock = store.getClock(ownClientID)
+  const nextId = createID(ownClientID, nextClock)
+  const redoneItem = new Item(
+    nextId,
+    left, left && left.lastId,
+    right, right && right.id,
+    parentType,
+    item.parentSub,
+    item.content.copy()
+  )
+  item.redone = nextId
+  keepItem(redoneItem, true)
+  redoneItem.integrate(transaction, 0)
+  return redoneItem
+}
+
+/**
+ * Make sure that neither item nor any of its parents is ever deleted.
+ *
+ * This property does not persist when storing it into a database or when
+ * sending it to other peers
+ *
+ * @param {Item|null} item
+ * @param {boolean} keep
+ */
+export const keepItem = (item, keep) => {
+  while (item !== null && item.keep !== keep) {
+    item.keep = keep
+    item = /** @type {YType} */ (item.parent)._item
+  }
 }

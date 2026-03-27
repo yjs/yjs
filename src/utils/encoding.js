@@ -14,94 +14,25 @@
  * 7: Item with Type
  */
 
-import {
-  findIndexSS,
-  getState,
-  getStateVector,
-  readAndApplyDeleteSet,
-  writeIdSet,
-  transact,
-  UpdateDecoderV1,
-  UpdateDecoderV2,
-  UpdateEncoderV1,
-  UpdateEncoderV2,
-  IdSetEncoderV2,
-  IdSetDecoderV1,
-  IdSetEncoderV1,
-  mergeUpdates,
-  mergeUpdatesV2,
-  Skip,
-  diffUpdateV2,
-  convertUpdateFormatV2ToV1,
-  readBlockSet,
-  createIdSet,
-  BlockSet, IdSet, IdSetDecoderV2, Doc, Transaction, GC, Item, StructStore, // eslint-disable-line
-  createID,
-  IdRange
-} from '../internals.js'
-
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as map from 'lib0/map'
 import * as math from 'lib0/math'
 import * as array from 'lib0/array'
 
-/**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Array<GC|Item>} structs All structs by `client`
- * @param {number} client
- * @param {Array<IdRange>} idranges
- *
- * @function
- */
-export const writeStructs = (encoder, structs, client, idranges) => {
-  let structsToWrite = 0 // this accounts for the skips
-  /**
-   * @type {Array<{ start: number, end: number, startClock: number, endClock: number }>}
-   */
-  const indexRanges = []
-  const firstPossibleClock = structs[0].id.clock
-  const lastStruct = array.last(structs)
-  const lastPossibleClock = lastStruct.id.clock + lastStruct.length
-  idranges.forEach(idrange => {
-    const startClock = math.max(idrange.clock, firstPossibleClock)
-    const endClock = math.min(idrange.clock + idrange.len, lastPossibleClock)
-    if (startClock >= endClock) return // structs for this range do not exist
-    // inclusive start
-    const start = findIndexSS(structs, startClock)
-    // exclusive end
-    const end = findIndexSS(structs, endClock - 1) + 1
-    structsToWrite += end - start
-    indexRanges.push({
-      start,
-      end,
-      startClock,
-      endClock
-    })
-  })
-  structsToWrite += idranges.length - 1
-  // start writing with this clock. this is updated to the next clock that we expect to write
-  let clock = indexRanges[0].startClock
-  // write # encoded structs
-  encoding.writeVarUint(encoder.restEncoder, structsToWrite)
-  encoder.writeClient(client)
-  // write clock
-  encoding.writeVarUint(encoder.restEncoder, clock)
-  indexRanges.forEach(indexRange => {
-    const skipLen = indexRange.startClock - clock
-    if (skipLen > 0) {
-      new Skip(createID(client, clock), skipLen).write(encoder, 0)
-      clock += skipLen
-    }
-    for (let i = indexRange.start; i < indexRange.end; i++) {
-      const struct = structs[i]
-      const structEnd = struct.id.clock + struct.length
-      const offsetEnd = math.max(structEnd - indexRange.endClock, 0)
-      struct.write(encoder, clock - struct.id.clock, offsetEnd)
-      clock = structEnd - offsetEnd
-    }
-  })
-}
+import { getStateVector, StructStore } from './StructStore.js'
+import { getItemCleanStart, getItemCleanEnd } from './transaction-helpers.js'
+import { createIdSet, IdRange, readAndApplyDeleteSet, readIdSet, mergeIdSets, writeIdSet } from './ids.js'
+import { createID, ID } from './ID.js'
+import { UpdateDecoderV1, UpdateDecoderV2, IdSetDecoderV1 } from './UpdateDecoder.js'
+import { UpdateEncoderV1, UpdateEncoderV2, IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
+import { convertUpdateFormatV2ToV1, LazyStructReader, LazyStructWriter, writeStructToLazyStructWriter, finishLazyStructWriting } from './updates.js'
+import { readBlockSet, writeBlockSet } from './BlockSet.js'
+import { Skip } from '../structs/Skip.js'
+import { Item } from '../structs/Item.js'
+import { GC } from '../structs/GC.js'
+import { Doc } from './Doc.js'
+import { writeStructs } from './encoding-helpers.js'
 
 /**
  * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
@@ -116,7 +47,7 @@ export const writeClientsStructs = (encoder, store, _sm) => {
   const sm = new Map()
   _sm.forEach((clock, client) => {
     // only write if new structs are available
-    if (getState(store, client) > clock) {
+    if (store.getClock(client) > clock) {
       sm.set(client, clock)
     }
   })
@@ -133,28 +64,6 @@ export const writeClientsStructs = (encoder, store, _sm) => {
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
     const lastStruct = structs[structs.length - 1]
     writeStructs(encoder, structs, client, [new IdRange(clock, lastStruct.id.clock + lastStruct.length - clock)])
-  })
-}
-
-/**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {StructStore} store
- * @param {IdSet} idset
- *
- * @todo at the moment this writes the full deleteset range
- *
- * @private
- * @function
- */
-export const writeStructsFromIdSet = (encoder, store, idset) => {
-  // write # states that were updated
-  encoding.writeVarUint(encoder.restEncoder, idset.clients.size)
-  // Write items with higher client ids first
-  // This heavily improves the conflict algorithm.
-  array.from(idset.clients.entries()).sort((a, b) => b[0] - a[0]).forEach(([client, ids]) => {
-    const idRanges = ids.getIds()
-    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(client))
-    writeStructs(encoder, structs, client, idRanges)
   })
 }
 
@@ -187,7 +96,7 @@ export const writeStructsFromIdSet = (encoder, store, idset) => {
  */
 const integrateStructs = (transaction, store, clientsStructRefs) => {
   /**
-   * @type {Array<Item | GC>}
+   * @type {Array<Item | GC | Skip>}
    */
   const stack = []
   // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
@@ -231,7 +140,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
     }
   }
   /**
-   * @type {GC|Item}
+   * @type {GC|Item|Skip}
    */
   let stackHead = /** @type {any} */ (curStructsTarget).refs[/** @type {any} */ (curStructsTarget).i++]
   // caching the state because it is used very often
@@ -267,19 +176,19 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
   // iterate over all struct readers until we are done
   while (true) {
     if (stackHead.constructor !== Skip) {
-      const localClock = map.setIfUndefined(state, stackHead.id.client, () => getState(store, stackHead.id.client))
+      const localClock = map.setIfUndefined(state, stackHead.id.client, () => store.getClock(stackHead.id.client))
       const offset = localClock - stackHead.id.clock
-      const missing = stackHead.getMissing(transaction, store)
+      const missing = getMissing(/** @type {any} */ (stackHead), transaction, store)
       if (missing !== null) {
         stack.push(stackHead)
         // get the struct reader that has the missing struct
         /**
-         * @type {{ refs: Array<GC|Item>, i: number }}
+         * @type {{ refs: Array<GC|Item|Skip>, i: number }}
          */
         const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
         if (structRefs.refs.length === structRefs.i || missing === stackHead.id.client || stack.some(s => s.id.client === missing)) { // @todo this could be optimized!
           // This update message causally depends on another update message that doesn't exist yet
-          updateMissingSv(/** @type {number} */ (missing), getState(store, missing))
+          updateMissingSv(/** @type {number} */ (missing), store.getClock(missing))
           addStackToRestSS()
         } else {
           stackHead = structRefs.refs[structRefs.i++]
@@ -323,15 +232,6 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
 }
 
 /**
- * @param {UpdateEncoderV1 | UpdateEncoderV2} encoder
- * @param {Transaction} transaction
- *
- * @private
- * @function
- */
-export const writeStructsFromTransaction = (encoder, transaction) => writeStructsFromIdSet(encoder, transaction.doc.store, transaction.insertSet)
-
-/**
  * Read and apply a document update.
  *
  * This function has the same effect as `applyUpdate` but accepts a decoder.
@@ -344,7 +244,7 @@ export const writeStructsFromTransaction = (encoder, transaction) => writeStruct
  * @function
  */
 export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = new UpdateDecoderV2(decoder)) =>
-  transact(ydoc, transaction => {
+  ydoc.transact(transaction => {
     // force that transaction.local is set to non-local
     transaction.local = false
     let retry = false
@@ -375,7 +275,7 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     if (pending) {
       // check if we can apply something
       for (const [client, clock] of pending.missing) {
-        if (ss.clients.has(client) || clock < getState(store, client)) {
+        if (ss.clients.has(client) || clock < store.getClock(client)) {
           retry = true
           break
         }
@@ -552,6 +452,94 @@ export const readStateVector = decoder => {
 }
 
 /**
+ *
+ * This function works similarly to `readUpdateV2`.
+ *
+ * @param {Array<Uint8Array<ArrayBuffer>>} updates
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
+ * @return {Uint8Array<ArrayBuffer>}
+ */
+export const mergeUpdatesV2 = (updates, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  if (updates.length === 1) {
+    return updates[0]
+  } else if (updates.length === 0) {
+    return encodeStateAsUpdateV2(new Doc(), new Uint8Array([0]), new YEncoder())
+  }
+  const updateDecoders = updates.map(update => new YDecoder(decoding.createDecoder(update)))
+  const blocksets = updateDecoders.map(dec => readBlockSet(dec))
+
+  const mergedBlockset = blocksets[0]
+  for (let i = 1; i < blocksets.length; i++) {
+    mergedBlockset.insertInto(blocksets[i])
+  }
+  const updateEncoder = new YEncoder()
+  writeBlockSet(updateEncoder, mergedBlockset)
+  const dss = updateDecoders.map(decoder => readIdSet(decoder))
+  const ds = mergeIdSets(dss)
+  writeIdSet(updateEncoder, ds)
+  return updateEncoder.toUint8Array()
+}
+
+/**
+ * @param {Array<Uint8Array<ArrayBuffer>>} updates
+ * @return {Uint8Array<ArrayBuffer>}
+ */
+export const mergeUpdates = updates => mergeUpdatesV2(updates, UpdateDecoderV1, UpdateEncoderV1)
+
+/**
+ * @deprecated
+ * @param {Uint8Array} update
+ * @param {Uint8Array} sv
+ * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
+ * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
+ */
+export const diffUpdateV2 = (update, sv, YDecoder = UpdateDecoderV2, YEncoder = UpdateEncoderV2) => {
+  const state = decodeStateVector(sv)
+  const encoder = new YEncoder()
+  const lazyStructWriter = new LazyStructWriter(encoder)
+  const decoder = new YDecoder(decoding.createDecoder(update))
+  const reader = new LazyStructReader(decoder, false)
+  while (reader.curr) {
+    const curr = reader.curr
+    const currClient = curr.id.client
+    const svClock = state.get(currClient) || 0
+    if (reader.curr.constructor === Skip) {
+      // the first written struct shouldn't be a skip
+      reader.next()
+      continue
+    }
+    if (curr.id.clock + curr.length > svClock) {
+      writeStructToLazyStructWriter(lazyStructWriter, curr, math.max(svClock - curr.id.clock, 0), 0)
+      reader.next()
+      while (reader.curr && reader.curr.id.client === currClient) {
+        writeStructToLazyStructWriter(lazyStructWriter, reader.curr, 0, 0)
+        reader.next()
+      }
+    } else {
+      // read until something new comes up
+      while (reader.curr && reader.curr.id.client === currClient && reader.curr.id.clock + reader.curr.length <= svClock) {
+        reader.next()
+      }
+    }
+  }
+  finishLazyStructWriting(lazyStructWriter)
+  // write ds
+  const ds = readIdSet(decoder)
+  writeIdSet(encoder, ds)
+  return encoder.toUint8Array()
+}
+
+/**
+ * @deprecated
+ * @todo remove this in favor of intersectupdate
+ *
+ * @param {Uint8Array<ArrayBuffer>} update
+ * @param {Uint8Array<ArrayBuffer>} sv
+ */
+export const diffUpdate = (update, sv) => diffUpdateV2(update, sv, UpdateDecoderV1, UpdateEncoderV1)
+
+/**
  * Read decodedState and return State as Map.
  *
  * @param {Uint8Array} decodedState
@@ -620,3 +608,90 @@ export const encodeStateVectorV2 = (doc, encoder = new IdSetEncoderV2()) => {
  * @function
  */
 export const encodeStateVector = doc => encodeStateVectorV2(doc, new IdSetEncoderV1())
+
+/**
+ * Return the creator clientID of the missing op or define missing items and return null.
+ *
+ * @param {Item} struct
+ * @param {Transaction} transaction
+ * @param {StructStore} store
+ * @return {null | number}
+ */
+const getMissing = (struct, transaction, store) => {
+  if (struct.constructor !== Item) return null
+  // we may not access these variables anymore after they have been written!
+  const origin = struct.origin
+  const rightOrigin = struct.rightOrigin
+  const parent = struct.parent
+  if (origin && (origin.clock >= store.getClock(origin.client) || store.skips.hasId(origin))) {
+    return origin.client
+  }
+  if (rightOrigin && (rightOrigin.clock >= store.getClock(rightOrigin.client) || store.skips.hasId(rightOrigin))) {
+    return rightOrigin.client
+  }
+  if (parent && parent.constructor === ID && (parent.clock >= store.getClock(parent.client) || store.skips.hasId(parent))) {
+    return parent.client
+  }
+  // We have all missing ids, now find the items
+  if (origin) {
+    struct.left = getItemCleanEnd(transaction, store, origin)
+    // copy left id to so that the original id can be gc'd
+    struct.origin = struct.left.lastId
+  }
+  if (rightOrigin) {
+    struct.right = getItemCleanStart(transaction, rightOrigin)
+    struct.rightOrigin = struct.right.id
+  }
+  if ((struct.left && struct.left.constructor === GC) || (struct.right && struct.right.constructor === GC)) {
+    struct.parent = null
+  } else if (parent == null) {
+    // only set parent if this shouldn't be garbage collected
+    if (struct.left && struct.left.constructor === Item) {
+      struct.parent = struct.left.parent
+      struct.parentSub = struct.left.parentSub
+    } else if (struct.right && struct.right.constructor === Item) {
+      struct.parent = struct.right.parent
+      struct.parentSub = struct.right.parentSub
+    }
+  } else if (parent.constructor === ID) {
+    const parentItem = store.getItem(parent)
+    if (parentItem.constructor === GC) {
+      struct.parent = null
+    } else {
+      struct.parent = /** @type {ContentType} */ (parentItem.content).type
+    }
+  } else if (typeof parent === 'string') {
+    struct.parent = transaction.doc.get(parent)
+  }
+  return null
+}
+
+/**
+ * @param {Uint8Array} update
+ * @param {import('./Doc.js').DocOpts} opts
+ */
+export const createDocFromUpdate = (update, opts = {}) => {
+  const ydoc = new Doc(opts)
+  applyUpdate(ydoc, update)
+  return ydoc
+}
+
+/**
+ * @param {Uint8Array} update
+ * @param {import('./Doc.js').DocOpts} opts
+ */
+export const createDocFromUpdateV2 = (update, opts = {}) => {
+  const ydoc = new Doc(opts)
+  applyUpdateV2(ydoc, update)
+  return ydoc
+}
+
+/**
+ * @param {Doc} ydoc
+ * @param {import('./Doc.js').DocOpts} [opts]
+ */
+export const cloneDoc = (ydoc, opts) => {
+  const clone = new Doc(opts)
+  applyUpdate(clone, encodeStateAsUpdate(ydoc))
+  return clone
+}

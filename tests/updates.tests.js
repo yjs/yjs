@@ -1,7 +1,10 @@
 import * as t from 'lib0/testing'
 import * as Y from '../src/index.js'
 import { init, compare } from './testHelper.js' // eslint-disable-line
-import { readBlockSet, readIdSet, UpdateDecoderV2, UpdateEncoderV2, writeIdSet } from '../src/internals.js'
+import { readBlockSet } from '../src/utils/BlockSet.js'
+import { readIdSet, writeIdSet } from '../src/utils/ids.js'
+import { UpdateDecoderV2 } from '../src/utils/UpdateDecoder.js'
+import { UpdateEncoderV2 } from '../src/utils/UpdateEncoder.js'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import * as object from 'lib0/object'

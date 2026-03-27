@@ -1,38 +1,38 @@
-import {
-  cleanupFormattingGap,
-  createIdSet,
-  removeEventHandlerListener,
-  callEventHandlerListeners,
-  addEventHandlerListener,
-  createEventHandler,
-  getState,
-  isVisible,
-  ContentType,
-  createID,
-  ContentAny,
-  ContentFormat,
-  ContentBinary,
-  ContentJSON,
-  ContentDeleted,
-  ContentString,
-  ContentEmbed,
-  getItemCleanStart,
-  noAttributionsManager,
-  transact,
-  ContentDoc, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, createAttributionFromAttributionItems, AbstractAttributionManager // eslint-disable-line
-} from './internals.js'
-
-import * as contentType from './structs/ContentType.js'
-import * as traits from 'lib0/traits'
-import * as delta from 'lib0/delta'
+import * as binary from 'lib0/binary'
 import * as array from 'lib0/array'
-import * as map from 'lib0/map'
-import * as iterator from 'lib0/iterator'
+import * as delta from 'lib0/delta'
 import * as error from 'lib0/error'
-import * as math from 'lib0/math'
+import * as iterator from 'lib0/iterator'
 import * as log from 'lib0/logging'
+import * as map from 'lib0/map'
+import * as math from 'lib0/math'
 import * as object from 'lib0/object'
 import * as s from 'lib0/schema'
+import * as traits from 'lib0/traits'
+import {
+  Item,
+  ContentAny,
+  ContentBinary,
+  ContentDeleted,
+  ContentEmbed,
+  ContentFormat,
+  ContentJSON,
+  ContentString,
+  ContentType,
+  YXmlFragmentRefID,
+  YXmlElementRefID,
+  YXmlHookRefID,
+  ContentDoc,
+  createContentDocFromDoc
+} from './structs/Item.js'
+import { noAttributionsManager } from './utils/attribution-manager-helpers.js'
+import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
+import { createID } from './utils/ID.js'
+import { createIdSet } from './utils/ids.js'
+import { getItemCleanStart, cleanupFormattingGap } from './utils/transaction-helpers.js'
+import { transact } from './utils/Transaction.js'
+import { YEvent } from './utils/YEvent.js'
+import { $ydoc } from './utils/schemas.js'
 
 /**
  * @typedef {Object<string,any>|Array<any>|number|null|string|Uint8Array|BigInt|YType<any>} YValue
@@ -44,6 +44,44 @@ import * as s from 'lib0/schema'
 export const warnPrematureAccess = () => { log.warn('Invalid access: Add Yjs type to a document before reading data.') }
 
 const maxSearchMarker = 80
+
+/**
+ * @todo SHOULD NOT RETURN AN OBJECT!
+ * @param {Array<ContentAttribute<any>>?} attrs
+ * @param {boolean} deleted - whether the attributed item is deleted
+ * @return {Attribution?}
+ */
+export const createAttributionFromAttributionItems = (attrs, deleted) => {
+  if (attrs == null) {
+    return null
+  }
+  /**
+   * @type {Attribution}
+   */
+  const attribution = {}
+  if (deleted) {
+    attribution.delete = []
+  } else {
+    attribution.insert = []
+  }
+  attrs.forEach(attr => {
+    switch (attr.name) {
+      // eslint-disable-next-line no-fallthrough
+      case 'insert':
+      case 'delete': {
+        // needs to be non-ambiguous: don't add existing attr if it doesn't match the actual status
+        attribution[attr.name]?.push(attr.val)
+        break
+      }
+      default: {
+        if (attr.name[0] !== '_') {
+          /** @type {any} */ (attribution)[attr.name] = attr.val
+        }
+      }
+    }
+  })
+  return attribution
+}
 
 /**
  * A unique timestamp that identifies each marker.
@@ -143,7 +181,7 @@ export class ItemTextListPosition {
           const rightLen = this.am.contentLength(item)
           if (length < rightLen) {
             /**
-             * @type {Array<import('./internals.js').AttributedContent<any>>}
+             * @type {Array<AttributedContent<any>>}
              */
             const contents = []
             this.am.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
@@ -204,7 +242,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   negatedAttributes.forEach((val, key) => {
     const left = currPos.left
     const right = currPos.right
-    const nextFormat = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+    const nextFormat = new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
     nextFormat.integrate(transaction, 0)
     currPos.right = nextFormat
     currPos.forward()
@@ -270,7 +308,7 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
       // save negated attribute (set null if currentVal undefined)
       negatedAttributes.set(key, currentVal)
       const { left, right } = currPos
-      currPos.right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
+      currPos.right = new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
       currPos.right.integrate(transaction, 0)
       currPos.forward()
     }
@@ -302,7 +340,7 @@ export const insertContent = (transaction, parent, currPos, content, attributes)
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
   }
-  right = new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
+  right = new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, content)
   right.integrate(transaction, 0)
   currPos.right = right
   currPos.index = index
@@ -327,14 +365,14 @@ export const insertContentHelper = (transaction, parent, currPos, insert, attrib
       if (first instanceof YType) {
         insertContent(transaction, parent, currPos, new ContentType(first), attributes)
         i++
-      } else if (first instanceof Doc) {
-        insertContent(transaction, parent, currPos, new ContentDoc(first), attributes)
+      } else if ($ydoc.check(first)) {
+        insertContent(transaction, parent, currPos, createContentDocFromDoc(first), attributes)
         i++
       } else {
         // insert "any" content
         // compute slice len
         let j = i + 1
-        for (; j < insert.length && !(insert[j] instanceof YType || insert[j] instanceof Doc); j++) { /* nop */ }
+        for (; j < insert.length && !(insert[j] instanceof YType || $ydoc.check(insert[j])); j++) { /* nop */ }
         insertContent(transaction, parent, currPos, new ContentAny((i === 0 && j === insert.length) ? insert : insert.slice(i, j)), attributes)
         i = j
       }
@@ -365,7 +403,7 @@ export const deleteText = (transaction, currPos, length) => {
       item.delete(transaction)
     } else if (currPos.am !== noAttributionsManager) {
       /**
-       * @type {Array<import('./internals.js').AttributedContent<any>>}
+       * @type {Array<AttributedContent<any>>}
        */
       const contents = []
       currPos.am.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
@@ -640,7 +678,7 @@ export class YType {
      * @private
      */
     this._content = /** @type {delta.DeltaBuilderAny} */ (delta.create())
-    this._legacyTypeRef = this.name == null ? contentType.YXmlFragmentRefID : contentType.YXmlElementRefID
+    this._legacyTypeRef = this.name == null ? YXmlFragmentRefID : YXmlElementRefID
     /**
      * @type {Array<ArraySearchMarker>|null}
      */
@@ -783,10 +821,10 @@ export class YType {
    *
    * @param {AbstractAttributionManager} am
    * @param {Object} [opts]
-   * @param {import('./utils/IdSet.js').IdSet?} [opts.itemsToRender]
+   * @param {IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @param {import('./utils/IdSet.js').IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
+   * @param {IdSet?} [opts.deletedItems] - used for computing prevItem in attributes
    * @param {Map<YType,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
    * @param {Deep} [opts.deep] - render child types as delta
    * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
@@ -829,7 +867,7 @@ export class YType {
        */
       const previousAttributes = {} // The value before changes
       /**
-       * @type {Array<import('./internals.js').AttributedContent<any>>}
+       * @type {Array<AttributedContent<any>>}
        */
       const cs = []
       for (let item = this._start; item !== null; cs.length = 0) {
@@ -978,7 +1016,7 @@ export class YType {
               // # Update Attributions
               if (attribution != null || object.hasProperty(previousUnattributedAttributes, key)) {
                 /**
-                 * @type {import('./utils/AttributionManager.js').Attribution}
+                 * @type {Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
                 const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
@@ -1428,8 +1466,8 @@ export class YType {
   _write (encoder) {
     encoder.writeTypeRef(this._legacyTypeRef)
     switch (this._legacyTypeRef) {
-      case contentType.YXmlElementRefID:
-      case contentType.YXmlHookRefID: {
+      case YXmlElementRefID:
+      case YXmlHookRefID: {
         encoder.writeKey(this.name)
         break
       }
@@ -1444,20 +1482,6 @@ export class YType {
  */
 export const $ytype = _dconf => s.$instanceOf(YType)
 export const $ytypeAny = s.$instanceOf(YType)
-
-/**
- * @param {import('./utils/UpdateDecoder.js').UpdateDecoderV1 | import('./utils/UpdateDecoder.js').UpdateDecoderV2} decoder
- * @return {YType}
- *
- * @private
- * @function
- */
-export const readYType = decoder => {
-  const typeRef = decoder.readTypeRef()
-  const ytype = new YType(typeRef === contentType.YXmlElementRefID || typeRef === contentType.YXmlHookRefID ? decoder.readKey() : null)
-  ytype._legacyTypeRef = typeRef
-  return ytype
-}
 
 /**
  * @param {any} a
@@ -1569,7 +1593,7 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
   let jsonContent = []
   const packJsonContent = () => {
     if (jsonContent.length > 0) {
-      left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
+      left = new Item(createID(ownClientId, store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentAny(jsonContent))
       left.integrate(transaction, 0)
       jsonContent = []
     }
@@ -1594,16 +1618,15 @@ export const typeListInsertGenericsAfter = (transaction, parent, referenceItem, 
           switch (c.constructor) {
             case Uint8Array:
             case ArrayBuffer:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
-              left.integrate(transaction, 0)
-              break
-            case Doc:
-              left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentDoc(/** @type {Doc} */ (c)))
+              left = new Item(createID(ownClientId, store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentBinary(new Uint8Array(/** @type {Uint8Array} */ (c))))
               left.integrate(transaction, 0)
               break
             default:
-              if (c instanceof YType) {
-                left = new Item(createID(ownClientId, getState(store, ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(/** @type {any} */ (c)))
+              if ($ydoc.check(c)) {
+                left = new Item(createID(ownClientId, store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, createContentDocFromDoc(/** @type {Doc} */ (c)))
+                left.integrate(transaction, 0)
+              } else if (c instanceof YType) {
+                left = new Item(createID(ownClientId, store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentType(/** @type {any} */ (c)))
                 left.integrate(transaction, 0)
               } else {
                 throw new Error('Unexpected content type in insert operation')
@@ -1784,18 +1807,17 @@ export const typeMapSet = (transaction, parent, key, value) => {
       case Uint8Array:
         content = new ContentBinary(/** @type {Uint8Array} */ (value))
         break
-      case Doc:
-        content = new ContentDoc(/** @type {Doc} */ (value))
-        break
       default:
-        if (value instanceof YType) {
+        if ($ydoc.check(value)) {
+          content = createContentDocFromDoc(/** @type {Doc} */ (value))
+        } else if (value instanceof YType) {
           content = new ContentType(/** @type {any} */ (value))
         } else {
           throw new Error('Unexpected content type')
         }
     }
   }
-  new Item(createID(ownClientId, getState(doc.store, ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
+  new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, null, null, parent, key, content).integrate(transaction, 0)
 }
 
 /**
@@ -1846,11 +1868,11 @@ export const typeMapGetAll = (parent) => {
  * @param {TypeDelta} d
  * @param {YType} parent
  * @param {Set<string|null>?} attrsToRender
- * @param {import('./internals.js').AbstractAttributionManager} am
+ * @param {AbstractAttributionManager} am
  * @param {boolean} deep
  * @param {Set<YType>|Map<YType,any>|null} [modified] - set of types that should be rendered as modified children
- * @param {import('./utils/IdSet.js').IdSet?} [deletedItems]
- * @param {import('./utils/IdSet.js').IdSet?} [itemsToRender]
+ * @param {IdSet?} [deletedItems]
+ * @param {IdSet?} [itemsToRender]
  * @param {any} [opts]
  * @param {any} [optsAll]
  *
@@ -1865,7 +1887,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
    */
   const renderAttrs = (item, key) => {
     /**
-     * @type {Array<import('./internals.js').AttributedContent<any>>}
+     * @type {Array<AttributedContent>}
      */
     const cs = []
     am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
@@ -1913,6 +1935,17 @@ export const typeMapHas = (parent, key) => {
   const val = parent._map.get(key)
   return val !== undefined && !val.deleted
 }
+
+/**
+ * @param {Item} item
+ * @param {Snapshot|undefined} snapshot
+ *
+ * @protected
+ * @function
+ */
+export const isVisible = (item, snapshot) => snapshot === undefined
+  ? !item.deleted
+  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
 
 /**
  * @param {YType<any>} parent
@@ -1969,4 +2002,128 @@ export const typeMapGetAllSnapshot = (parent, snapshot) => {
 export const createMapIterator = type => {
   type.doc ?? warnPrematureAccess()
   return iterator.iteratorFilter(type._map.entries(), /** @param {any} entry */ entry => !entry[1].deleted)
+}
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentType}
+ */
+export const readContentType = decoder => new ContentType(readYType(decoder))
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentString}
+ */
+export const readContentString = decoder => new ContentString(decoder.readString())
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentJSON}
+ */
+export const readContentJSON = decoder => {
+  const len = decoder.readLen()
+  const cs = []
+  for (let i = 0; i < len; i++) {
+    const c = decoder.readString()
+    if (c === 'undefined') {
+      cs.push(undefined)
+    } else {
+      cs.push(JSON.parse(c))
+    }
+  }
+  return new ContentJSON(cs)
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentFormat}
+ */
+export const readContentFormat = decoder => new ContentFormat(decoder.readKey(), decoder.readJSON())
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentEmbed}
+ */
+export const readContentEmbed = decoder => new ContentEmbed(decoder.readJSON())
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentDoc}
+ */
+export const readContentDoc = decoder => new ContentDoc(decoder.readString(), decoder.readAny())
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {ContentAny}
+ */
+export const readContentAny = decoder => {
+  const len = decoder.readLen()
+  const cs = []
+  for (let i = 0; i < len; i++) {
+    cs.push(decoder.readAny())
+  }
+  return new ContentAny(cs)
+}
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
+ * @return {ContentBinary}
+ */
+export const readContentBinary = decoder => new ContentBinary(decoder.readBuf())
+
+/**
+ * @private
+ *
+ * @param {UpdateDecoderV1 | UpdateDecoderV2 } decoder
+ * @return {ContentDeleted}
+ */
+export const readContentDeleted = decoder => new ContentDeleted(decoder.readLen())
+
+/**
+ * A lookup map for reading Item content.
+ *
+ * @type {Array<function(UpdateDecoderV1 | UpdateDecoderV2):AbstractContent>}
+ */
+export const contentRefs = [
+  () => { error.unexpectedCase() }, // GC is not ItemContent
+  readContentDeleted, // 1
+  readContentJSON, // 2
+  readContentBinary, // 3
+  readContentString, // 4
+  readContentEmbed, // 5
+  readContentFormat, // 6
+  readContentType, // 7
+  readContentAny, // 8
+  readContentDoc, // 9
+  () => { error.unexpectedCase() } // 10 - Skip is not ItemContent
+]
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @param {number} info
+ */
+export const readItemContent = (decoder, info) => contentRefs[info & binary.BITS5](decoder)
+
+/**
+ * @param {UpdateDecoderV1 | UpdateDecoderV2} decoder
+ * @return {YType}
+ *
+ * @private
+ * @function
+ */
+export const readYType = decoder => {
+  const typeRef = decoder.readTypeRef()
+  const ytype = new YType(typeRef === YXmlElementRefID || typeRef === YXmlHookRefID ? decoder.readKey() : null)
+  ytype._legacyTypeRef = typeRef
+  return ytype
 }

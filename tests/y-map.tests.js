@@ -1,10 +1,7 @@
 import * as Y from '../src/index.js'
 import { init, compare, applyRandomTests, Doc } from './testHelper.js' // eslint-disable-line
-import {
-  noAttributionsManager,
-  TwosetAttributionManager,
-  createIdMapFromIdSet
-} from '../src/internals.js'
+import { noAttributionsManager, TwosetAttributionManager } from '../src/utils/AttributionManager.js'
+import { createIdMapFromIdSet } from '../src/utils/ids.js'
 import * as t from 'lib0/testing'
 import * as prng from 'lib0/prng'
 import * as delta from 'lib0/delta'

@@ -2,8 +2,8 @@ import * as t from 'lib0/testing'
 
 import {
   contentRefs,
-  readContentBinary,
   readContentDeleted,
+  readContentBinary,
   readContentString,
   readContentJSON,
   readContentEmbed,
@@ -11,7 +11,7 @@ import {
   readContentFormat,
   readContentAny,
   readContentDoc
-} from '../src/internals.js'
+} from '../src/ytype.js'
 
 import * as Y from '../src/index.js'
 

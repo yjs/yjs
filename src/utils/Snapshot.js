@@ -1,28 +1,17 @@
-import {
-  createDeleteSetFromStructStore,
-  getStateVector,
-  getItemCleanStart,
-  iterateStructsByIdSet,
-  writeIdSet,
-  writeStateVector,
-  readIdSet,
-  readStateVector,
-  createIdSet,
-  createID,
-  getState,
-  findIndexSS,
-  UpdateEncoderV2,
-  applyUpdateV2,
-  LazyStructReader,
-  equalIdSets,
-  UpdateDecoderV1, UpdateDecoderV2, IdSetEncoderV1, IdSetEncoderV2, IdSetDecoderV1, IdSetDecoderV2, Transaction, Doc, IdSet, Item, // eslint-disable-line
-  mergeIdSets
-} from '../internals.js'
-
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
+
+import { createID } from './ID.js'
+import { createDeleteSetFromStructStore, createIdSet, iterateStructsByIdSet, equalIdSets, mergeIdSets, writeIdSet, readIdSet } from './ids.js'
+import { getStateVector } from './StructStore.js'
+import { findIndexSS, getItemCleanStart } from './transaction-helpers.js'
+import { writeStateVector, readStateVector, applyUpdateV2 } from './encoding.js'
+import { UpdateDecoderV1, UpdateDecoderV2, IdSetDecoderV1, IdSetDecoderV2 } from './UpdateDecoder.js'
+import { UpdateEncoderV2, IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
+import { LazyStructReader } from './updates.js'
+import { Doc } from './Doc.js'
 
 export class Snapshot {
   /**
@@ -109,17 +98,6 @@ export const emptySnapshot = createSnapshot(createIdSet(), new Map())
 export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc.store), getStateVector(doc.store))
 
 /**
- * @param {Item} item
- * @param {Snapshot|undefined} snapshot
- *
- * @protected
- * @function
- */
-export const isVisible = (item, snapshot) => snapshot === undefined
-  ? !item.deleted
-  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
-
-/**
  * @param {Transaction} transaction
  * @param {Snapshot} snapshot
  */
@@ -129,7 +107,7 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
   // check if we already split for this snapshot
   if (!meta.has(snapshot)) {
     snapshot.sv.forEach((clock, client) => {
-      if (clock < getState(store, client)) {
+      if (clock < store.getClock(client)) {
         getItemCleanStart(transaction, createID(client, clock))
       }
     })
@@ -173,7 +151,7 @@ export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) =
       if (clock === 0) {
         continue
       }
-      if (clock < getState(originDoc.store, client)) {
+      if (clock < originDoc.store.getClock(client)) {
         getItemCleanStart(transaction, createID(client, clock))
       }
       const structs = originDoc.store.clients.get(client) || []

@@ -1,149 +1,19 @@
-import {
-  getItem,
-  diffIdSet,
-  createInsertSetFromStructStore,
-  createDeleteSetFromStructStore,
-  createIdMapFromIdSet,
-  ContentDeleted,
-  insertIntoIdMap,
-  insertIntoIdSet,
-  diffIdMap,
-  createIdMap,
-  mergeIdMaps,
-  createID,
-  mergeIdSets,
-  applyUpdate,
-  writeIdSet,
-  UpdateEncoderV1,
-  transact,
-  createMaybeAttrRange,
-  createIdSet,
-  writeStructsFromIdSet,
-  UndoManager,
-  StackItem,
-  getItemCleanStart,
-  intersectSets,
-  intersectMaps,
-  ContentFormat,
-  createContentAttribute,
-  StructStore, Transaction, ID, IdSet, Item, Snapshot, Doc, AbstractContent, IdMap, // eslint-disable-line
-  encodeStateAsUpdate
-} from '../internals.js'
-
-import * as error from 'lib0/error'
 import { ObservableV2 } from 'lib0/observable'
 import * as encoding from 'lib0/encoding'
-import * as s from 'lib0/schema'
 
-export const attributionJsonSchema = s.$object({
-  insert: s.$array(s.$string).optional,
-  insertedAt: s.$number.optional,
-  delete: s.$array(s.$string).optional,
-  deletedAt: s.$number.optional,
-  format: s.$record(s.$string, s.$array(s.$string)).optional,
-  formatAt: s.$number.optional
-})
+import { getItemCleanStart } from './transaction-helpers.js'
+import { diffIdSet, createInsertSetFromStructStore, createDeleteSetFromStructStore, insertIntoIdSet, mergeIdSets, intersectSets, createIdSet, writeIdSet, createIdMapFromIdSet, insertIntoIdMap, diffIdMap, createIdMap, mergeIdMaps, intersectMaps, createMaybeAttrRange, createContentAttribute } from './ids.js'
+import { ContentDeleted, ContentFormat } from '../structs/Item.js'
+import { createID } from './ID.js'
+import { writeStructsFromIdSet } from './encoding-helpers.js'
+import { applyUpdate, encodeStateAsUpdate } from './encoding.js'
+import { UpdateEncoderV1 } from './UpdateEncoder.js'
+import { transact } from './Transaction.js'
+import { UndoManager, StackItem } from './UndoManager.js'
 
-/**
- * @todo rename this to `insertBy`, `insertAt`, ..
- *
- * @typedef {s.Unwrap<typeof attributionJsonSchema>} Attribution
- */
+import { $attributionManager, AttributedContent } from './attribution-manager-helpers.js'
 
-/**
- * @todo SHOULD NOT RETURN AN OBJECT!
- * @param {Array<import('./IdMap.js').ContentAttribute<any>>?} attrs
- * @param {boolean} deleted - whether the attributed item is deleted
- * @return {Attribution?}
- */
-export const createAttributionFromAttributionItems = (attrs, deleted) => {
-  if (attrs == null) {
-    return null
-  }
-  /**
-   * @type {Attribution}
-   */
-  const attribution = {}
-  if (deleted) {
-    attribution.delete = []
-  } else {
-    attribution.insert = []
-  }
-  attrs.forEach(attr => {
-    switch (attr.name) {
-      // eslint-disable-next-line no-fallthrough
-      case 'insert':
-      case 'delete': {
-        // needs to be non-ambiguous: don't add existing attr if it doesn't match the actual status
-        attribution[attr.name]?.push(attr.val)
-        break
-      }
-      default: {
-        if (attr.name[0] !== '_') {
-          /** @type {any} */ (attribution)[attr.name] = attr.val
-        }
-      }
-    }
-  })
-  return attribution
-}
-
-/**
- * @template T
- */
-export class AttributedContent {
-  /**
-   * @param {AbstractContent} content
-   * @param {number} clock
-   * @param {boolean} deleted
-   * @param {Array<import('./IdMap.js').ContentAttribute<T>> | null} attrs
-   * @param {0|1|2} renderBehavior
-   */
-  constructor (content, clock, deleted, attrs, renderBehavior) {
-    this.content = content
-    this.clock = clock
-    this.deleted = deleted
-    this.attrs = attrs
-    this.render = renderBehavior === 0 ? false : (renderBehavior === 1 ? (!deleted || attrs != null) : true)
-  }
-}
-
-/**
- * Abstract class for associating Attributions to content / changes
- *
- * Should fire an event when the attributions changed _after_ the original change happens. This
- * Event will be used to update the attribution on the current content.
- *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
- */
-export class AbstractAttributionManager extends ObservableV2 {
-  /**
-   * @param {Array<AttributedContent<any>>} _contents - where to write the result
-   * @param {number} _client
-   * @param {number} _clock
-   * @param {boolean} _deleted
-   * @param {AbstractContent} _content
-   * @param {0|1|2} _shouldRender - 0: if undeleted or attributed, render as a retain operation. 1: render only if undeleted or attributed. 2: render as insert operation (if unattributed and deleted, render as delete).
-   */
-  readContent (_contents, _client, _clock, _deleted, _content, _shouldRender) {
-    error.methodUnimplemented()
-  }
-
-  /**
-   * Calculate the length of the attributed content. This is used by iterators that walk through the
-   * content.
-   *
-   * If the content is not countable, it should return 0.
-   *
-   * @param {Item} _item
-   * @return {number}
-   */
-  contentLength (_item) {
-    error.methodUnimplemented()
-  }
-}
-
-export const $attributionManager = AbstractAttributionManager.prototype.$type = s.$type('y:am', AbstractAttributionManager)
+export { noAttributionsManager, NoAttributionsManager, AbstractAttributionManager, $attributionManager } from './attribution-manager-helpers.js'
 
 /**
  * @implements AbstractAttributionManager
@@ -201,41 +71,6 @@ export class TwosetAttributionManager extends ObservableV2 {
 }
 
 /**
- * Abstract class for associating Attributions to content / changes
- *
- * @implements AbstractAttributionManager
- *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
- */
-export class NoAttributionsManager extends ObservableV2 {
-  get $type () { return $attributionManager }
-
-  /**
-   * @param {Array<AttributedContent<any>>} contents - where to write the result
-   * @param {number} _client
-   * @param {number} clock
-   * @param {boolean} deleted
-   * @param {AbstractContent} content
-   * @param {0|1|2} shouldRender - whether this should render or just result in a `retain` operation
-   */
-  readContent (contents, _client, clock, deleted, content, shouldRender) {
-    if (!deleted || shouldRender) {
-      contents.push(new AttributedContent(content, clock, deleted, null, shouldRender))
-    }
-  }
-
-  /**
-   * @param {Item} item
-   * @return {number}
-   */
-  contentLength (item) {
-    return (item.deleted || !item.content.isCountable()) ? 0 : item.length
-  }
-}
-
-export const noAttributionsManager = new NoAttributionsManager()
-
-/**
  * @param {StructStore} store
  * @param {number} client
  * @param {number} clock
@@ -243,7 +78,7 @@ export const noAttributionsManager = new NoAttributionsManager()
  */
 const getItemContent = (store, client, clock, len) => {
   // Retrieved item is never more fragmented than the newer item.
-  const prevItem = getItem(store, createID(client, clock))
+  const prevItem = store.getItem(createID(client, clock))
   const diffStart = clock - prevItem.id.clock
   let content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
   // trim itemContent to the correct size.
@@ -275,8 +110,8 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
   /**
    * @type {Item?}
    */
-  let item = getItem(store, start)
-  const endItem = start === end ? item : (end == null ? null : getItem(store, end))
+  let item = store.getItem(start)
+  const endItem = start === end ? item : (end == null ? null : store.getItem(end))
 
   // walk to the left and find first un-attributed change that is rendered
   while (item.left != null) {
@@ -533,7 +368,7 @@ export class DiffAttributionManager extends ObservableV2 {
           continue
         }
         // Retrieved item is never more fragmented than the newer item.
-        const prevItem = getItem(this._prevDocStore, createID(client, s.clock))
+        const prevItem = this._prevDocStore.getItem(createID(client, s.clock))
         const diffStart = s.clock - prevItem.id.clock
         content = prevItem.length > 1 ? prevItem.content.copy() : prevItem.content
         // trim itemContent to the correct size.
@@ -594,7 +429,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
    * @param {Object} [options] - options for the attribution manager
-   * @param {Array<import('./IdMap.js').ContentAttribute<any>>} [options.attrs] - the attributes to apply to the diff
+   * @param {Array<ContentAttribute>} [options.attrs] - the attributes to apply to the diff
    */
   constructor (prevSnapshot, nextSnapshot) {
     super()

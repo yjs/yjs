@@ -1,16 +1,10 @@
-import {
-  createInsertSetFromStructStore,
-  createDeleteSetFromStructStore,
-  createAttributionManagerFromDiff,
-  diffIdSet,
-  mergeIdSets,
-  Item,
-  YType, Doc, // eslint-disable-line
-  iterateStructsByIdSet
-} from '../internals.js'
 import * as delta from 'lib0/delta'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
+
+import { createInsertSetFromStructStore, createDeleteSetFromStructStore, diffIdSet, mergeIdSets, iterateStructsByIdSet } from './ids.js'
+import { createAttributionManagerFromDiff } from './AttributionManager.js'
+import { Item } from '../structs/Item.js'
 
 /**
  * @param {Doc} v1

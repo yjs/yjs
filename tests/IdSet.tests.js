@@ -1,5 +1,5 @@
 import * as t from 'lib0/testing'
-import * as d from '../src/utils/IdSet.js'
+import * as d from '../src/utils/ids.js'
 import * as math from 'lib0/math'
 import * as prng from 'lib0/prng'
 import { compareIdSets, createRandomIdSet, ID } from './testHelper.js'
@@ -10,7 +10,7 @@ import { compareIdSets, createRandomIdSet, ID } from './testHelper.js'
 const simpleConstructIdSet = ops => {
   const idset = d.createIdSet()
   ops.forEach(op => {
-    d.addToIdSet(idset, op[0], op[1], op[2])
+    idset.add(op[0], op[1], op[2])
   })
   return idset
 }
@@ -198,7 +198,7 @@ export const testRepeatMergingMultipleIdsets = tc => {
       const oneHas = idss.some(ids => ids.hasId(new ID(iclient, iclock)))
       t.assert(mergedHas === oneHas)
       if (oneHas) {
-        d.addToIdSet(composed, iclient, iclock, 1)
+        composed.add(iclient, iclock, 1)
       }
     }
   }

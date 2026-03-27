@@ -1,18 +1,12 @@
-import {
-  diffIdSet,
-  mergeIdSets,
-  noAttributionsManager,
-  YType, Doc, AbstractAttributionManager, Item, Transaction, AbstractStruct, // eslint-disable-line
-  createAbsolutePositionFromRelativePosition,
-  createRelativePosition
-} from '../internals.js'
-
 import * as map from 'lib0/map'
-import * as delta from 'lib0/delta' // eslint-disable-line
 import * as set from 'lib0/set'
 
+import { diffIdSet, mergeIdSets } from './ids.js'
+import { noAttributionsManager } from './attribution-manager-helpers.js'
+import { createAbsolutePositionFromRelativePosition, createRelativePosition } from './RelativePosition.js'
+
 /**
- * @template {delta.DeltaConf} DConf
+ * @template {DeltaConf} DConf
  * YEvent describes the changes on a YType.
  */
 export class YEvent {
@@ -38,11 +32,11 @@ export class YEvent {
      */
     this.transaction = transaction
     /**
-     * @type {delta.Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>|null}
+     * @type {Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>|null}
      */
     this._delta = null
     /**
-     * @type {delta.Delta<DConf>|null}
+     * @type {Delta<DConf>|null}
      */
     this._deltaDeep = null
     /**
@@ -94,7 +88,7 @@ export class YEvent {
    * @param {AbstractAttributionManager} am
    * @param {object} [opts]
    * @param {Deep} [opts.deep]
-   * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
+   * @return {Deep extends true ? Delta<DConf> : Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
@@ -133,7 +127,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.Delta<import('../internals.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
+   * @type {Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    * @public
    */
   get delta () {
@@ -144,7 +138,7 @@ export class YEvent {
    * Compute the changes in the delta format.
    * A {@link https://quilljs.com/docs/delta/|Quill Delta}) that represents the changes on the document.
    *
-   * @type {delta.Delta<DConf>} The Delta representation of this type.
+   * @type {Delta<DConf>} The Delta representation of this type.
    * @public
    */
   get deltaDeep () {
