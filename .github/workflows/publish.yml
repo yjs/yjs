@@ -1,11 +1,14 @@
 name: Publish to npm
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Node.js CI"]
+    types: [completed]
     branches: [main]
 
 jobs:
   check:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       should_publish: ${{ steps.version-check.outputs.should_publish }}
@@ -27,25 +30,9 @@ jobs:
             echo "New version detected: $LOCAL"
           fi
 
-  test:
+  publish:
     needs: check
     if: needs.check.outputs.should_publish == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22.x, 24.x]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test
-
-  publish:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,8 +50,8 @@ jobs:
         id: npm-tag
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if echo "$VERSION" | grep -qE '-(rc|alpha|beta|next)'; then
-            echo "tag=next" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "tag=beta" >> "$GITHUB_OUTPUT"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
@@ -74,7 +61,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           PRERELEASE=""
-          if echo "$VERSION" | grep -qE '-(rc|alpha|beta|next)'; then
+          if [[ "$VERSION" == *-* ]]; then
             PRERELEASE="--prerelease"
           fi
           gh release create "v${VERSION}" --generate-notes $PRERELEASE
