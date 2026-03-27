@@ -39,7 +39,8 @@
   "files": [
     "src",
     "dist",
-    "tests/testHelper.js"
+    "tests/testHelper.js",
+    "global.d.ts"
   ],
   "dictionaries": {
     "test": "tests"
