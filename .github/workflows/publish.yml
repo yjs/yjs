@@ -1,0 +1,84 @@
+name: Publish to npm
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_publish: ${{ steps.version-check.outputs.should_publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Check if version is already published
+        id: version-check
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          LOCAL=$(node -p "require('./package.json').version")
+          if npm view "${NAME}@${LOCAL}" version 2>/dev/null; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version $LOCAL already published, skipping."
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "New version detected: $LOCAL"
+          fi
+
+  test:
+    needs: check
+    if: needs.check.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x, 24.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: Build
+        run: npm run dist
+      - name: Determine npm tag
+        id: npm-tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if echo "$VERSION" | grep -qE '-(rc|alpha|beta|next)'; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish
+        run: npm publish --provenance --access public --tag ${{ steps.npm-tag.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create GitHub Release
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          PRERELEASE=""
+          if echo "$VERSION" | grep -qE '-(rc|alpha|beta|next)'; then
+            PRERELEASE="--prerelease"
+          fi
+          gh release create "v${VERSION}" --generate-notes $PRERELEASE
+        env:
+          GH_TOKEN: ${{ github.token }}

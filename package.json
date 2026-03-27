@@ -13,8 +13,7 @@
     "clean": "rm -rf dist",
     "test": "NODE_ENV=development node ./tests/index.js --repetition-time 50",
     "test-extensive": "node ./tests/index.js --production --repetition-time 10000",
-    "dist": "npm run clean && (tsc --skipLibCheck --noEmit false|| true)",
-    "release": "npm test && PRODUCTION=1 npm run dist && test -e dist/src/index.d.ts && np",
+    "dist": "npm run clean && PRODUCTION=1 tsc --skipLibCheck --noEmit false && test -e dist/src/index.d.ts",
     "lint": "markdownlint README.md && standard && tsc --skipLibCheck && npx dpdm --exit-code circular:1 --warning false --tree false src/index.js",
     "debug": "npm run gentesthtml && 0serve -o test.html",
     "debug:node": "node --inspect-brk tests/index.js",
@@ -86,6 +85,6 @@
   },
   "engines": {
     "npm": ">=8.0.0",
-    "node": ">=16.0.0"
+    "node": ">=22.0.0"
   }
 }
