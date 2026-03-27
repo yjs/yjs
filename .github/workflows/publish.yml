@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest
       - run: npm ci
       - name: Build
         run: npm run dist
@@ -70,8 +70,6 @@ jobs:
           fi
       - name: Publish
         run: npm publish --provenance --access public --tag ${{ steps.npm-tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Create GitHub Release
         run: |
           VERSION=$(node -p "require('./package.json').version")
