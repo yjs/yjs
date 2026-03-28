@@ -19,7 +19,6 @@ import { IdSetDecoderV2 } from './UpdateDecoder.js'
  * @typedef {{ inserts: IdMap<any>, deletes: IdMap<any> }} ContentMap
  */
 
-
 export class IdRange {
   /**
    * @param {number} clock
