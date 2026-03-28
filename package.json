@@ -38,7 +38,7 @@
   },
   "files": [
     "src",
-    "dist",
+    "dist/src",
     "tests/testHelper.js",
     "global.d.ts"
   ],

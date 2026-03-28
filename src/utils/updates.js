@@ -232,7 +232,7 @@ export const encodeStateVectorFromUpdate = update => encodeStateVectorFromUpdate
 /**
  * @param {Uint8Array} update
  * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
- * @return {import('./meta.js').ContentIds}
+ * @return {ContentIds}
  */
 export const createContentIdsFromUpdateV2 = (update, YDecoder = UpdateDecoderV2) => {
   const updateDecoder = new YDecoder(decoding.createDecoder(update))
@@ -264,7 +264,7 @@ export const createContentIdsFromUpdateV2 = (update, YDecoder = UpdateDecoderV2)
 
 /**
  * @param {Uint8Array} update
- * @return {import('./meta.js').ContentIds}
+ * @return {ContentIds}
  */
 export const createContentIdsFromUpdate = update => createContentIdsFromUpdateV2(update, UpdateDecoderV1)
 
@@ -523,7 +523,7 @@ export const convertUpdateFormatV2ToV1 = update => convertUpdateFormat(update, f
  * overlapping portion is included in the result.
  *
  * @param {Uint8Array} update
- * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
+ * @param {ContentIds} contentIds - Pattern specifying which content to include
  * @param {typeof UpdateDecoderV1 | typeof UpdateDecoderV2} [YDecoder]
  * @param {typeof UpdateEncoderV1 | typeof UpdateEncoderV2} [YEncoder]
  * @return {Uint8Array<ArrayBuffer>}
@@ -569,7 +569,7 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
  * Filter an update (V1 format) to only include content specified by a ContentIds pattern.
  *
  * @param {Uint8Array} update
- * @param {import('./meta.js').ContentIds} contentIds - Pattern specifying which content to include
+ * @param {ContentIds} contentIds - Pattern specifying which content to include
  * @return {Uint8Array<ArrayBuffer>}
  */
 export const intersectUpdateWithContentIds = (update, contentIds) =>

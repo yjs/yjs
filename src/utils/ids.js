@@ -11,6 +11,15 @@ import { iterateStructs, findIndexSS } from './transaction-helpers.js'
 import { UpdateEncoderV2, IdSetEncoderV2 } from './UpdateEncoder.js'
 import { IdSetDecoderV2 } from './UpdateDecoder.js'
 
+/**
+ * @typedef {{ inserts: IdSet, deletes: IdSet }} ContentIds
+ */
+
+/**
+ * @typedef {{ inserts: IdMap<any>, deletes: IdMap<any> }} ContentMap
+ */
+
+
 export class IdRange {
   /**
    * @param {number} clock

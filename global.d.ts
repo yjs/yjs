@@ -7,6 +7,9 @@ declare type IdMap<Attrs> = import('./src/utils/ids.js').IdMap<Attrs>
 declare type AttrRanges<Attrs = any> = import('./src/utils/ids.js').AttrRanges<Attrs>
 declare type AttrRange<Attrs = any> = import('./src/utils/ids.js').AttrRange<Attrs>
 declare type ContentAttribute<V=any> = import('./src/utils/ids.js').ContentAttribute<V>
+declare type ContentIds = import('./src/utils/ids.js').ContentIds
+declare type ContentMap= import('./src/utils/ids.js').ContentMap
+
 
 declare type BlockSet = import('./src/utils/BlockSet.js').BlockSet
 declare type UpdateDecoderV1 = import('./src/utils/UpdateDecoder.js').UpdateDecoderV1

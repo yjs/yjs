@@ -1,3 +1,4 @@
+/// <reference types="../global.d.ts" />
 /** eslint-env browser */
 
 // Order matters: follows internals.js ordering to avoid circular dependency issues
@@ -26,6 +27,13 @@ export { Item, ContentBinary, ContentDeleted, ContentDoc, ContentEmbed, ContentF
 export { Skip } from './structs/Skip.js'
 
 export * from './utils/meta.js'
+
+/**
+ * @typedef {import('./utils/ids.js').ContentIds} ContentIds
+ */
+/**
+ * @typedef {import('./utils/ids.js').ContentMap} ContentMap
+ */
 
 const glo = /** @type {any} */ (typeof globalThis !== 'undefined'
   ? globalThis

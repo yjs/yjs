@@ -4,38 +4,48 @@
 
 import * as decoding from 'lib0/decoding'
 
-import * as ids from './ids.js'
+import {
+  createIdSetFromIdMap,
+  createDeleteSetFromStructStore,
+  createInsertSetFromStructStore,
+  diffIdMap,
+  mergeIdMaps,
+  createIdSet,
+  mergeIdSets,
+  diffIdSet,
+  createIdMapFromIdSet,
+  writeIdSet,
+  readIdSet,
+  writeIdMap,
+  readIdMap,
+  intersectMaps,
+  intersectSets,
+  filterIdMap
+} from './ids.js'
 import { IdSetEncoderV2 } from './UpdateEncoder.js'
 import { IdSetDecoderV2 } from './UpdateDecoder.js'
 
 /**
- * @typedef {{ inserts: IdSet, deletes: IdSet }} ContentIds
- */
-
-/**
- * @typedef {{ inserts: IdMap<any>, deletes: IdMap<any> }} ContentMap
- */
-
-/**
  * @param {IdSet} inserts
  * @param {IdSet} deletes
+ * @return {ContentIds}
  */
-export const createContentIds = (inserts = ids.createIdSet(), deletes = ids.createIdSet()) => ({ inserts, deletes })
+export const createContentIds = (inserts = createIdSet(), deletes = createIdSet()) => ({ inserts, deletes })
 
 /**
  * @param {ContentMap} contentMap
  */
 export const createContentIdsFromContentMap = contentMap => createContentIds(
-  ids.createIdSetFromIdMap(contentMap.inserts),
-  ids.createIdSetFromIdMap(contentMap.deletes)
+  createIdSetFromIdMap(contentMap.inserts),
+  createIdSetFromIdMap(contentMap.deletes)
 )
 
 /**
  * @param {import('./Doc.js').Doc} ydoc
  */
 export const createContentIdsFromDoc = ydoc => createContentIds(
-  ids.createInsertSetFromStructStore(ydoc.store, false),
-  ids.createDeleteSetFromStructStore(ydoc.store)
+  createInsertSetFromStructStore(ydoc.store, false),
+  createDeleteSetFromStructStore(ydoc.store)
 )
 
 /**
@@ -50,36 +60,37 @@ export const createContentIdsFromDocDiff = (ydocPrev, ydocNext) =>
  * @param {ContentIds} excludeContent
  */
 export const excludeContentIds = (content, excludeContent) =>
-  createContentIds(ids.diffIdSet(content.inserts, excludeContent.inserts), ids.diffIdSet(content.deletes, excludeContent.deletes))
+  createContentIds(diffIdSet(content.inserts, excludeContent.inserts), diffIdSet(content.deletes, excludeContent.deletes))
 
 /**
  * @param {ContentMap} content
  * @param {ContentIds | ContentMap} excludeContent
  */
 export const excludeContentMap = (content, excludeContent) => createContentMap(
-  ids.diffIdMap(content.inserts, excludeContent.inserts),
-  ids.diffIdMap(content.deletes, excludeContent.deletes)
+  diffIdMap(content.inserts, excludeContent.inserts),
+  diffIdMap(content.deletes, excludeContent.deletes)
 )
 
 /**
  * @param {Array<ContentMap>} contents
  */
 export const mergeContentMaps = contents => createContentMap(
-  ids.mergeIdMaps(contents.map(c => c.inserts)),
-  ids.mergeIdMaps(contents.map(c => c.deletes))
+  mergeIdMaps(contents.map(c => c.inserts)),
+  mergeIdMaps(contents.map(c => c.deletes))
 )
 
 /**
  * @param {Array<ContentIds>} contents
  */
 export const mergeContentIds = contents => createContentIds(
-  ids.mergeIdSets(contents.map(c => c.inserts)),
-  ids.mergeIdSets(contents.map(c => c.deletes))
+  mergeIdSets(contents.map(c => c.inserts)),
+  mergeIdSets(contents.map(c => c.deletes))
 )
 
 /**
  * @param {IdMap<any>} inserts
  * @param {IdMap<any>} deletes
+ * @return {ContentMap}
  */
 export const createContentMap = (inserts, deletes) => ({ inserts, deletes })
 
@@ -89,8 +100,8 @@ export const createContentMap = (inserts, deletes) => ({ inserts, deletes })
  * @param {Array<ContentAttribute<any>>} [deleteAttrs]
  */
 export const createContentMapFromContentIds = (contentIds, insertAttrs, deleteAttrs = insertAttrs) => createContentMap(
-  ids.createIdMapFromIdSet(contentIds.inserts, insertAttrs),
-  ids.createIdMapFromIdSet(contentIds.deletes, deleteAttrs)
+  createIdMapFromIdSet(contentIds.inserts, insertAttrs),
+  createIdMapFromIdSet(contentIds.deletes, deleteAttrs)
 )
 
 /**
@@ -98,8 +109,8 @@ export const createContentMapFromContentIds = (contentIds, insertAttrs, deleteAt
  * @param {ContentIds} contentIds
  */
 export const writeContentIds = (encoder, contentIds) => {
-  ids.writeIdSet(encoder, contentIds.inserts)
-  ids.writeIdSet(encoder, contentIds.deletes)
+  writeIdSet(encoder, contentIds.inserts)
+  writeIdSet(encoder, contentIds.deletes)
 }
 
 /**
@@ -118,8 +129,8 @@ export const encodeContentIds = contentIds => {
  * @return {ContentIds}
  */
 export const readContentIds = decoder => createContentIds(
-  ids.readIdSet(decoder),
-  ids.readIdSet(decoder)
+  readIdSet(decoder),
+  readIdSet(decoder)
 )
 
 /**
@@ -134,8 +145,8 @@ export const decodeContentIds = buf => readContentIds(new IdSetDecoderV2(decodin
  * @param {ContentMap} contentMap
  */
 export const writeContentMap = (encoder, contentMap) => {
-  ids.writeIdMap(encoder, contentMap.inserts)
-  ids.writeIdMap(encoder, contentMap.deletes)
+  writeIdMap(encoder, contentMap.inserts)
+  writeIdMap(encoder, contentMap.deletes)
 }
 
 /**
@@ -145,8 +156,8 @@ export const writeContentMap = (encoder, contentMap) => {
  * @return {ContentMap} contentMap
  */
 export const readContentMap = (decoder) => createContentMap(
-  ids.readIdMap(decoder),
-  ids.readIdMap(decoder)
+  readIdMap(decoder),
+  readIdMap(decoder)
 )
 
 /**
@@ -163,8 +174,8 @@ export const encodeContentMap = contentMap => {
  * @param {ContentMap|ContentIds} mapB
  */
 export const intersectContentMap = (mapA, mapB) => createContentMap(
-  ids.intersectMaps(mapA.inserts, mapB.inserts),
-  ids.intersectMaps(mapA.deletes, mapB.deletes)
+  intersectMaps(mapA.inserts, mapB.inserts),
+  intersectMaps(mapA.deletes, mapB.deletes)
 )
 
 /**
@@ -172,8 +183,8 @@ export const intersectContentMap = (mapA, mapB) => createContentMap(
  * @param {ContentIds|ContentMap} setB
  */
 export const intersectContentIds = (setA, setB) => createContentIds(
-  ids.intersectSets(setA.inserts, setB.inserts),
-  ids.intersectSets(setA.deletes, setB.deletes)
+  intersectSets(setA.inserts, setB.inserts),
+  intersectSets(setA.deletes, setB.deletes)
 )
 
 /**
@@ -187,4 +198,4 @@ export const decodeContentMap = buf => readContentMap(new IdSetDecoderV2(decodin
  * @param {(c:Array<ContentAttribute<any>>)=>boolean} insertPredicate
  * @param {(c:Array<ContentAttribute<any>>)=>boolean} deletePredicate
  */
-export const filterContentMap = (contentMap, insertPredicate, deletePredicate) => createContentMap(ids.filterIdMap(contentMap.inserts, insertPredicate), ids.filterIdMap(contentMap.deletes, deletePredicate))
+export const filterContentMap = (contentMap, insertPredicate, deletePredicate) => createContentMap(filterIdMap(contentMap.inserts, insertPredicate), filterIdMap(contentMap.deletes, deletePredicate))

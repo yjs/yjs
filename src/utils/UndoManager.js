@@ -393,7 +393,7 @@ export class UndoManager extends ObservableV2 {
  * This is not guaranteed to work on documents with gc enabled!
  *
  * @param {Doc} ydoc
- * @param {import('./meta.js').ContentIds} contentIds
+ * @param {ContentIds} contentIds
  * @param {UndoManagerOptions} opts
  */
 export const undoContentIds = (ydoc, contentIds, opts = {}) => {
