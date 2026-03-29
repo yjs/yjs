@@ -1087,7 +1087,7 @@ export class YType {
             let item = currPos.right
             while (item != null && (item.deleted || !item.countable)) { item = item.next }
             if (item == null || item.content.constructor !== ContentType) { error.unexpectedCase() }
-            /** @type {ContentType} */ (item.content).type.applyDelta(op.value)
+            /** @type {ContentType} */ (item.content).type.applyDelta(op.value, am)
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
@@ -1103,7 +1103,7 @@ export class YType {
             if (!(sub instanceof YType)) {
               error.unexpectedCase()
             }
-            sub.applyDelta(op.value)
+            sub.applyDelta(op.value, am)
           }
         }
       })
