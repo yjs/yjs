@@ -305,6 +305,13 @@ Encryption (E2EE).
 An ActionCable companion for Yjs clients. There is a fitting
 <a href="https://github.com/y-crdt/yrb-redis">redis extension</a> as well.
   </dd>
+  <dt><a href="https://github.com/uwx/y-atproto">y-atproto</a></dt>
+  <dd>
+A Yjs provider that syncs documents over the
+<a href="https://atproto.com/">AT Protocol</a> (the decentralized protocol
+behind Bluesky). Documents are stored as ATProto records and real-time updates
+are delivered via <a href="https://github.com/bluesky-social/jetstream">Jetstream</a>.
+  </dd>
   <dt><a href="https://github.com/y-crdt/ypy-websocket">ypy-websocket</a></dt>
   <dd>
 Websocket backend, written in Python.
