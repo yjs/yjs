@@ -9,4 +9,4 @@
 
 ## Reporting a Vulnerability
 
-Open an issue. If the vulnerability can be used to exploit user data (or leak other sensitive information) send an email to yjs [at] kevinjahns.de
+If the vulnerability could be used to exploit user data or leak other sensitive information, please report it privately via [GitHub's security advisory reporting](https://github.com/yjs/yjs/security/advisories/new). For lower-severity issues, feel free to open a regular issue.
