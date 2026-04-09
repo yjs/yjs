@@ -10,6 +10,8 @@ jobs:
   check:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       should_publish: ${{ steps.version-check.outputs.should_publish }}
     steps:
