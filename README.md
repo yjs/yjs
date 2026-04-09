@@ -131,6 +131,8 @@ editing for your IDE or custom editor
 * [ProtonMail | Proton Docs](https://proton.me/drive/docs) - E2E encrypted
   collaborative documents in Proton Drive.
 * [Theneo](https://www.theneo.io/) - AI-powered API docs with live team collaboration.
+* [ToolJet](https://tooljet.com/) - Build full-stack enterprise internal apps in
+  minutes.
 
 ## Table of Contents
 
