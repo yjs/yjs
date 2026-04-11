@@ -12,13 +12,13 @@ import { createAbsolutePositionFromRelativePosition, createRelativePosition } fr
 export class YEvent {
   /**
    * @param {YType<DConf>} target The changed type.
-   * @param {Transaction} transaction
+   * @param {import('./Transaction.js').Transaction} transaction
    * @param {Set<any>?} subs The keys that changed
    */
   constructor (target, transaction, subs) {
     /**
      * The type on which this event was created on.
-     * @type {YType<DConf>}
+     * @type {import('../ytype.js').YType<DConf>}
      */
     this.target = target
     /**
@@ -28,7 +28,7 @@ export class YEvent {
     this.currentTarget = target
     /**
      * The transaction that triggered this event.
-     * @type {Transaction}
+     * @type {import('./Transaction.js').Transaction}
      */
     this.transaction = transaction
     /**
