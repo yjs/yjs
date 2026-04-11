@@ -80,7 +80,7 @@
     "@y/y": ".",
     "dpdm": "^4.0.1",
     "markdownlint": "^0.40.0",
-    "markdownlint-cli": "^0.45.0",
+    "markdownlint-cli": "^0.48.0",
     "standard": "^17.1.2",
     "typescript": "^5.9.3"
   },

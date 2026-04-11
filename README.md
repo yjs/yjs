@@ -50,7 +50,6 @@ Showcase](https://yjs-diagram.synergy.codes/).
 
 * [AFFiNE](https://affine.pro/) A local-first, privacy-first, open source
   knowledge base. :star2:
-* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform :star2:
 * [Cargo](https://cargo.site/) Site builder for designers and artists :star2:
 * [Gitbook](https://gitbook.com) Knowledge management for technical teams :star2:
 * [Evernote](https://evernote.com) Note-taking app :star2:
@@ -62,6 +61,7 @@ Showcase](https://yjs-diagram.synergy.codes/).
 * [Dynaboard](https://dynaboard.com/) Build web apps collaboratively. :star:
 * [Relm](https://www.relm.us/) A collaborative gameworld for teamwork and
   community. :star:
+* [Huly](https://huly.io/) - Open Source All-in-One Project Management Platform
 * [Room.sh](https://room.sh/) A meeting application with integrated
   collaborative drawing, editing, and coding tools. :star:
 * [Nimbus Note](https://nimbusweb.me/note.php) A note-taking app designed by
@@ -159,8 +159,8 @@ are implemented in separate modules.
 
 ### Bindings
 
-| Name | Cursors | Binding |  Demo |
-|---|:-:|---|---|
+| Name | Cursors | Binding | Demo |
+| --- | :-: | --- | --- |
 | [ProseMirror](https://prosemirror.net/) &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://demos.yjs.dev/prosemirror/prosemirror.html) |
 | [Quill](https://quilljs.com/) | ✔ | [y-quill](https://github.com/yjs/y-quill) | [demo](https://demos.yjs.dev/quill/quill.html) |
 | [CodeMirror](https://codemirror.net/) | ✔ | [y-codemirror](https://github.com/yjs/y-codemirror) | [demo](https://demos.yjs.dev/codemirror/codemirror.html) |
@@ -173,12 +173,12 @@ are implemented in separate modules.
 | [Tiptap](https://tiptap.dev/) | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://template.tiptap.dev/preview/templates/simple) |
 | [Milkdown](https://github.com/Milkdown/milkdown) | ✔ | [y-prosemirror](https://github.com/yjs/y-prosemirror) | [demo](https://milkdown.dev/playground) |
 | [Superdoc](https://superdoc.dev/) | ✔ | (native) | [demo](https://superdoc.dev/) |
-| [valtio](https://github.com/pmndrs/valtio) |  | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
-| [immer](https://github.com/immerjs/immer) |  | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
+| [valtio](https://github.com/pmndrs/valtio) | | [valtio-yjs](https://github.com/dai-shi/valtio-yjs) | [demo](https://codesandbox.io/s/valtio-yjs-demo-ox3iy) |
+| [immer](https://github.com/immerjs/immer) | | [immer-yjs](https://github.com/sep2/immer-yjs) | [demo](https://codesandbox.io/s/immer-yjs-demo-6e0znb) |
 | React | | [react-yjs](https://github.com/nikgraf/react-yjs) | [demo](https://react-yjs-example.vercel.app/) |
 | React / Vue / Svelte / MobX | | [SyncedStore](https://syncedstore.org) | [demo](https://syncedstore.org/docs/react) |
-| [mobx-keystone](https://mobx-keystone.js.org/) |  | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
-| [PSPDFKit](https://www.nutrient.io/) |  | [yjs-pspdfkit](https://github.com/hoangqwe159/yjs-pspdfkit) | [demo](https://github.com/hoangqwe159/yjs-pspdfkit) |
+| [mobx-keystone](https://mobx-keystone.js.org/) | | [mobx-keystone-yjs](https://github.com/xaviergonz/mobx-keystone/tree/master/packages/mobx-keystone-yjs) | [demo](https://mobx-keystone.js.org/examples/yjs-binding) |
+| [PSPDFKit](https://www.nutrient.io/) | | [yjs-pspdfkit](https://github.com/hoangqwe159/yjs-pspdfkit) | [demo](https://github.com/hoangqwe159/yjs-pspdfkit) |
 | [Rows n'Columns](https://www.rowsncolumns.app/) | ✔ | [@rowsncolumns/y-spreadsheet](https://docs.rowsncolumns.app/collaboration/yjs-collaboration) | |
 
 ### Utilities
@@ -192,7 +192,7 @@ Library with <code>YMultiDocUndoManager</code> (undo/redo across Yjs docs) and
 <code>YKeyValue</code> (optimized key-value store).
   </dd>
   <dt>
-<a href="https://github.com/Tulip-Writer/yjs-orderedtree"> yjs-orderedtree </a> 🌳
+<a href="https://github.com/Tulip-Writer/yjs-orderedtree">yjs-orderedtree</a> 🌳
   </dt>
   <dd>
 Class for ordered trees via Y.Map. Handles <code>insert</code>,
@@ -568,7 +568,8 @@ to JSON using their <code>toJSON</code> method.
     </dd>
     <b><code>[Symbol.Iterator]</code></b>
     <dd>
-      Returns an YArray Iterator that contains the values for each index in the array.
+      Returns an YArray Iterator that contains the values for each index in
+      the array.
       <pre>for (let value of yarray) { .. }</pre>
     </dd>
     <b><code>observe(function(YArrayEvent, Transaction):void)</code></b>
