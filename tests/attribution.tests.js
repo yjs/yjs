@@ -172,3 +172,26 @@ export const testAttributionSession1 = tc => {
   const d4 = text0.toDelta()
   t.compare(d4, delta.create().insert('bc').done())
 }
+
+export const testAttributionEvent = () => {
+  const ydoc = new Y.Doc()
+  const ytype = ydoc.get()
+  // <p>hi</p>
+  ytype.applyDelta(delta.create().insert([delta.create('p').insert('hi').done()]).done())
+  const ydocBase = Y.cloneDoc(ydoc)
+  const am = Y.createAttributionManagerFromDiff(ydocBase, ydoc)
+  let called = false
+  ytype.observeDeep(event => {
+    const change = event.getDelta(am)
+    const expectedChange = delta.create().modify(delta.create('p').retain(2, null, { delete: [] }), null, { delete: [] }).done()
+    t.compare(
+      change,
+      expectedChange
+    )
+    called = true
+  })
+  // delete <p>
+  // we expect that the children get attributions as well
+  ytype.delete(0, 1)
+  t.assert(called)
+}

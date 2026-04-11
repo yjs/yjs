@@ -183,7 +183,7 @@ export const nextID = transaction => {
  */
 export const addChangedTypeToTransaction = (transaction, type, parentSub) => {
   const item = type._item
-  if (item === null || (!item.deleted && !transaction.insertSet.hasId(item.id))) {
+  if (item === null || !transaction.insertSet.hasId(item.id)) {
     map.setIfUndefined(transaction.changed, type, set.create).add(parentSub)
   }
 }

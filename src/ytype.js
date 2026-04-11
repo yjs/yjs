@@ -930,7 +930,12 @@ export class YType {
                 d.usedAttributes = currentAttributes
                 usingCurrentAttributes = true
                 if (c.deleted ? retainDeletes : retainInserts) {
-                  d.retain(c.content.getLength(), null, attribution ?? {})
+                  if (c.deleted && c.content.constructor === ContentType) {
+                    // @todo use current transaction instead
+                    d.modify(/** @type {any} */ (c.content).type.toDelta(am, opts), null, attribution ?? {})
+                  } else {
+                    d.retain(c.content.getLength(), null, attribution ?? {})
+                  }
                 } else if (deep && c.content.constructor === ContentType) {
                   d.insert([/** @type {any} */(c.content).type.toDelta(am, optsAll)], null, attribution)
                 } else {

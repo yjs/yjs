@@ -1478,7 +1478,6 @@ export class ContentType {
         transaction._mergeStructs.push(item)
       }
     })
-    transaction.changed.delete(this.type)
   }
 
   /**
