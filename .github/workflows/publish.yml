@@ -15,10 +15,10 @@ jobs:
     outputs:
       should_publish: ${{ steps.version-check.outputs.should_publish }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22.x
+          node-version: 24.x
       - name: Check if version is already published
         id: version-check
         run: |
@@ -40,11 +40,10 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22.x
-      - run: npm install -g npm@latest
+          node-version: 24.x
       - run: npm ci
       - name: Build
         run: npm run dist
