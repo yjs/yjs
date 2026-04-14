@@ -134,7 +134,9 @@ export const testBasics = _tc => {
   // define a change: insert textual content and an object
   const childChange = delta.create().insert('hello').insert([{ my: 'object' }]).done()
   // merge changes
-  const mergedChanges = delta.create(delta.$deltaAny).apply(attrChange).apply(childChange).done()
+  const mergedChanges = delta.create(delta.$deltaAny)
+  mergedChanges.apply(attrChange)
+  mergedChanges.apply(childChange).done()
   console.log('merged changes: ', mergedChanges.toJSON())
   ytype.applyDelta(mergedChanges)
   // the observed change should equal the applied change
