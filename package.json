@@ -1,8 +1,7 @@
 {
   "name": "@y/y",
-  "version": "14.0.0-rc.11",
+  "version": "14.0.0-rc.12",
   "description": "Shared Editing Library",
-  "types": "./dist/src/index.d.ts",
   "type": "module",
   "sideEffects": false,
   "funding": {
