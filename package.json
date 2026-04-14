@@ -71,7 +71,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^1.0.0-rc.7"
+    "lib0": "^1.0.0-rc.12"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",

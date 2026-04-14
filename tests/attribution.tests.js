@@ -195,3 +195,22 @@ export const testAttributionEvent = () => {
   ytype.delete(0, 1)
   t.assert(called)
 }
+
+export const testAttributionChange = () => {
+  const ydoc = new Y.Doc()
+  const ytype = ydoc.get()
+  ytype.applyDelta(delta.create().insert('hi').done())
+  const ydocClone = Y.cloneDoc(ydoc)
+  const am = Y.createAttributionManagerFromDiff(ydocClone, ydoc)
+  ytype.applyDelta(delta.create().retain(2).insert('!').done())
+  let calledHandler = false
+  am.on('change', changes => {
+    calledHandler = true
+    const changeUpdate = ytype.toDelta(am, { deep: true, itemsToRender: changes, retainInserts: true, retainDeletes: true })
+    const expectedUpdate = delta.create().retain(2).retain(1, null, {})
+    t.compare(changeUpdate, expectedUpdate)
+    console.log(changeUpdate.toJSON())
+  })
+  Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc))
+  t.assert(calledHandler)
+}

@@ -378,9 +378,13 @@ export const iterateStructsByIdSetWithoutSplits = (store, ds, f) =>
     const ranges = idRanges.getIds()
     const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientid))
     if (structs != null) {
+      const lastStruct = structs[structs.length - 1]
+      const nextClock = lastStruct.id.clock + lastStruct.length
       for (let i = 0; i < ranges.length; i++) {
         const del = ranges[i]
-        iterateStructsWithoutSplits(structs, del.clock, del.len, f)
+        if (del.clock < nextClock) {
+          iterateStructsWithoutSplits(structs, del.clock, del.len, f)
+        }
       }
     }
   })
