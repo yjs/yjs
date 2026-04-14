@@ -143,6 +143,33 @@ export const iterateStructs = (transaction, structs, clockStart, len, f) => {
 }
 
 /**
+ * Iterate over a range of structs without splitting the structs. You will get content that you did
+ * not expect.
+ *
+ * @param {Array<Item|GC>} structs
+ * @param {number} clockStart Inclusive start
+ * @param {number} len
+ * @param {(struct: GC|Item|Skip, offset:number, len:number)=>void} f
+ *
+ * @function
+ */
+export const iterateStructsWithoutSplits = (structs, clockStart, len, f) => {
+  if (len === 0) {
+    return
+  }
+  const clockEnd = clockStart + len
+  for (
+    let index = findIndexSS(structs, clockStart), struct = structs[index], clock = struct.id.clock;
+    clock < clockEnd;
+    struct = structs[++index], clock = struct.id.clock
+  ) {
+    const offset = clock < clockStart ? clockStart - clock : 0
+    f(struct, offset, math.min(clock + struct.length, clockEnd) - clock)
+    if (index + 1 === structs.length) break
+  }
+}
+
+/**
  * More generalized version of splitItem. Split leftStruct into two structs
  * @param {Transaction?} transaction
  * @param {Item|GC|Skip} leftStruct

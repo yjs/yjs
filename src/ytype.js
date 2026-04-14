@@ -5,6 +5,7 @@ import * as error from 'lib0/error'
 import * as iterator from 'lib0/iterator'
 import * as log from 'lib0/logging'
 import * as map from 'lib0/map'
+import * as set from 'lib0/set'
 import * as math from 'lib0/math'
 import * as object from 'lib0/object'
 import * as s from 'lib0/schema'
@@ -28,7 +29,7 @@ import {
 import { noAttributionsManager } from './utils/attribution-manager-helpers.js'
 import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
 import { createID } from './utils/ID.js'
-import { createIdSet } from './utils/ids.js'
+import { createIdSet, iterateStructsByIdSetWithoutSplits } from './utils/ids.js'
 import { getItemCleanStart, cleanupFormattingGap } from './utils/transaction-helpers.js'
 import { transact } from './utils/Transaction.js'
 import { YEvent } from './utils/YEvent.js'
@@ -832,15 +833,17 @@ export class YType {
    * @public
    */
   toDelta (am = noAttributionsManager, opts = {}) {
-    const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, modified = null, deep = false } = opts
+    const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, deep = false } = opts
+    const { modified = (deep && itemsToRender) ? computeModifiedFromItems(/** @type {Doc} */ (this.doc).store, itemsToRender) : null } = opts
     const renderAttrs = modified?.get(this) || null
-    const renderChildren = !!(modified == null || modified.get(this)?.has(null))
+    const renderChildren = modified == null || !modified.has(this) || /** @type {Set<string|null>} */ (modified.get(this)).has(null)
     /**
      * @type {delta.DeltaBuilderAny}
      */
     const d = /** @type {any} */ (delta.create(this.name))
-    const optsAll = modified == null ? opts : object.assign({}, opts, { modified: null })
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, opts, optsAll)
+    const optsAll = object.assign({}, opts, { modified })
+    // opts has been re-computed - do not use opts after this point!
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, optsAll, optsAll)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -932,7 +935,7 @@ export class YType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   if (c.deleted && c.content.constructor === ContentType) {
                     // @todo use current transaction instead
-                    d.modify(/** @type {any} */ (c.content).type.toDelta(am, opts), null, attribution ?? {})
+                    d.modify(/** @type {any} */ (c.content).type.toDelta(am, optsAll), null, attribution ?? {})
                   } else {
                     d.retain(c.content.getLength(), null, attribution ?? {})
                   }
@@ -946,7 +949,7 @@ export class YType {
               } else if (retainContent) {
                 if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
                   // @todo use current transaction instead
-                  d.modify(/** @type {any} */ (c.content).type.toDelta(am, opts))
+                  d.modify(/** @type {any} */ (c.content).type.toDelta(am, optsAll))
                 } else {
                   d.usedAttributes = changedAttributes
                   usingChangedAttributes = true
@@ -1487,6 +1490,27 @@ export class YType {
  */
 export const $ytype = _dconf => s.$instanceOf(YType)
 export const $ytypeAny = s.$instanceOf(YType)
+
+/**
+ * @param {StructStore} store
+ * @param {IdSet} items
+ */
+export const computeModifiedFromItems = (store, items) => {
+  /**
+   * @type {Map<YType,Set<null|string>>}
+   */
+  const modified = new Map()
+  iterateStructsByIdSetWithoutSplits(store, items, /** @param {Item | GC | Skip | null} item */ item => {
+    while (item instanceof Item) {
+      const parent = /** @type {YType} */ (item.parent)
+      const conf = map.setIfUndefined(modified, parent, set.create)
+      if (conf.has(item.parentSub)) break // has already been marked as modified
+      conf.add(item.parentSub)
+      item = parent._item
+    }
+  })
+  return modified
+}
 
 /**
  * @param {any} a

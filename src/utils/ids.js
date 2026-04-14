@@ -7,7 +7,7 @@ import * as rabin from 'lib0/hash/rabin'
 import * as array from 'lib0/array'
 import * as map from 'lib0/map'
 
-import { iterateStructs, findIndexSS } from './transaction-helpers.js'
+import { iterateStructs, findIndexSS, iterateStructsWithoutSplits } from './transaction-helpers.js'
 import { UpdateEncoderV2, IdSetEncoderV2 } from './UpdateEncoder.js'
 import { IdSetDecoderV2 } from './UpdateDecoder.js'
 
@@ -362,6 +362,25 @@ export const iterateStructsByIdSet = (transaction, ds, f) =>
       for (let i = 0; i < ranges.length; i++) {
         const del = ranges[i]
         iterateStructs(transaction, structs, del.clock, del.len, f)
+      }
+    }
+  })
+
+/**
+ * Iterate over all structs that are mentioned by the IdSet, without spliting the items.
+ *
+ * @param {StructStore} store
+ * @param {IdSet} ds
+ * @param {(struct: GC|Item|Skip, offset:number, len:number)=>void} f
+ */
+export const iterateStructsByIdSetWithoutSplits = (store, ds, f) =>
+  ds.clients.forEach((idRanges, clientid) => {
+    const ranges = idRanges.getIds()
+    const structs = /** @type {Array<GC|Item>} */ (store.clients.get(clientid))
+    if (structs != null) {
+      for (let i = 0; i < ranges.length; i++) {
+        const del = ranges[i]
+        iterateStructsWithoutSplits(structs, del.clock, del.len, f)
       }
     }
   })
