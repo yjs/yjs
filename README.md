@@ -400,12 +400,16 @@ There are several Yjs-compatible ports to other programming languages.
 * [y-crdt](https://github.com/y-crdt/y-crdt) - Rust implementation with multiple
 language bindings to other languages
   * [yrs](https://github.com/y-crdt/y-crdt/tree/main/yrs) - Rust interface
-  * [ypy](https://github.com/y-crdt/ypy) - Python binding
+  * [pycrdt](https://github.com/y-crdt/pycrdt) - Python binding
   * [yrb](https://github.com/y-crdt/yrb) - Ruby binding
+  * [yr](https://github.com/y-crdt/yr) - R binding
+  * [ydotnet](https://github.com/y-crdt/ydotnet) - .NET/C# binding
   * [yswift](https://github.com/y-crdt/yswift) - Swift binding
+  * [ykt](https://github.com/y-crdt/ykt) - Kotlin binding
   * [yffi](https://github.com/y-crdt/y-crdt/tree/main/yffi) - C-FFI
   * [ywasm](https://github.com/y-crdt/y-crdt/tree/main/ywasm) - WASM binding
-  * [y_ex](https://github.com/satoren/y_ex) - Elixir bindings
+  * [y_ex](https://github.com/satoren/y_ex) - Elixir binding
+  * [ypy](https://github.com/y-crdt/ypy) - Python binding (deprecated, use pycrdt)
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 
 ## Getting Started
