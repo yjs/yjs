@@ -1252,6 +1252,36 @@ export const testDeltaAfterConcurrentFormatting = tc => {
 }
 
 /**
+ * https://github.com/yjs/yjs/issues/776
+ * @param {t.TestCase} _tc
+ */
+export const testDeletingTextWithNonPrimitiveFormatting = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const testText = ydoc.get('test')
+  testText.insert(0, 'one two three', { bold: { active: false } })
+  testText.format(4, 9, { bold: { active: true } })
+  testText.format(7, 6, { bold: { active: false } })
+  testText.delete(2, 9)
+  /**
+   * @type {Y.Item | null}
+   */
+  let twoItem = null
+  for (let item = testText._start; item; item = item.right) {
+    const { content } = item
+    if (content instanceof Y.ContentString && content.str === 'two') {
+      twoItem = item
+    }
+  }
+  t.assert(twoItem, 'could not find twoItem')
+  t.assert(twoItem.deleted, 'expected twoItem to be deleted')
+  const formatItem = twoItem.right
+  t.assert(formatItem?.content instanceof Y.ContentFormat, 'expected ContentFormat')
+  const formatContent = /** @type {Y.ContentFormat } */ (formatItem?.content)
+  t.compare(formatContent.value, { active: false }, 'unexpected ContentFormat value')
+  t.assert(formatItem?.deleted, 'expected ContentFormat item to be deleted')
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testBasicInsertAndDelete = tc => {

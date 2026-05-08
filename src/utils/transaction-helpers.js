@@ -4,6 +4,7 @@ import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 
 import { createID } from './ID.js'
+import { equalAttrs } from '../ytype.js'
 
 /**
  * These modules don't require any imports.
@@ -389,7 +390,7 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
       if (content.getRef() === 6) { // is ContentFormat
         const { key, value } = /** @type {ContentFormat} */ (content)
         const startAttrValue = startAttributes.get(key) ?? null
-        if (endFormats.get(key) !== content || startAttrValue === value) {
+        if (endFormats.get(key) !== content || equalAttrs(startAttrValue, value)) {
           // Either this format is overwritten or it is not necessary because the attribute already existed.
           start.delete(transaction)
           transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
