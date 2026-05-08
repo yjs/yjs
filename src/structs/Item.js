@@ -223,6 +223,10 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     } else {
       left = parentType._map.get(item.parentSub) || null
     }
+    // drop cross-parent left so origin doesn't mislead the remote (#757)
+    if (left !== null && left.parent !== parentType) {
+      left = null
+    }
   }
   const nextClock = getState(store, ownClientID)
   const nextId = createID(ownClientID, nextClock)
