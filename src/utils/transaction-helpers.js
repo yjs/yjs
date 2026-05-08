@@ -395,7 +395,11 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
           start.delete(transaction)
           transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
           cleanups++
-          if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
+          if (
+            !reachedCurr &&
+            equalAttrs((currAttributes.get(key) ?? null), value) &&
+            !equalAttrs(startAttrValue, value)
+          ) {
             if (startAttrValue === null) {
               currAttributes.delete(key)
             } else {
