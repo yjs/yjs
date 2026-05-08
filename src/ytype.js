@@ -30,7 +30,7 @@ import { noAttributionsManager } from './utils/attribution-manager-helpers.js'
 import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
 import { createID } from './utils/ID.js'
 import { createIdSet, iterateStructsByIdSetWithoutSplits } from './utils/ids.js'
-import { getItemCleanStart, cleanupFormattingGap } from './utils/transaction-helpers.js'
+import { getItemCleanStart, cleanupFormattingGap, equalAttrs } from './utils/transaction-helpers.js'
 import { transact } from './utils/Transaction.js'
 import { YEvent } from './utils/YEvent.js'
 import { $ydoc } from './utils/schemas.js'
@@ -1511,13 +1511,6 @@ export const computeModifiedFromItems = (store, items) => {
   })
   return modified
 }
-
-/**
- * @param {any} a
- * @param {any} b
- * @return {boolean}
- */
-export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
  * @template {delta.DeltaConf} DConf

@@ -1,15 +1,22 @@
 import * as math from 'lib0/math'
+import * as object from 'lib0/object'
 import * as error from 'lib0/error'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 
 import { createID } from './ID.js'
-import { equalAttrs } from '../ytype.js'
 
 /**
  * These modules don't require any imports.
  * These helpers are used by items to integrate themselves
  */
+
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
  * Perform a binary search on a sorted array
