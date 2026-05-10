@@ -91,7 +91,7 @@ export class IdRanges {
     this.sorted = false
     /**
      * A typical use-case for IdSet is to append data. We heavily optimize this case by allowing the
-     * last item to be mutated ef it isn't used currently.
+     * last item to be mutated if it isn't used currently.
      * This flag is true if the last item was exposed to the outside.
      */
     this._lastIsUsed = false
@@ -102,7 +102,10 @@ export class IdRanges {
   }
 
   copy () {
-    return new IdRanges(this._ids.slice())
+    const cpy = new IdRanges(this._ids.slice())
+    cpy.sorted = this.sorted
+    this._lastIsUsed = true
+    return cpy
   }
 
   /**
@@ -482,9 +485,9 @@ const _insertIntoIdSet = (dest, src) => {
       array.appendTo(targetRanges.getIds(), srcRanges.getIds())
       targetRanges.sorted = false
     } else {
-      const res = srcRanges.copy()
-      res.sorted = true
-      dest.clients.set(client, /** @type {any} */ (res))
+      // order first
+      srcRanges.getIds()
+      dest.clients.set(client, /** @type {any} */ (srcRanges.copy()))
     }
   })
 }
@@ -937,7 +940,9 @@ export class AttrRanges {
   }
 
   copy () {
-    return new AttrRanges(this._ids.slice())
+    const cpy = new AttrRanges(this._ids.slice())
+    cpy.sorted = this.sorted
+    return cpy
   }
 
   /**
@@ -1434,6 +1439,8 @@ export const createIdMap = () => new IdMap()
 /**
  * Remove all ranges from `exclude` from `ds`. The result is a fresh IdMap containing all ranges from `idSet` that are not
  * in `exclude`.
+ *
+ * @todo this should be called "excludeIdMap"
  *
  * @template {IdMap<any>} ISet
  * @param {ISet} set
