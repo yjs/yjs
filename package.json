@@ -1,6 +1,6 @@
 {
   "name": "@y/y",
-  "version": "14.0.0-rc.13",
+  "version": "14.0.0-rc.14",
   "description": "Shared Editing Library",
   "type": "module",
   "sideEffects": false,
@@ -71,7 +71,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^1.0.0-rc.12"
+    "lib0": "^1.0.0-rc.13"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
