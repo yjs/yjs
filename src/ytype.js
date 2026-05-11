@@ -1078,7 +1078,7 @@ export class YType {
   applyDelta (d, am = noAttributionsManager) {
     if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
-    } else {
+    } else if (this._item?.deleted !== true) {
       // @todo this was moved here from ytext. Make this more generic
       transact(this.doc, transaction => {
         const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
