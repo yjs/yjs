@@ -553,7 +553,7 @@ export const testAttributedContent = _tc => {
   let attributionManager = noAttributionsManager
 
   ydoc.on('afterTransaction', tr => {
-    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertedAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
     attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('initial value', () => {

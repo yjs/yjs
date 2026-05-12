@@ -1036,13 +1036,13 @@ export class YType {
                 } else {
                   const by = changedAttributedAttributes[key] = (changedAttributedAttributes[key]?.slice() ?? [])
                   by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
-                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                  const attributedAt = (c.deleted ? attribution.deleteAt : attribution.insertAt)
                   if (attributedAt) formattingAttribution.formatAt = attributedAt
                 }
                 if (object.isEmpty(changedAttributedAttributes)) {
                   d.useAttribution(null)
                 } else if (attribution != null) {
-                  const attributedAt = (c.deleted ? attribution.deletedAt : attribution.insertedAt)
+                  const attributedAt = (c.deleted ? attribution.deleteAt : attribution.insertAt)
                   if (attributedAt != null) formattingAttribution.formatAt = attributedAt
                   d.useAttribution(formattingAttribution)
                 }

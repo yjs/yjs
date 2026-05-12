@@ -4,9 +4,9 @@ import { ObservableV2 } from 'lib0/observable'
 
 export const attributionJsonSchema = s.$object({
   insert: s.$array(s.$string).optional,
-  insertedAt: s.$number.optional,
+  insertAt: s.$number.optional,
   delete: s.$array(s.$string).optional,
-  deletedAt: s.$number.optional,
+  deleteAt: s.$number.optional,
   format: s.$record(s.$string, s.$array(s.$string)).optional,
   formatAt: s.$number.optional
 })
