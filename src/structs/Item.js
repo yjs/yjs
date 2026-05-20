@@ -222,11 +222,16 @@ export class Item extends AbstractStruct {
               // Since this is to the left of o, we can break here
               break
             } // else, o might be integrated before an item that this conflicts with. If so, we will find it in the next iterations
-          } else if (o.origin !== null && itemsBeforeOrigin.has(transaction.doc.store.getItem(o.origin))) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
-            // case 2
-            if (!conflictingItems.has(transaction.doc.store.getItem(o.origin))) {
-              left = o
-              conflictingItems.clear()
+          } else if (o.origin !== null) { // use getItem instead of getItemCleanEnd because we don't want / need to split items.
+            // case 2: cache the lookup to avoid a double binary-search and guard against mutation hazard
+            const oOriginItem = transaction.doc.store.getItem(o.origin)
+            if (itemsBeforeOrigin.has(oOriginItem)) {
+              if (!conflictingItems.has(oOriginItem)) {
+                left = o
+                conflictingItems.clear()
+              }
+            } else {
+              break
             }
           } else {
             break
@@ -259,7 +264,7 @@ export class Item extends AbstractStruct {
         // set as current parent value if right === null and this is parentSub
         /** @type {YType} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
-          // this is the current attribute value of parent. delete right
+          // this is the current attribute value of parent. delete the previous (left) value
           this.left.delete(transaction)
         }
       }
