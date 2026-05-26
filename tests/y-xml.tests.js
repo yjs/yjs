@@ -442,3 +442,32 @@ export const testToDeltaDeepEmitsNoDeleteOpsForSoftDeletedParent = _tc => {
     `toDeltaDeep(am) emitted ${offenders.length} forbidden delete op(s) for a soft-deleted parent (issue #247 / y-prosemirror)`
   )
 }
+
+/**
+ * Companion to the cascade case above: an explicit `deleteAttr` under a diff
+ * AM must also surface as a positive `SetAttrOp` carrying the prior value and
+ * `{ delete: [] }` attribution, never as a `DeleteAttrOp`. The same contract
+ * applies whether the attribute deletion came from a parent-cascade or from
+ * a direct `ytype.deleteAttr(key)` call.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testToDeltaDeepRendersExplicitDeleteAttrAsSetAttrWithAttribution = _tc => {
+  const ydocV1 = new Y.Doc({ gc: false })
+  ydocV1.get('p').setAttr('id', 'C')
+  const ydoc = new Y.Doc({ gc: false })
+  Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
+  ydoc.transact(() => {
+    ydoc.get('p').deleteAttr('id')
+  })
+  const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
+  const rendered = ydoc.get('p').toDeltaDeep(am)
+
+  const offenders = collectForbiddenOps(rendered, ['DeleteAttrOp', 'DeleteOp'])
+  t.assert(offenders.length === 0, 'no DeleteAttrOp / DeleteOp from explicit deleteAttr under diff AM')
+  t.compare(
+    rendered.toJSON().attrs,
+    { id: { type: 'insert', value: 'C', attribution: { delete: [] } } },
+    'explicit deleteAttr surfaces as SetAttrOp with prior value and delete attribution'
+  )
+}
