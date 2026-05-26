@@ -572,7 +572,12 @@ export const testAttributedContent = _tc => {
   })
   t.group('delete value', () => {
     ymap.deleteAttr('test')
-    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'delete', attribution: { delete: [] } }) }
+    // Snapshot-mode `toDelta(am)` (no `itemsToRender` opt) must not emit
+    // `DeleteAttrOp`. An attribute deleted under attribution is still
+    // observable in the rendered state with its prior value and a `delete`
+    // attribution marker - symmetric with how soft-deleted content children
+    // surface as `InsertOp` with `{ delete: [] }` rather than `DeleteOp`.
+    const expectedContent = { test: delta.$deltaMapChangeJson.expect({ type: 'insert', value: 'fourtytwo', attribution: { delete: [] } }) }
     const attributedContent = ymap.toDelta(attributionManager)
     console.log(attributedContent.toJSON())
     t.compare(expectedContent, attributedContent.toJSON().attrs)

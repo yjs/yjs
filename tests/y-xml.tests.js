@@ -347,3 +347,98 @@ export const testAttributionManagerSimpleExample = _tc => {
 }
 */
 }
+
+/**
+ * Walk a delta tree and collect every op whose constructor matches one of the
+ * forbidden names. Returns a list of `{ path, opType, op }` for reporting.
+ *
+ * @param {any} d
+ * @param {Array<string>} forbidden - constructor names that should never appear
+ * @param {string} [path]
+ * @param {Array<{path:string, opType:string, op:any}>} [acc]
+ */
+const collectForbiddenOps = (d, forbidden, path = '$', acc = []) => {
+  if (d == null || typeof d !== 'object') return acc
+  if (d.attrs != null) {
+    for (const attrOp of d.attrs) {
+      const name = attrOp?.constructor?.name
+      if (name && forbidden.includes(name)) {
+        acc.push({ path: `${path}.attrs[${attrOp.key}]`, opType: name, op: attrOp })
+      }
+    }
+  }
+  if (d.children?.start != null) {
+    let op = d.children.start
+    let i = 0
+    while (op != null) {
+      const name = op.constructor?.name
+      if (name && forbidden.includes(name)) {
+        acc.push({ path: `${path}.children[${i}]`, opType: name, op })
+      }
+      if (op.insert && Array.isArray(op.insert)) {
+        op.insert.forEach((nested, j) => collectForbiddenOps(nested, forbidden, `${path}.children[${i}].insert[${j}]`, acc))
+      }
+      if (op.value != null) {
+        collectForbiddenOps(op.value, forbidden, `${path}.children[${i}].value`, acc)
+      }
+      op = op.next
+      i++
+    }
+  }
+  return acc
+}
+
+/**
+ * Reproduces the y-prosemirror issue #247 contract violation at the @y/y
+ * level: `ytype.toDeltaDeep(am)` is supposed to surface soft-deleted content
+ * as positive ops (`SetAttrOp` / `InsertOp`) carrying attribution metadata,
+ * never as `DeleteAttrOp` / `DeleteOp`. Today, when a parent YXmlElement is
+ * itself soft-deleted under attribution, `typeMapGetDelta` (ytype.js:1928)
+ * and the children traversal in `toDelta` emit raw delete ops for the
+ * cascaded child setAttr / content items - which downstream consumers
+ * (lib0/delta `diff`, y-prosemirror's PM mapper) cannot handle.
+ *
+ * Expected after fix: walking the delta returned by `parent.toDeltaDeep(am)`
+ * finds zero `DeleteAttrOp` entries in any `attrs` map and zero `DeleteOp`
+ * entries in any `children` list, at every nesting level.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testToDeltaDeepEmitsNoDeleteOpsForSoftDeletedParent = _tc => {
+  // Base doc: a fragment containing one YXmlElement that has an `id` attr
+  // and one nested text child.
+  const ydocV1 = new Y.Doc({ gc: false })
+  const parentV1 = ydocV1.get('frag')
+  const childV1 = new Y.Type('item')
+  childV1.setAttr('id', 'C')
+  childV1.insert(0, [delta.create().insert('hello')])
+  parentV1.insert(0, [childV1])
+
+  // Forked doc: copy V1, then suggestion-delete the YXmlElement child by
+  // removing it from the fragment. Under the diff AM this surfaces as a
+  // soft-deleted child whose own `id` setAttr Item is cascade-tombstoned.
+  const ydoc = new Y.Doc({ gc: false })
+  Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydocV1))
+  const parent = ydoc.get('frag')
+  ydoc.transact(() => {
+    parent.delete(0, 1)
+  })
+
+  const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
+  const rendered = parent.toDeltaDeep(am)
+
+  // The cascade should surface as positive ops with attribution, not as
+  // delete ops. Find any DeleteAttrOp / DeleteOp anywhere in the tree.
+  const offenders = collectForbiddenOps(rendered, ['DeleteAttrOp', 'DeleteOp'])
+  if (offenders.length > 0) {
+    console.log('Forbidden delete ops in toDeltaDeep output:')
+    for (const o of offenders) {
+      console.log(`  ${o.opType} at ${o.path}`)
+    }
+    console.log('Full delta:', JSON.stringify(rendered.toJSON(), null, 2))
+  }
+  t.assert(
+    offenders.length === 0,
+    `toDeltaDeep(am) emitted ${offenders.length} forbidden delete op(s) for a soft-deleted parent (issue #247 / y-prosemirror)`
+  )
+}

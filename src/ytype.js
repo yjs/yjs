@@ -1926,7 +1926,19 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
     let c = array.last(content.getContent())
     if (deleted) {
       if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
-        d.deleteAttr(key, attribution, c)
+        if (attribution != null) {
+          // Item surfaced under attribution (suggestion view / diff AM,
+          // either in snapshot mode or in an event-driven render). The
+          // attribute is still observable in the rendered state, so emit
+          // a positive `SetAttrOp` carrying the attribution metadata -
+          // matching how content children are rendered for the same case
+          // (positive `InsertOp` with attribution, never `DeleteOp`).
+          d.setAttr(key, c, attribution)
+        } else {
+          // Hard-deleted attribute (no AM-surfaced attribution): emit the
+          // change op so event consumers can apply it.
+          d.deleteAttr(key, attribution, c)
+        }
       }
     } else if (deep && c instanceof YType && modified?.has(c)) {
       d.modifyAttr(key, c.toDelta(am, opts))
