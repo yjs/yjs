@@ -376,7 +376,7 @@ const collectForbiddenOps = (d, forbidden, path = '$', acc = []) => {
         acc.push({ path: `${path}.children[${i}]`, opType: name, op })
       }
       if (op.insert && Array.isArray(op.insert)) {
-        op.insert.forEach((nested, j) => collectForbiddenOps(nested, forbidden, `${path}.children[${i}].insert[${j}]`, acc))
+        op.insert.forEach((/** @type {any} */ nested, /** @type {number} */ j) => collectForbiddenOps(nested, forbidden, `${path}.children[${i}].insert[${j}]`, acc))
       }
       if (op.value != null) {
         collectForbiddenOps(op.value, forbidden, `${path}.children[${i}].value`, acc)
