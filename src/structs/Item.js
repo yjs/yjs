@@ -259,7 +259,7 @@ export class Item extends AbstractStruct {
         // set as current parent value if right === null and this is parentSub
         /** @type {YType} */ (this.parent)._map.set(this.parentSub, this)
         if (this.left !== null) {
-          // this is the current attribute value of parent. delete right
+          // this is the current attribute value of parent. delete the previous value
           this.left.delete(transaction)
         }
       }
