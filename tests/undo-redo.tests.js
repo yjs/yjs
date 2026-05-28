@@ -235,6 +235,38 @@ export const testUndoMap = tc => {
 }
 
 /**
+ * Regression: undoing a deletion of an embedded type together with an attribute
+ * change on it must restore the attribute consistently for remote peers. The
+ * redone attribute item used to keep an origin from the original (deleted)
+ * parent, so the value was correct locally but dropped after sync.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testUndoEmbeddedTypeAttribute = tc => {
+  const { testConnector, text0, text1 } = init(tc, { users: 2 })
+  const button = new Y.Type()
+  button.setAttr('type', 'button')
+  button.setAttr('test', true)
+  button.insert(0, 'Click me')
+  text0.insert(0, [button])
+  testConnector.syncAll()
+
+  const undoManager = new Y.UndoManager(text0)
+  undoManager.stopCapturing()
+  // change an attribute, then delete the embedded type
+  button.setAttr('type', 'paragraph')
+  text0.delete(0, 1)
+  // undo both operations at once
+  undoManager.undo()
+
+  const expected = { type: 'button', test: true }
+  t.compare(text0.get(0).getAttrs(), expected)
+  testConnector.syncAll()
+  // remote peer must converge to the same attributes
+  t.compare(text1.get(0).getAttrs(), expected)
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testUndoArray = tc => {
@@ -685,14 +717,14 @@ export const testUndoDeleteTextFormat = _tc => {
  * @see https://github.com/yjs/yjs/issues/392
  * @param {t.TestCase} _tc
  */
-export const testBehaviorOfIgnoreremotemapchangesProperty = _tc => {
+export const testBehaviorOfIgnoreRemoteAttributeChangesProperty = _tc => {
   const doc = new Y.Doc()
   const doc2 = new Y.Doc()
   doc.on('update', update => Y.applyUpdate(doc2, update, doc))
   doc2.on('update', update => Y.applyUpdate(doc, update, doc2))
   const map1 = doc.get()
   const map2 = doc2.get()
-  const um1 = new Y.UndoManager(map1, { ignoreRemoteMapChanges: true })
+  const um1 = new Y.UndoManager(map1, { ignoreRemoteAttributeChanges: true })
   map1.setAttr('x', 1)
   map2.setAttr('x', 2)
   map1.setAttr('x', 3)

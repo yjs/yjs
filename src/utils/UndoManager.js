@@ -92,7 +92,7 @@ const popStackItem = (undoManager, stack, eventType) => {
         }
       })
       itemsToRedo.forEach(struct => {
-        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.inserts, undoManager.ignoreRemoteMapChanges, undoManager) !== null || performedChange
+        performedChange = redoItem(transaction, struct, itemsToRedo, stackItem.inserts, undoManager.ignoreRemoteAttributeChanges, undoManager) !== null || performedChange
       })
       // We want to delete in reverse order so that children are deleted before
       // parents, so we have more information available when items are filtered.
@@ -131,7 +131,7 @@ const popStackItem = (undoManager, stack, eventType) => {
  * filter returns false, the type/item won't be deleted even it is in the
  * undo/redo scope.
  * @property {Set<any>} [UndoManagerOptions.trackedOrigins=new Set([null])]
- * @property {boolean} [ignoreRemoteMapChanges] Experimental. By default, the UndoManager will never overwrite remote changes. Enable this property to enable overwriting remote changes on key-value changes (Y.Map, properties on Y.Xml, etc..).
+ * @property {boolean} [ignoreRemoteAttributeChanges] By default, the UndoManager will never overwrite remote changes. In some cases this might be the expected behavior. This property enables overwriting remote changes on attribute changes. (previously named `ignoreRemoteMapChanges`)
  * @property {Doc} [doc] The document that this UndoManager operates on. Only needed if typeScope is empty.
  */
 
@@ -162,7 +162,7 @@ export class UndoManager extends ObservableV2 {
     captureTransaction = _tr => true,
     deleteFilter = () => true,
     trackedOrigins = new Set([null]),
-    ignoreRemoteMapChanges = false,
+    ignoreRemoteAttributeChanges = false,
     doc = /** @type {Doc} */ (array.isArray(typeScope) ? typeScope[0].doc : typeScope instanceof Doc ? typeScope : typeScope.doc)
   } = {}) {
     super()
@@ -198,7 +198,7 @@ export class UndoManager extends ObservableV2 {
      */
     this.currStackItem = null
     this.lastChange = 0
-    this.ignoreRemoteMapChanges = ignoreRemoteMapChanges
+    this.ignoreRemoteAttributeChanges = ignoreRemoteAttributeChanges
     this.captureTimeout = captureTimeout
     /**
      * @param {Transaction} transaction
@@ -415,14 +415,14 @@ const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackI
  * @param {Item} item
  * @param {Set<Item>} redoitems
  * @param {IdSet} itemsToDelete
- * @param {boolean} ignoreRemoteMapChanges
+ * @param {boolean} ignoreRemoteAttributeChanges
  * @param {import('../utils/UndoManager.js').UndoManager} um
  *
  * @return {Item|null}
  *
  * @private
  */
-export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) => {
+export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemoteAttributeChanges, um) => {
   const doc = transaction.doc
   const store = doc.store
   const ownClientID = doc.clientID
@@ -442,7 +442,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   // make sure that parent is redone
   if (parentItem !== null && parentItem.deleted === true) {
     // try to undo parent if it will be undone anyway
-    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteMapChanges, um) === null)) {
+    if (parentItem.redone === null && (!redoitems.has(parentItem) || redoItem(transaction, parentItem, redoitems, itemsToDelete, ignoreRemoteAttributeChanges, um) === null)) {
       return null
     }
     while (parentItem.redone !== null) {
@@ -491,7 +491,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     }
   } else {
     right = null
-    if (item.right && !ignoreRemoteMapChanges) {
+    if (item.right && !ignoreRemoteAttributeChanges) {
       left = item
       // Iterate right while right is in itemsToDelete
       // If it is intended to delete right while item is redone, we can expect that item should replace right.
@@ -506,6 +506,9 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
         return null
       }
     } else {
+      left = parentType._map.get(item.parentSub) || null
+    }
+    if (left !== null && /** @type {YType} */ (left.parent)._item !== parentItem) {
       left = parentType._map.get(item.parentSub) || null
     }
   }

@@ -1203,8 +1203,16 @@ ytext.toString() // => 'abc'
 
 <dl>
   <b><code>constructor(scope:Y.AbstractType|Array&lt;Y.AbstractType&gt;
-  [, {captureTimeout:number,trackedOrigins:Set&lt;any&gt;,deleteFilter:function(item):boolean}])</code></b>
+  [, {captureTimeout:number,trackedOrigins:Set&lt;any&gt;,deleteFilter:function(item):boolean,ignoreRemoteAttributeChanges:boolean}])</code></b>
   <dd>Accepts either single type as scope or an array of types.</dd>
+  <b><code>ignoreRemoteAttributeChanges:boolean</code></b>
+  <dd>
+By default, the UndoManager will never overwrite remote changes. In some cases
+this is not the expected behavior. When set to <code>true</code>, undo/redo may
+overwrite remote attribute changes (e.g. on <code>Y.Map</code> keys or
+<code>Y.XmlElement</code> / <code>Y.XmlText</code> attributes). Defaults to
+<code>false</code>. <em>(previously named <code>ignoreRemoteMapChanges</code>)</em>
+  </dd>
   <b><code>undo()</code></b>
   <dd></dd>
   <b><code>redo()</code></b>
