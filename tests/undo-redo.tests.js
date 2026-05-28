@@ -811,3 +811,35 @@ export const testUndoDoingStackItem = async (_tc) => {
   t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
   t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
 }
+
+/**
+ * @see https://github.com/yjs/yjs/issues/757
+ * @param {t.TestCase} _tc
+ */
+export const testUndoSetAttributeAndDeleteSyncsAttributes = _tc => {
+  const doc = new Y.Doc()
+  const root = /** @type {Y.XmlText} */ (doc.get('sharedRoot', Y.XmlText))
+  const button = new Y.XmlText()
+  button.setAttribute('type', 'button')
+  button.setAttribute('test', true)
+  button.insert(0, 'Click me')
+  root.insertEmbed(0, button)
+
+  const undoManager = new Y.UndoManager(root)
+  undoManager.stopCapturing()
+
+  button.setAttribute('type', 'paragraph')
+  root.delete(0, 1)
+  undoManager.undo()
+
+  const expectedAttrs = { type: 'button', test: true }
+  const expectedText = 'Click me'
+  t.compare(root.toDelta()[0].insert.getAttributes(), expectedAttrs)
+  t.compare(root.toDelta()[0].insert.toString(), expectedText)
+
+  const remoteDoc = new Y.Doc()
+  Y.applyUpdateV2(remoteDoc, Y.encodeStateAsUpdateV2(doc))
+  const remoteRoot = /** @type {Y.XmlText} */ (remoteDoc.get('sharedRoot', Y.XmlText))
+  t.compare(remoteRoot.toDelta()[0].insert.getAttributes(), expectedAttrs)
+  t.compare(remoteRoot.toDelta()[0].insert.toString(), expectedText)
+}
