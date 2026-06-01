@@ -411,6 +411,7 @@ language bindings to other languages
   * [y_ex](https://github.com/satoren/y_ex) - Elixir binding
   * [ypy](https://github.com/y-crdt/ypy) - Python binding (deprecated, use pycrdt)
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
+* [ygo](https://github.com/reearth/ygo) - Go implementation.
 
 ## Getting Started
 
