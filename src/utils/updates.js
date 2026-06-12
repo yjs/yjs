@@ -541,7 +541,7 @@ export const intersectUpdateWithContentIdsV2 = (update, contentIds, YDecoder = U
     let firstWrite = false
     while (reader.curr != null && reader.curr.id.client === currClientId) {
       const curr = reader.curr
-      for (const slice of inserts.slice(currClientId, nextClock, curr.length)) {
+      for (const slice of inserts.slice(currClientId, curr.id.clock, curr.length)) {
         if (slice.exists) {
           const skipLen = slice.clock - nextClock
           if (skipLen > 0 && firstWrite) {

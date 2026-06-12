@@ -404,3 +404,58 @@ export const testIntersectDoc = () => {
   Y.applyUpdate(y1, v1)
   t.assert(ydoc.get().getAttr('k'))
 }
+
+/**
+ * Selecting a sparse mid-stream range of content-ids must not drop the selection
+ * just because earlier structs of the same client were not selected.
+ *
+ * @see https://github.com/yjs/yjs/issues/781
+ */
+export const testIntersectSparseContentIds = () => {
+  const src = new Y.Doc()
+  src.transact(() => {
+    const m = src.get('m')
+    for (let i = 0; i < 10; i++) m.setAttr(`k${i}`, i) // clocks 0..9, single client
+  })
+  const update = Y.encodeStateAsUpdate(src)
+  const cids = Y.createContentIdsFromUpdate(update)
+  /**
+   * @type {number}
+   */
+  let client = 0
+  cids.inserts.clients.forEach((_r, c) => { client = c })
+
+  // Select ONLY clocks [5, 7) — a mid-stream range.
+  const sel = Y.createIdSet()
+  sel.add(client, 5, 2)
+  const chunk = Y.intersectUpdateWithContentIds(update, {
+    inserts: sel,
+    deletes: Y.createIdSet()
+  })
+  // Each map key is a separate length-1 item, so clocks [5,7) yield two structs.
+  const structs = Y.decodeUpdate(chunk).structs.filter(s => !(s instanceof Y.Skip))
+  t.assert(structs.every(s => s.id.client === client))
+  t.compare(structs.map(s => [s.id.clock, s.length]), [[5, 1], [6, 1]])
+
+  // A selection split across a gap must round-trip both ranges with a Skip in between.
+  const sel2 = Y.createIdSet()
+  sel2.add(client, 1, 2) // clocks 1,2
+  sel2.add(client, 7, 1) // clock 7
+  const chunk2 = Y.intersectUpdateWithContentIds(update, {
+    inserts: sel2,
+    deletes: Y.createIdSet()
+  })
+  const structs2 = Y.decodeUpdate(chunk2).structs.filter(s => !(s instanceof Y.Skip))
+  t.compare(structs2.map(s => [s.id.clock, s.length]), [[1, 1], [2, 1], [7, 1]])
+
+  // A full-coverage selection must round-trip byte-identically to the source update.
+  const selAll = Y.createIdSet()
+  cids.inserts.clients.forEach((ranges, c) => {
+    ranges.getIds().forEach(r => selAll.add(c, r.clock, r.len))
+  })
+  const chunkAll = Y.intersectUpdateWithContentIds(update, {
+    inserts: selAll,
+    deletes: Y.createIdSet()
+  })
+  t.compare(chunkAll, update)
+}
