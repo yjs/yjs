@@ -26,18 +26,18 @@ export const generateNewClientId = random.uint53
  *
  * @example
  * const ydoc = new Y.Doc()
- * const map = ydoc.getMap('map')
+ * const map = ydoc.get('map')
  * // Log content when change is triggered
  * map.observe(() => {
  *   console.log('change triggered')
  * })
  * // Each change on the map type triggers a log message:
- * map.set('a', 0) // => "change triggered"
- * map.set('b', 0) // => "change triggered"
+ * map.setAttr('a', 0) // => "change triggered"
+ * map.setAttr('b', 0) // => "change triggered"
  * // When put in a transaction, it will trigger the log after the transaction:
  * ydoc.transact(() => {
- *   map.set('a', 1)
- *   map.set('b', 1)
+ *   map.setAttr('a', 1)
+ *   map.setAttr('b', 1)
  * }) // => "change triggered"
  *
  * @public

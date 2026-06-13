@@ -119,11 +119,11 @@ export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
 /**
  * @example
  *  const ydoc = new Y.Doc({ gc: false })
- *  ydoc.getText().insert(0, 'world!')
+ *  ydoc.get().insert(0, 'world!')
  *  const snapshot = Y.snapshot(ydoc)
- *  ydoc.getText().insert(0, 'hello ')
+ *  ydoc.get().insert(0, 'hello ')
  *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
- *  assert(restored.getText().toString() === 'world!')
+ *  assert(restored.get().toString() === 'world!')
  *
  * @param {Doc} originDoc
  * @param {Snapshot} snapshot
