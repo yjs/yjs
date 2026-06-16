@@ -18,7 +18,7 @@ export { Transaction, transact, cleanupYTextFormatting } from './utils/Transacti
 export { UndoManager, undoContentIds } from './utils/UndoManager.js'
 export { logUpdate, logUpdateV2, decodeUpdate, decodeUpdateV2, encodeStateVectorFromUpdate, encodeStateVectorFromUpdateV2, convertUpdateFormatV1ToV2, convertUpdateFormatV2ToV1, obfuscateUpdate, obfuscateUpdateV2, createContentIdsFromUpdate, createContentIdsFromUpdateV2, intersectUpdateWithContentIds, intersectUpdateWithContentIdsV2 } from './utils/updates.js'
 export { YEvent, getPathTo } from './utils/YEvent.js'
-export { TwosetAttributionManager, noAttributionsManager, AbstractAttributionManager, createAttributionManagerFromDiff, DiffAttributionManager, createAttributionManagerFromSnapshots, SnapshotAttributionManager, Attributions, $attributionManager } from './utils/AttributionManager.js'
+export { TwosetRenderer, baseRenderer, AbstractRenderer, createDiffRenderer, DiffRenderer, createSnapshotRenderer, SnapshotRenderer, Attributions, $renderer } from './utils/Renderer.js'
 export { diffDocsToDelta } from './utils/delta-helpers.js'
 export { YType as Type, getTypeChildren, typeMapGetSnapshot, typeMapGetAllSnapshot, $ytype, $ytypeAny } from './ytype.js'
 export { AbstractStruct } from './structs/AbstractStruct.js'

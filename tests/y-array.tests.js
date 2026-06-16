@@ -467,11 +467,11 @@ export const testAttributedContent = _tc => {
    */
   const yarray = ydoc.get()
   yarray.insert(0, [1, 2])
-  let attributionManager = Y.noAttributionsManager
+  let renderer = Y.baseRenderer
 
   ydoc.on('afterTransaction', tr => {
-    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
-    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+    // renderer = new TwosetRenderer(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    renderer = new Y.TwosetRenderer(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete', () => {
     ydoc.transact(() => {
@@ -479,7 +479,7 @@ export const testAttributedContent = _tc => {
       yarray.insert(1, [42])
     })
     const expectedContent = delta.create().insert([1], null, { delete: [] }).insert([2]).insert([42], null, { insert: [] })
-    const attributedContent = yarray.toDelta(attributionManager)
+    const attributedContent = yarray.toDelta({ renderer })
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })

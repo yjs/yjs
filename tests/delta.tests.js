@@ -168,14 +168,14 @@ export const testAttributions = _tc => {
   const ytype = ydoc.get('txt')
   // delete " world" and insert exclamation mark "!".
   ytype.applyDelta(delta.create().retain(5).delete(6).insert('!').done())
-  const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
+  const renderer = Y.createDiffRenderer(ydocV1, ydoc)
   // get the attributed differences
-  const attributedContent = ytype.toDelta(am)
+  const attributedContent = ytype.toDelta({ renderer })
   console.log('attributed content', attributedContent.toJSON())
   t.assert(attributedContent.equals(delta.create().insert('hello').insert(' world', null, { delete: [] }).insert('!', null, { insert: [] }).done()))
   // for editor bindings, it is also necessary to observe changes and get the attributed changes
   ytype.observe(event => {
-    const attributedChange = event.getDelta(am)
+    const attributedChange = event.getDelta({ renderer })
     console.log('the attributed change', attributedChange.toJSON())
     t.assert(attributedChange.done().equals(delta.create().retain(11).insert('!', null, { insert: [] }).done()))
     const unattributedChange = event.delta
@@ -191,7 +191,7 @@ export const testAttributions = _tc => {
    * UNattributed: 'world!'
    */
   // Apply a change to the attributed content
-  ytype.applyDelta(delta.create().retain(11).insert('!').done(), am)
+  ytype.applyDelta(delta.create().retain(11).insert('!').done(), { renderer })
   // // Equivalent to applying a change to the UNattributed content:
   // ytype.applyDelta(delta.create().retain(5).insert('!'))
 }

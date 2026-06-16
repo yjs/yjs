@@ -26,7 +26,7 @@ import {
   ContentDoc,
   createContentDocFromDoc
 } from './structs/Item.js'
-import { noAttributionsManager } from './utils/attribution-manager-helpers.js'
+import { baseRenderer } from './utils/renderer-helpers.js'
 import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
 import { createID } from './utils/ID.js'
 import { createIdSet, iterateStructsByIdSetWithoutSplits } from './utils/ids.js'
@@ -99,14 +99,14 @@ export class ItemTextListPosition {
    * @param {Item|null} right
    * @param {number} index
    * @param {Map<string,any>} currentAttributes
-   * @param {AbstractAttributionManager} am
+   * @param {AbstractRenderer} renderer
    */
-  constructor (left, right, index, currentAttributes, am) {
+  constructor (left, right, index, currentAttributes, renderer) {
     this.left = left
     this.right = right
     this.index = index
     this.currentAttributes = currentAttributes
-    this.am = am
+    this.renderer = renderer
   }
 
   /**
@@ -123,7 +123,7 @@ export class ItemTextListPosition {
         }
         break
       default:
-        this.index += this.am.contentLength(this.right)
+        this.index += this.renderer.contentLength(this.right)
         break
     }
     this.left = this.right
@@ -150,7 +150,7 @@ export class ItemTextListPosition {
       (length > 0 ||
         (
           negatedAttributes.size > 0 &&
-          ((this.right.deleted && this.am.contentLength(this.right) === 0) || this.right.content.constructor === ContentFormat)
+          ((this.right.deleted && this.renderer.contentLength(this.right) === 0) || this.right.content.constructor === ContentFormat)
         )
       )
     ) {
@@ -179,13 +179,13 @@ export class ItemTextListPosition {
         }
         default: {
           const item = this.right
-          const rightLen = this.am.contentLength(item)
+          const rightLen = this.renderer.contentLength(item)
           if (length < rightLen) {
             /**
              * @type {Array<AttributedContent<any>>}
              */
             const contents = []
-            this.am.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
+            this.renderer.readContent(contents, item.id.client, item.id.clock, item.deleted, item.content, 0)
             let i = 0
             for (; i < contents.length && length > 0; i++) {
               const c = contents[i]
@@ -227,7 +227,7 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
   // check if we really need to remove attributes
   while (
     currPos.right !== null && (
-      (currPos.right.deleted && (currPos.am === noAttributionsManager || currPos.am.contentLength(currPos.right) === 0)) || (
+      (currPos.right.deleted && (currPos.renderer === baseRenderer || currPos.renderer.contentLength(currPos.right) === 0)) || (
         currPos.right.content.constructor === ContentFormat &&
         equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
       )
@@ -278,7 +278,7 @@ const minimizeAttributeChanges = (currPos, attributes) => {
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted ? (currPos.am.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted ? (currPos.renderer.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -402,12 +402,12 @@ export const deleteText = (transaction, currPos, length) => {
       }
       length -= item.length
       item.delete(transaction)
-    } else if (currPos.am !== noAttributionsManager) {
+    } else if (currPos.renderer !== baseRenderer) {
       /**
        * @type {Array<AttributedContent<any>>}
        */
       const contents = []
-      currPos.am.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
+      currPos.renderer.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
       for (let i = 0; i < contents.length; i++) {
         const c = contents[i]
         if (c.content.isCountable() && c.attrs != null) {
@@ -820,8 +820,8 @@ export class YType {
    *
    * @template {boolean} [Deep=false]
    *
-   * @param {AbstractAttributionManager} am
    * @param {Object} [opts]
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
    * @param {IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
@@ -832,8 +832,8 @@ export class YType {
    *
    * @public
    */
-  toDelta (am = noAttributionsManager, opts = {}) {
-    const { itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, deep = false } = opts
+  toDelta (opts = {}) {
+    const { renderer = baseRenderer, itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, deep = false } = opts
     const { modified = (deep && itemsToRender) ? computeModifiedFromItems(/** @type {Doc} */ (this.doc).store, itemsToRender) : null } = opts
     const renderAttrs = modified?.get(this) || null
     const renderChildren = modified == null || !modified.has(this) || /** @type {Set<string|null>} */ (modified.get(this)).has(null)
@@ -841,9 +841,9 @@ export class YType {
      * @type {delta.DeltaBuilderAny}
      */
     const d = /** @type {any} */ (delta.create(this.name))
-    const optsAll = object.assign({}, opts, { modified })
+    const optsAll = object.assign({}, opts, { renderer, modified })
     // opts has been re-computed - do not use opts after this point!
-    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, am, deep, modified, deletedItems, itemsToRender, optsAll, optsAll)
+    typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, renderer, deep, modified, deletedItems, itemsToRender, optsAll, optsAll)
     if (renderChildren) {
       /**
        * @type {delta.FormattingAttributes}
@@ -884,12 +884,12 @@ export class YType {
               if (ir !== rslice.length - 1) {
                 itemContent = itemContent.splice(idrange.len)
               }
-              am.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists ? 2 : 0)
+              renderer.readContent(cs, item.id.client, idrange.clock, item.deleted, content, idrange.exists ? 2 : 0)
             }
           }
         } else {
           for (; item !== null && cs.length < 50; item = item.right) {
-            am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
+            renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
           }
         }
         for (let i = 0; i < cs.length; i++) {
@@ -935,12 +935,12 @@ export class YType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   if (c.deleted && c.content.constructor === ContentType) {
                     // @todo use current transaction instead
-                    d.modify(/** @type {any} */ (c.content).type.toDelta(am, optsAll), null, attribution ?? {})
+                    d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll), null, attribution ?? {})
                   } else {
                     d.retain(c.content.getLength(), null, attribution ?? {})
                   }
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.toDelta(am, optsAll)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], null, attribution)
                 } else {
                   d.insert(c.content.getContent(), null, attribution)
                 }
@@ -949,7 +949,7 @@ export class YType {
               } else if (retainContent) {
                 if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
                   // @todo use current transaction instead
-                  d.modify(/** @type {any} */ (c.content).type.toDelta(am, optsAll))
+                  d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll))
                 } else {
                   d.usedAttributes = changedAttributes
                   usingChangedAttributes = true
@@ -1060,28 +1060,30 @@ export class YType {
    * Render the difference to another ydoc (which can be empty) and highlight the differences with
    * attributions.
    *
-   * @param {AbstractAttributionManager} am
+   * @param {Object} [opts]
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
    * @return {delta.Delta<DConf>}
    */
-  toDeltaDeep (am = noAttributionsManager) {
-    return /** @type {any} */ (this.toDelta(am, { deep: true }))
+  toDeltaDeep (opts = {}) {
+    return /** @type {any} */ (this.toDelta({ ...opts, deep: true }))
   }
 
   /**
    * Apply a {@link Delta} on this shared type.
    *
    * @param {delta.DeltaAny} d The changes to apply on this element.
-   * @param {AbstractAttributionManager} am
+   * @param {Object} [opts]
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
    *
    * @public
    */
-  applyDelta (d, am = noAttributionsManager) {
+  applyDelta (d, { renderer = baseRenderer } = {}) {
     if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
     } else if (this._item?.deleted !== true) {
       // @todo this was moved here from ytext. Make this more generic
       transact(this.doc, transaction => {
-        const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), am)
+        const currPos = new ItemTextListPosition(null, this._start, 0, new Map(), renderer)
         for (const op of d.children) {
           if (delta.$textOp.check(op)) {
             insertContent(transaction, /** @type {any} */ (this), currPos, new ContentString(op.insert), op.format || {})
@@ -1095,7 +1097,7 @@ export class YType {
             let item = currPos.right
             while (item != null && (item.deleted || !item.countable)) { item = item.next }
             if (item == null || item.content.constructor !== ContentType) { error.unexpectedCase() }
-            /** @type {ContentType} */ (item.content).type.applyDelta(op.value, am)
+            /** @type {ContentType} */ (item.content).type.applyDelta(op.value, { renderer })
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
@@ -1111,7 +1113,7 @@ export class YType {
             if (!(sub instanceof YType)) {
               error.unexpectedCase()
             }
-            sub.applyDelta(op.value, am)
+            sub.applyDelta(op.value, { renderer })
           }
         }
       })
@@ -1897,7 +1899,7 @@ export const typeMapGetAll = (parent) => {
  * @param {TypeDelta} d
  * @param {YType} parent
  * @param {Set<string|null>?} attrsToRender
- * @param {AbstractAttributionManager} am
+ * @param {AbstractRenderer} renderer
  * @param {boolean} deep
  * @param {Set<YType>|Map<YType,any>|null} [modified] - set of types that should be rendered as modified children
  * @param {IdSet?} [deletedItems]
@@ -1908,7 +1910,7 @@ export const typeMapGetAll = (parent) => {
  * @private
  * @function
  */
-export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, deletedItems, itemsToRender, opts, optsAll) => {
+export const typeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modified, deletedItems, itemsToRender, opts, optsAll) => {
   // @todo support modified ops!
   /**
    * @param {Item} item
@@ -1919,7 +1921,7 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
      * @type {Array<AttributedContent>}
      */
     const cs = []
-    am.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
+    renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
     const { deleted, attrs, content, render } = cs[cs.length - 1]
     if (!render) return
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
@@ -1941,17 +1943,17 @@ export const typeMapGetDelta = (d, parent, attrsToRender, am, deep, modified, de
         }
       }
     } else if (deep && c instanceof YType && modified?.has(c)) {
-      d.modifyAttr(key, c.toDelta(am, opts))
+      d.modifyAttr(key, c.toDelta(opts))
     } else {
       // find prev content
       let prevContentItem = item
-      // this algorithm is problematic. should check all previous content using am.readcontent
+      // this algorithm is problematic. should check all previous content using renderer.readcontent
       for (; prevContentItem.left !== null && deletedItems?.hasId(prevContentItem.left.lastId); prevContentItem = prevContentItem.left) {
         // nop
       }
       const prevValue = (prevContentItem !== item && itemsToRender?.hasId(prevContentItem.lastId)) ? array.last(prevContentItem.content.getContent()) : undefined
       if (deep && c instanceof YType) {
-        c = /** @type {any} */(c).toDelta(am, optsAll)
+        c = /** @type {any} */(c).toDelta(optsAll)
       }
       d.setAttr(key, c, attribution, prevValue)
     }

@@ -11,16 +11,16 @@ import { UpdateEncoderV1 } from './UpdateEncoder.js'
 import { transact } from './Transaction.js'
 import { UndoManager, StackItem } from './UndoManager.js'
 
-import { $attributionManager, AttributedContent } from './attribution-manager-helpers.js'
+import { $renderer, AttributedContent } from './renderer-helpers.js'
 
-export { noAttributionsManager, NoAttributionsManager, AbstractAttributionManager, $attributionManager } from './attribution-manager-helpers.js'
+export { baseRenderer, BaseRenderer, AbstractRenderer, $renderer } from './renderer-helpers.js'
 
 /**
- * @implements AbstractAttributionManager
+ * @implements AbstractRenderer
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class TwosetAttributionManager extends ObservableV2 {
+export class TwosetRenderer extends ObservableV2 {
   /**
    * @param {IdMap<any>} inserts
    * @param {IdMap<any>} deletes
@@ -31,7 +31,7 @@ export class TwosetAttributionManager extends ObservableV2 {
     this.deletes = deletes
   }
 
-  get $type () { return $attributionManager }
+  get $type () { return $renderer }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
@@ -93,15 +93,15 @@ const getItemContent = (store, client, clock, len) => {
 
 /**
  * @param {Transaction?} tr - only specify this if you want to fill the content of deleted content
- * @param {DiffAttributionManager} am
+ * @param {DiffRenderer} renderer
  * @param {ID} start
  * @param {ID} end
  * @param {boolean} collectAll - collect as many items as possible. Accept adding redundant changes.
  */
-const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
+const collectSuggestedChanges = (tr, renderer, start, end, collectAll) => {
   const inserts = createIdSet()
   const deletes = createIdSet()
-  const store = am._nextDoc.store
+  const store = renderer._nextDoc.store
   /**
    * make sure to collect suggestions until all formats are closed
    * @type {Set<string>}
@@ -121,7 +121,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
       break
     }
     if (!item.deleted) {
-      const slice = am.inserts.slice(item.id.client, item.id.clock, item.length)
+      const slice = renderer.inserts.slice(item.id.client, item.id.clock, item.length)
       if (slice.some(s => s.attrs === null)) {
         for (let i = slice.length - 1; i >= 0; i--) {
           const s = slice[i]
@@ -137,7 +137,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
   // eslint-disable-next-line
   itemLoop: while (item != null) {
     const itemClient = item.id.client
-    const slice = (item.deleted ? am.deletes : am.inserts).slice(itemClient, item.id.clock, item.length)
+    const slice = (item.deleted ? renderer.deletes : renderer.inserts).slice(itemClient, item.id.clock, item.length)
     foundEndItem ||= item === endItem
     if (item.deleted) {
       // item probably gc'd content. Need to split item and fill with content again
@@ -154,7 +154,7 @@ const collectSuggestedChanges = (tr, am, start, end, collectAll) => {
         if (tr != null) {
           const splicedItem = getItemCleanStart(tr, createID(itemClient, s.clock))
           if (s.attrs != null) {
-            splicedItem.content = getItemContent(am._prevDocStore, itemClient, s.clock, s.len)
+            splicedItem.content = getItemContent(renderer._prevDocStore, itemClient, s.clock, s.len)
           }
         }
       }
@@ -197,15 +197,15 @@ export class Attributions {
 const extractAttributions = (attrs, slice) => attrs == null ? createIdMapFromIdSet(slice, []) : mergeIdMaps([intersectMaps(attrs, slice), createIdMapFromIdSet(slice, [])])
 
 /**
- * @implements AbstractAttributionManager
+ * @implements AbstractRenderer
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class DiffAttributionManager extends ObservableV2 {
+export class DiffRenderer extends ObservableV2 {
   /**
    * @param {Doc} prevDoc
    * @param {Doc} nextDoc
-   * @param {Object} [options] - options for the attribution manager
+   * @param {Object} [options] - options for the renderer
    * @param {Attributions?} [options.attrs] - the attributes to apply to the diff
    */
   constructor (prevDoc, nextDoc, { attrs = null } = {}) {
@@ -264,7 +264,7 @@ export class DiffAttributionManager extends ObservableV2 {
     })
     this._afterTrListener = nextDoc.on('afterTransaction', (tr) => {
       // apply deletes on attributed deletes (content that is already deleted, but is rendered by
-      // the attribution manager)
+      // the renderer)
       if (!this.suggestionMode && tr.local && (this.suggestionOrigins == null || this.suggestionOrigins.some(o => o === tr.origin))) {
         const attributedDeletes = tr.meta.get('attributedDeletes')
         if (attributedDeletes != null) {
@@ -290,7 +290,7 @@ export class DiffAttributionManager extends ObservableV2 {
     prevDoc.on('destroy', this._destroyHandler)
   }
 
-  get $type () { return $attributionManager }
+  get $type () { return $renderer }
 
   destroy () {
     super.destroy()
@@ -411,24 +411,24 @@ export class DiffAttributionManager extends ObservableV2 {
  *
  * @param {Doc} prevDoc
  * @param {Doc} nextDoc
- * @param {Object} [options] - options for the attribution manager
+ * @param {Object} [options] - options for the renderer
  * @param {ContentMap?} [options.attrs] - the attributes to apply to the diff
  */
-export const createAttributionManagerFromDiff = (prevDoc, nextDoc, options) => new DiffAttributionManager(prevDoc, nextDoc, options)
+export const createDiffRenderer = (prevDoc, nextDoc, options) => new DiffRenderer(prevDoc, nextDoc, options)
 
 /**
- * Intended for projects that used the v13 snapshot feature. With this AttributionManager you can
+ * Intended for projects that used the v13 snapshot feature. With this renderer you can
  * read content similar to the previous snapshot api. Requires that `ydoc.gc` is turned off.
  *
- * @implements AbstractAttributionManager
+ * @implements AbstractRenderer
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class SnapshotAttributionManager extends ObservableV2 {
+export class SnapshotRenderer extends ObservableV2 {
   /**
    * @param {Snapshot} prevSnapshot
    * @param {Snapshot} nextSnapshot
-   * @param {Object} [options] - options for the attribution manager
+   * @param {Object} [options] - options for the renderer
    * @param {Array<ContentAttribute>} [options.attrs] - the attributes to apply to the diff
    */
   constructor (prevSnapshot, nextSnapshot) {
@@ -445,7 +445,7 @@ export class SnapshotAttributionManager extends ObservableV2 {
     this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
   }
 
-  get $type () { return $attributionManager }
+  get $type () { return $renderer }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
@@ -495,4 +495,4 @@ export class SnapshotAttributionManager extends ObservableV2 {
  * @param {Snapshot} prevSnapshot
  * @param {Snapshot} nextSnapshot
  */
-export const createAttributionManagerFromSnapshots = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotAttributionManager(prevSnapshot, nextSnapshot)
+export const createSnapshotRenderer = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotRenderer(prevSnapshot, nextSnapshot)

@@ -1,6 +1,6 @@
 import * as delta from 'lib0/delta'
 import { createInsertSetFromStructStore, createDeleteSetFromStructStore, diffIdSet, mergeIdSets } from './ids.js'
-import { createAttributionManagerFromDiff } from './AttributionManager.js'
+import { createDiffRenderer } from './Renderer.js'
 import { computeModifiedFromItems } from '../ytype.js'
 
 /**
@@ -8,7 +8,7 @@ import { computeModifiedFromItems } from '../ytype.js'
  * @param {Doc} v2
  * @return {delta.DeltaBuilderAny}
  */
-export const diffDocsToDelta = (v1, v2, { am = createAttributionManagerFromDiff(v1, v2) } = {}) => {
+export const diffDocsToDelta = (v1, v2, { renderer = createDiffRenderer(v1, v2) } = {}) => {
   const insertDiff = diffIdSet(createInsertSetFromStructStore(v2.store, false), createInsertSetFromStructStore(v1.store, false))
   const deleteDiff = diffIdSet(createDeleteSetFromStructStore(v2.store), createDeleteSetFromStructStore(v1.store))
   // don't render items that have been inserted and then deleted
@@ -23,8 +23,8 @@ export const diffDocsToDelta = (v1, v2, { am = createAttributionManagerFromDiff(
   v2.share.forEach((type, typename) => {
     const typeConf = changedTypes.get(type)
     if (typeConf) {
-      const shareDelta = type.toDelta(am, {
-        itemsToRender, retainDeletes: true, deletedItems: deletesOnly, modified: changedTypes, deep: true
+      const shareDelta = type.toDelta({
+        renderer, itemsToRender, retainDeletes: true, deletedItems: deletesOnly, modified: changedTypes, deep: true
       })
       d.modifyAttr(typename, shareDelta)
     }

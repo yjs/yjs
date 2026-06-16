@@ -4,7 +4,7 @@ import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
 import { createIdMapFromIdSet } from '../src/utils/ids.js'
-import { noAttributionsManager, TwosetAttributionManager, createAttributionManagerFromSnapshots } from '../src/utils/AttributionManager.js'
+import { baseRenderer, TwosetRenderer, createSnapshotRenderer } from '../src/utils/Renderer.js'
 
 const { init, compare } = Y
 
@@ -1476,11 +1476,11 @@ export const testSnapshot = tc => {
     .insert('x')
     .delete(1)
   )
-  const state1 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1))
+  const state1 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1) })
   t.compare(state1, delta.create().insert('abcd').done())
-  const state2 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot2))
+  const state2 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot2) })
   t.compare(state2, delta.create().insert('axcd').done())
-  const state2Diff = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1, snapshot2))
+  const state2Diff = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1, snapshot2) })
   t.compare(
     state2Diff,
     delta.create()
@@ -1509,7 +1509,7 @@ export const testSnapshotDeleteAfter = tc => {
     .insert('e')
     .done()
   )
-  const state1 = text0.toDelta(createAttributionManagerFromSnapshots(snapshot1))
+  const state1 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1) })
   t.compare(state1, delta.create().insert('abcd').done())
 }
 
@@ -1900,23 +1900,23 @@ export const testAttributedContent = _tc => {
   const ydoc = new Y.Doc({ gc: false })
   const ytext = ydoc.get()
   ytext.insert(0, 'Hello World!')
-  let attributionManager = noAttributionsManager
+  let renderer = baseRenderer
 
   ydoc.on('afterTransaction', tr => {
-    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
-    attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
+    // renderer = new TwosetRenderer(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    renderer = new TwosetRenderer(createIdMapFromIdSet(tr.insertSet, []), createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete / format', () => {
     ytext.applyDelta(delta.create().retain(4, { italic: true }).retain(2).delete(5).insert('attributions').done())
     const expectedContent = delta.create().insert('Hell', { italic: true }, { format: { italic: [] } }).insert('o ').insert('World', {}, { delete: [] }).insert('attributions', {}, { insert: [] }).insert('!')
-    const attributedContent = ytext.toDelta(attributionManager)
+    const attributedContent = ytext.toDelta({ renderer })
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
   t.group('unformat', () => {
     ytext.applyDelta(delta.create().retain(5, { italic: null }))
     const expectedContent = delta.create().insert('Hell', null, { format: { italic: [] } }).insert('o attributions!')
-    const attributedContent = ytext.toDelta(attributionManager)
+    const attributedContent = ytext.toDelta({ renderer })
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
   })
@@ -1944,10 +1944,10 @@ export const testAttributedDiffing = _tc => {
   const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [Y.createContentAttribute('insert', 'Bob')])
   const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [Y.createContentAttribute('delete', 'Bob')])
   // now we can define an attribution manager that maps these changes to output. One of the
-  // implementations is the TwosetAttributionManager
-  const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
-  // we render the attributed content with the attributionManager
-  const attributedContent = ytext.toDelta(attributionManager)
+  // implementations is the TwosetRenderer
+  const renderer = new TwosetRenderer(attributedInsertions, attributedDeletions)
+  // we render the attributed content with the renderer
+  const attributedContent = ytext.toDelta({ renderer })
   console.log(JSON.stringify(attributedContent.toJSON(), null, 2))
   const expectedContent = delta.create().insert('Hell', { italic: true }, { format: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
   t.assert(attributedContent.equals(expectedContent))
@@ -2187,7 +2187,7 @@ const checkResult = result => {
  *
  * @param {t.TestCase} tc
  */
-export const testAttributionManagerDefaultPerformance = tc => {
+export const testRendererDefaultPerformance = tc => {
   const N = 10000
   const MaxDeletionLength = 5 // 25% chance of deletion
   const MaxInsertionLength = 5
@@ -2212,7 +2212,7 @@ export const testAttributionManagerDefaultPerformance = tc => {
       ytext.toString()
     }
   })
-  t.measureTime(`toDelta(attributionManager) performance <executed ${M} times>`, () => {
+  t.measureTime(`toDelta(renderer) performance <executed ${M} times>`, () => {
     for (let i = 0; i < M; i++) {
       ytext.toDelta()
     }

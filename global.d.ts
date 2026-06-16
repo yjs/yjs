@@ -46,8 +46,8 @@ declare type Delta<DConf extends DeltaConf> = import('lib0/delta').Delta<DConf>
 // @todo the below should have a separate Y/[mod] export
 declare type StackItem = import('./src/utils/UndoManager.js').StackItem
 declare type UndoManager = import('./src/utils/UndoManager.js').UndoManager
-declare type AbstractAttributionManager = import('./src/utils/attribution-manager-helpers.js').AbstractAttributionManager
-declare type Attribution = import('./src/utils/attribution-manager-helpers.js').Attribution
-declare type AttributedContent<T = any> = import('./src/utils/attribution-manager-helpers.js').AttributedContent<T>
+declare type AbstractRenderer = import('./src/utils/renderer-helpers.js').AbstractRenderer
+declare type Attribution = import('./src/utils/renderer-helpers.js').Attribution
+declare type AttributedContent<T = any> = import('./src/utils/renderer-helpers.js').AttributedContent<T>
 
 declare type Snapshot = import('./src/utils/Snapshot.js').Snapshot

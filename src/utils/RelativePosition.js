@@ -4,7 +4,7 @@ import * as error from 'lib0/error'
 
 import { Item, followRedone, ContentType } from '../structs/Item.js'
 import { writeID, readID, compareIDs, findRootTypeKey, createID } from './ID.js'
-import { noAttributionsManager } from './attribution-manager-helpers.js'
+import { baseRenderer } from './renderer-helpers.js'
 
 /**
  * A relative position is based on the Yjs model and is not affected by document changes.
@@ -146,12 +146,12 @@ export const createRelativePosition = (type, item, assoc) => {
  * @param {YType} type The base type (e.g. YText or YArray).
  * @param {number} index The absolute position.
  * @param {number} [assoc]
- * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
+ * @param {import('../utils/Renderer.js').AbstractRenderer} renderer
  * @return {RelativePosition}
  *
  * @function
  */
-export const createRelativePositionFromTypeIndex = (type, index, assoc = 0, attributionManager = noAttributionsManager) => {
+export const createRelativePositionFromTypeIndex = (type, index, assoc = 0, renderer = baseRenderer) => {
   let t = type._start
   if (assoc < 0) {
     // associated to the left character or the beginning of a type, increment index if possible.
@@ -161,7 +161,7 @@ export const createRelativePositionFromTypeIndex = (type, index, assoc = 0, attr
     index--
   }
   while (t !== null) {
-    const len = attributionManager.contentLength(t)
+    const len = renderer.contentLength(t)
     if (len > index) {
       // case 1: found position somewhere in the linked list
       return createRelativePosition(type, createID(t.id.client, t.id.clock + index), assoc)
@@ -272,12 +272,12 @@ const getItemWithOffset = (store, id) => {
  * @param {RelativePosition} rpos
  * @param {Doc} doc
  * @param {boolean} followUndoneDeletions - whether to follow undone deletions - see https://github.com/yjs/yjs/issues/638
- * @param {import('../utils/AttributionManager.js').AbstractAttributionManager} attributionManager
+ * @param {import('../utils/Renderer.js').AbstractRenderer} renderer
  * @return {AbsolutePosition|null}
  *
  * @function
  */
-export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true, attributionManager = noAttributionsManager) => {
+export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndoneDeletions = true, renderer = baseRenderer) => {
   const store = doc.store
   const rightID = rpos.item
   const typeID = rpos.type
@@ -296,10 +296,10 @@ export const createAbsolutePositionFromRelativePosition = (rpos, doc, followUndo
     }
     type = /** @type {YType<any>} */ (right.parent)
     if (type._item === null || !type._item.deleted) {
-      index = attributionManager.contentLength(right) === 0 ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
+      index = renderer.contentLength(right) === 0 ? 0 : (res.diff + (assoc >= 0 ? 0 : 1)) // adjust position based on left association if necessary
       let n = right.left
       while (n !== null) {
-        index += attributionManager.contentLength(n)
+        index += renderer.contentLength(n)
         n = n.left
       }
     }

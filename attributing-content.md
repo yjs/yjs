@@ -51,11 +51,11 @@ const deleteSetDiff = Y.diffIdSet(deleteSet, Y.createDeleteSetFromStructStore(yd
 // assign attributes to the diff
 const attributedInsertions = createIdMapFromIdSet(insertionSetDiff, [new Y.Attribution('insert', 'Bob')])
 const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [new Y.Attribution('delete', 'Bob')])
-// now we can define an attribution manager that maps these changes to output. One of the
-// implementations is the TwosetAttributionManager
-const attributionManager = new TwosetAttributionManager(attributedInsertions, attributedDeletions)
-// we render the attributed content with the attributionManager
-let attributedContent = ytext.toDelta(attributionManager)
+// now we can define a renderer that maps these changes to output. One of the
+// implementations is the TwosetRenderer
+const renderer = new TwosetRenderer(attributedInsertions, attributedDeletions)
+// we render the attributed content with the renderer
+let attributedContent = ytext.toDelta({ renderer })
 console.log(JSON.stringify(attributedContent.toJSON().ops, null, 2))
 let expectedContent = delta.create().insert('Hell', { italic: true }, { attributes: { italic: ['Bob'] } }).insert('o ').insert('World', {}, { delete: ['Bob'] }).insert('attributions', {}, { insert: ['Bob'] }).insert('!')
 t.assert(attributedContent.equals(expectedContent))
@@ -113,9 +113,10 @@ const attributedDeletions = createIdMapFromIdSet(deleteSetDiff, [new Y.Attributi
 You could use the same output to calculate a real diff as well (consisting of
 deletions and insertions only, without Attributions). 
 
-`AttributionManager` is an abstract class for mapping attributions. It is
-possible to highlight arbitrary content with this approach. 
+`AbstractRenderer` is the abstract base class for renderers, which map
+attributions onto content. It is possible to highlight arbitrary content with
+this approach.
 
-The AttributionManager is encodes very efficiently. The ids are encoded using
+The attribution data is encoded very efficiently. The ids are encoded using
 run-length encoding and the Attributes are de-duplicated and only encoded once.
 The above example encodes in 20 bytes.

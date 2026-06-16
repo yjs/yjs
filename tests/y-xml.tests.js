@@ -139,10 +139,10 @@ export const testFragmentAttributedContent = _tc => {
   const elem3 = Y.Type.from(delta.create().insert('world'))
   yfragment.insert(0, [elem1, elem2])
   ydoc.get().insert(0, [yfragment])
-  let attributionManager = Y.noAttributionsManager
+  let renderer = Y.baseRenderer
   ydoc.on('afterTransaction', tr => {
-    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
-    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+    // renderer = new TwosetRenderer(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    renderer = new Y.TwosetRenderer(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete', () => {
     ydoc.transact(() => {
@@ -150,10 +150,10 @@ export const testFragmentAttributedContent = _tc => {
       yfragment.insert(1, [elem3])
     })
     const expectedContent = delta.create().insert([elem1], null, { delete: [] }).insert([elem2]).insert([elem3], null, { insert: [] })
-    const attributedContent = yfragment.toDelta(attributionManager)
+    const attributedContent = yfragment.toDelta({ renderer })
     console.log(attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
-    t.compare(elem1.toDelta(attributionManager).toJSON(), delta.create().insert('hello', null, { delete: [] }).toJSON())
+    t.compare(elem1.toDelta({ renderer }).toJSON(), delta.create().insert('hello', null, { delete: [] }).toJSON())
   })
 }
 
@@ -167,10 +167,10 @@ export const testElementAttributedContent = _tc => {
   const elem2 = delta.create('span').done()
   const elem3 = delta.create().insert('world').done()
   yelement.insert(0, [elem1, elem2])
-  let attributionManager = Y.noAttributionsManager
+  let renderer = Y.baseRenderer
   ydoc.on('afterTransaction', tr => {
-    // attributionManager = new TwosetAttributionManager(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
-    attributionManager = new Y.TwosetAttributionManager(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
+    // renderer = new TwosetRenderer(createIdMapFromIdSet(tr.insertSet, [new Y.Attribution('insertAt', 42), new Y.Attribution('insert', 'kevin')]), createIdMapFromIdSet(tr.deleteSet, [new Y.Attribution('delete', 'kevin')]))
+    renderer = new Y.TwosetRenderer(Y.createIdMapFromIdSet(tr.insertSet, []), Y.createIdMapFromIdSet(tr.deleteSet, []))
   })
   t.group('insert / delete', () => {
     ydoc.transact(() => {
@@ -183,7 +183,7 @@ export const testElementAttributedContent = _tc => {
       .insert([elem2])
       .insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.toDeltaDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep({ renderer })
     console.log('retrieved content', attributedContent.toJSON())
     t.assert(attributedContent.equals(expectedContent))
     t.compare(attributedContent.toJSON().attrs, { key: { type: 'insert', value: '42', attribution: { insert: [] } } })
@@ -206,9 +206,9 @@ export const testElementAttributedContentViaDiffer = _tc => {
     yelement.insert(1, [elem3])
     yelement.setAttr('key', '42')
   })
-  const attributionManager = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
+  const renderer = Y.createDiffRenderer(ydocV1, ydoc)
   const expectedContent = delta.create().insert([delta.create().insert('hello')], null, { delete: [] }).insert([elem2.toDeltaDeep()]).insert([delta.create().insert('world', null, { insert: [] })], null, { insert: [] }).setAttr('key', '42', { insert: [] })
-  const attributedContent = yelement.toDeltaDeep(attributionManager)
+  const attributedContent = yelement.toDeltaDeep({ renderer })
   console.log('children', attributedContent.toJSON().children)
   console.log('attributes', attributedContent.toJSON().attrs)
   t.compare(attributedContent.toJSON(), expectedContent.toJSON())
@@ -226,7 +226,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
         delta.create().insert('world', null, { insert: [] })
       ], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.toDeltaDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep({ renderer })
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -238,7 +238,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
     elem3.insert(0, 'big')
   })
   t.group('test getContentDeep after some more updates', () => {
-    t.info('expecting diffingAttributionManager to auto update itself')
+    t.info('expecting DiffRenderer to auto update itself')
     const expectedContent = delta.create()
       .insert(
         [delta.create().insert('hello')],
@@ -250,7 +250,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
         delta.create().insert('bigworld', null, { insert: [] })
       ], null, { insert: [] })
       .setAttr('key', '42', { insert: [] })
-    const attributedContent = yelement.toDeltaDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep({ renderer })
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -260,11 +260,11 @@ export const testElementAttributedContentViaDiffer = _tc => {
   })
   Y.applyUpdate(ydocV1, Y.encodeStateAsUpdate(ydoc))
   t.group('test getContentDeep both docs synced', () => {
-    t.info('expecting diffingAttributionManager to auto update itself')
+    t.info('expecting DiffRenderer to auto update itself')
     const expectedContent = delta.create().insert([delta.create('span')]).insert([
       delta.create().insert('bigworld')
     ]).setAttr('key', '42')
-    const attributedContent = yelement.toDeltaDeep(attributionManager)
+    const attributedContent = yelement.toDeltaDeep({ renderer })
     console.log('children', JSON.stringify(attributedContent.toJSON().children, null, 2))
     console.log('cs expec', JSON.stringify(expectedContent.toJSON(), null, 2))
     console.log('attributes', attributedContent.toJSON().attrs)
@@ -277,7 +277,7 @@ export const testElementAttributedContentViaDiffer = _tc => {
 /**
  * @param {t.TestCase} _tc
  */
-export const testAttributionManagerSimpleExample = _tc => {
+export const testRendererSimpleExample = _tc => {
   const ydoc = new Y.Doc()
   ydoc.clientID = 0
   // create some initial content
@@ -295,7 +295,7 @@ export const testAttributionManagerSimpleExample = _tc => {
   ytext.delete(11, 8)
   ytext.insert(11, '!')
   // highlight the changes
-  console.log(JSON.stringify(ydocFork.get().toDeltaDeep(Y.createAttributionManagerFromDiff(ydoc, ydocFork)), null, 2))
+  console.log(JSON.stringify(ydocFork.get().toDeltaDeep({ renderer: Y.createDiffRenderer(ydoc, ydocFork) }), null, 2))
 /* =>
 {
   "children": {
@@ -390,7 +390,7 @@ const collectForbiddenOps = (d, forbidden, path = '$', acc = []) => {
 
 /**
  * Reproduces the y-prosemirror issue #247 contract violation at the @y/y
- * level: `ytype.toDeltaDeep(am)` is supposed to surface soft-deleted content
+ * level: `ytype.toDeltaDeep({ renderer })` is supposed to surface soft-deleted content
  * as positive ops (`SetAttrOp` / `InsertOp`) carrying attribution metadata,
  * never as `DeleteAttrOp` / `DeleteOp`. Today, when a parent YXmlElement is
  * itself soft-deleted under attribution, `typeMapGetDelta` (ytype.js:1928)
@@ -398,7 +398,7 @@ const collectForbiddenOps = (d, forbidden, path = '$', acc = []) => {
  * cascaded child setAttr / content items - which downstream consumers
  * (lib0/delta `diff`, y-prosemirror's PM mapper) cannot handle.
  *
- * Expected after fix: walking the delta returned by `parent.toDeltaDeep(am)`
+ * Expected after fix: walking the delta returned by `parent.toDeltaDeep({ renderer })`
  * finds zero `DeleteAttrOp` entries in any `attrs` map and zero `DeleteOp`
  * entries in any `children` list, at every nesting level.
  *
@@ -424,8 +424,8 @@ export const testToDeltaDeepEmitsNoDeleteOpsForSoftDeletedParent = _tc => {
     parent.delete(0, 1)
   })
 
-  const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const rendered = parent.toDeltaDeep(am)
+  const renderer = Y.createDiffRenderer(ydocV1, ydoc)
+  const rendered = parent.toDeltaDeep({ renderer })
 
   // The cascade should surface as positive ops with attribution, not as
   // delete ops. Find any DeleteAttrOp / DeleteOp anywhere in the tree.
@@ -439,7 +439,7 @@ export const testToDeltaDeepEmitsNoDeleteOpsForSoftDeletedParent = _tc => {
   }
   t.assert(
     offenders.length === 0,
-    `toDeltaDeep(am) emitted ${offenders.length} forbidden delete op(s) for a soft-deleted parent (issue #247 / y-prosemirror)`
+    `toDeltaDeep(renderer) emitted ${offenders.length} forbidden delete op(s) for a soft-deleted parent (issue #247 / y-prosemirror)`
   )
 }
 
@@ -460,8 +460,8 @@ export const testToDeltaDeepRendersExplicitDeleteAttrAsSetAttrWithAttribution = 
   ydoc.transact(() => {
     ydoc.get('p').deleteAttr('id')
   })
-  const am = Y.createAttributionManagerFromDiff(ydocV1, ydoc)
-  const rendered = ydoc.get('p').toDeltaDeep(am)
+  const renderer = Y.createDiffRenderer(ydocV1, ydoc)
+  const rendered = ydoc.get('p').toDeltaDeep({ renderer })
 
   const offenders = collectForbiddenOps(rendered, ['DeleteAttrOp', 'DeleteOp'])
   t.assert(offenders.length === 0, 'no DeleteAttrOp / DeleteOp from explicit deleteAttr under diff AM')

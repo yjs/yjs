@@ -5,19 +5,19 @@ The Attribution feature extends Yjs types to provide rich metadata about content
 changes, including information about who created, deleted, or formatted content.
 This enables powerful collaborative editing features such as authorship tracking
 and change visualization. The information about who performed which changes can
-be handled by a separate CRDT (which is part of the attribution manager).
+be handled by a separate CRDT (which is part of the renderer).
 
 ## Core Concepts
 
-### Attribution Manager
+### Renderer
 
-The `attributionManager` is the central component that tracks and manages
-attribution data. It must be passed to methods that support attribution to
-enable the feature.
+A `renderer` renders Content (with its Attributions) to a delta. It is the
+central component for the attribution feature: pass it to methods like
+`toDelta()` / `getDelta()` to render content together with attribution metadata.
 
-Different implementations of AttributionManager are available for different use cases:
-- `DiffingAttributionManager`: Highlights the differences between two Yjs documents
-- `SnapshotAttributionManager`: Highlights the differences between two snapshots
+Different implementations of Renderer are available for different use cases:
+- `DiffRenderer`: Highlights the differences between two Yjs documents
+- `SnapshotRenderer`: Highlights the differences between two snapshots
 
 ### Attributed Content
 
@@ -50,15 +50,15 @@ Deleted content is represented in attributed results to maintain authorship info
 
 ### YText
 
-#### `getDelta([attributionManager])`
+#### `getDelta([renderer])`
 
 Returns the delta representation of the YText content, optionally with attribution information.
 
 **Parameters:**
-- `attributionManager` (optional): The attribution manager instance
+- `renderer` (optional): The renderer instance
 
 **Returns:**
-- Array of delta operations, with attribution metadata if `attributionManager` is provided
+- Array of delta operations, with attribution metadata if `renderer` is provided
 
 **Examples:**
 
@@ -72,46 +72,46 @@ const delta = ytext.getDelta()
 // [{ insert: 'hello world' }]
 
 // With attribution
-const attributedDelta = ytext.getDelta(attributionManager)
+const attributedDelta = ytext.getDelta({ renderer })
 // [
 //   { insert: 'hello', attribution: { insert: ['kevin'] } },
 //   { insert: ' world', attribution: { insert: ['alice'] } }
 // ]
 ```
 
-#### `toDelta([attributionManager])`
+#### `toDelta([renderer])`
 
 Returns the content representation with optional attribution information.
 
 **Parameters:**
-- `toDelta` (optional): The attribution manager instance
+- `renderer` (optional): The renderer instance
 
 **Returns:**
-- Content representation with attribution metadata if `attributionManager` is provided
+- Content representation with attribution metadata if `renderer` is provided
 
 ### YArray
 
-#### `toDelta([attributionManager])`
+#### `toDelta([renderer])`
 
 Returns the array content with optional attribution information for each element.
 
 **Parameters:**
-- `attributionManager` (optional): The attribution manager instance
+- `renderer` (optional): The renderer instance
 
 **Returns:**
-- Array content with attribution metadata if `attributionManager` is provided
+- Array content with attribution metadata if `renderer` is provided
 
 ### YMap
 
-#### `toDelta([attributionManager])`
+#### `toDelta([renderer])`
 
 Returns the map content with optional attribution information for each key-value pair.
 
 **Parameters:**
-- `attributionManager` (optional): The attribution manager instance
+- `renderer` (optional): The renderer instance
 
 **Returns:**
-- Map content with attribution metadata if `attributionManager` is provided
+- Map content with attribution metadata if `renderer` is provided
 
 ## Position Adjustments
 
@@ -124,7 +124,7 @@ When working with attributed content, position calculations must account for del
 ytext.toString() // "world"
 
 // Attributed content (includes deleted content)
-ytext.getDelta(attributionManager)
+ytext.getDelta({ renderer })
 // [
 //   { insert: 'hello ', attribution: { delete: ['kevin'] } },  // positions 0-5
 //   { insert: 'world' }                                         // positions 6-10
@@ -141,7 +141,7 @@ Events in Yjs are enhanced to work with attributed content, automatically adjust
 
 ### Event Position Adjustment
 
-When an `attributionManager` is used, event positions are automatically adjusted to account for deleted content.
+When a `renderer` is used, event positions are automatically adjusted to account for deleted content.
 
 **Example:**
 
@@ -157,8 +157,8 @@ ytext.observe((event, transaction) => {
   const standardDelta = event.getDelta()
   // Shows insertion at position 5 (after "world" in visible content)
   
-  // Attributed event (with attribution manager)
-  const attributedDelta = event.getDelta(attributionManager)
+  // Attributed event (with renderer)
+  const attributedDelta = event.getDelta({ renderer })
   // Shows insertion at position 11 (accounting for deleted "hello ")
   // [
   //   { insert: 'hello ', attribution: { delete: ['kevin'] } },
@@ -175,8 +175,8 @@ ytext.observe((event, transaction) => {
 Display content with visual indicators of who created each part:
 
 ```javascript
-function renderWithAuthorship(ytext, attributionManager) {
-  const attributedDelta = ytext.getDelta(attributionManager)
+function renderWithAuthorship(ytext, renderer) {
+  const attributedDelta = ytext.getDelta({ renderer })
   
   return attributedDelta.map(op => {
     const author = op.attribution?.insert?.[0] || 'unknown'
@@ -197,9 +197,9 @@ function renderWithAuthorship(ytext, attributionManager) {
 Track who made specific changes to content:
 
 ```javascript
-function trackChanges(ytext, attributionManager) {
+function trackChanges(ytext, renderer) {
   ytext.observe((event, transaction) => {
-    const changes = event.changes.getAttributedDelta?.(attributionManager) || event.changes.delta
+    const changes = event.changes.getAttributedDelta?.(renderer) || event.changes.delta
     
     changes.forEach(change => {
       if (change.attribution) {
@@ -212,11 +212,11 @@ function trackChanges(ytext, attributionManager) {
 
 ## Best Practices
 
-### Attribution Manager Lifecycle
+### Renderer Lifecycle
 
-- Create one attribution manager per document or collaboration session
-- Ensure the attribution manager is consistently used across all operations
-- Pass the same attribution manager instance to all methods that need attribution
+- Create one renderer per document or collaboration session
+- Ensure the renderer is consistently used across all operations
+- Pass the same renderer instance to all methods that need attribution
 
 ## Migration Guide
 
@@ -224,14 +224,14 @@ function trackChanges(ytext, attributionManager) {
 
 To add attribution support to existing Yjs applications:
 
-1. **Add attribution manager**: Create and configure an attribution manager
-2. **Update method calls**: Add the attribution manager parameter to relevant method calls
+1. **Add renderer**: Create and configure a renderer
+2. **Update method calls**: Add the renderer parameter to relevant method calls
 3. **Handle attributed content**: Update code to handle the new attribution metadata format
 4. **Adjust position calculations**: Update position calculations to account for deleted content
 
 ### Backward Compatibility
 
 The Attribution feature is fully backward compatible:
-- All existing methods work without the attribution manager parameter
+- All existing methods work without the renderer parameter
 - Existing code continues to work unchanged
 - Attribution is opt-in and doesn't affect performance when not used

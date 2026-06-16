@@ -38,14 +38,14 @@ export class AttributedContent {
 }
 
 /**
- * Abstract class for associating Attributions to content / changes
+ * Abstract base class for renderers. A renderer renders Content (with Attributions) to a delta.
  *
  * Should fire an event when the attributions changed _after_ the original change happens. This
  * Event will be used to update the attribution on the current content.
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class AbstractAttributionManager extends ObservableV2 {
+export class AbstractRenderer extends ObservableV2 {
   /**
    * @param {Array<AttributedContent<any>>} _contents - where to write the result
    * @param {number} _client
@@ -72,17 +72,17 @@ export class AbstractAttributionManager extends ObservableV2 {
   }
 }
 
-export const $attributionManager = AbstractAttributionManager.prototype.$type = s.$type('y:am', AbstractAttributionManager)
+export const $renderer = AbstractRenderer.prototype.$type = s.$type('y:r', AbstractRenderer)
 
 /**
- * Abstract class for associating Attributions to content / changes
+ * The default renderer. Renders content as-is, without looking up any attributions.
  *
- * @implements AbstractAttributionManager
+ * @implements AbstractRenderer
  *
  * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
  */
-export class NoAttributionsManager extends ObservableV2 {
-  get $type () { return $attributionManager }
+export class BaseRenderer extends ObservableV2 {
+  get $type () { return $renderer }
 
   /**
    * @param {Array<AttributedContent<any>>} contents - where to write the result
@@ -107,4 +107,4 @@ export class NoAttributionsManager extends ObservableV2 {
   }
 }
 
-export const noAttributionsManager = new NoAttributionsManager()
+export const baseRenderer = new BaseRenderer()

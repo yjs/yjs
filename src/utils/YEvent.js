@@ -2,7 +2,7 @@ import * as map from 'lib0/map'
 import * as set from 'lib0/set'
 
 import { diffIdSet, mergeIdSets } from './ids.js'
-import { noAttributionsManager } from './attribution-manager-helpers.js'
+import { baseRenderer } from './renderer-helpers.js'
 import { createAbsolutePositionFromRelativePosition, createRelativePosition } from './RelativePosition.js'
 
 /**
@@ -85,14 +85,14 @@ export class YEvent {
 
   /**
    * @template {boolean} [Deep=false]
-   * @param {AbstractAttributionManager} am
    * @param {object} [opts]
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
    * @param {Deep} [opts.deep]
    * @return {Deep extends true ? Delta<DConf> : Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta (am = noAttributionsManager, { deep } = {}) {
+  getDelta ({ renderer = baseRenderer, deep } = {}) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
     /**
      * @todo this should be done only one in the transaction step
@@ -120,7 +120,7 @@ export class YEvent {
       }
       modified = dchanged
     }
-    return /** @type {any} */ (this.target.toDelta(am, { itemsToRender, retainDeletes: true, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
+    return /** @type {any} */ (this.target.toDelta({ renderer, itemsToRender, retainDeletes: true, deletedItems: this.transaction.deleteSet, deep: !!deep, modified }))
   }
 
   /**
@@ -142,7 +142,7 @@ export class YEvent {
    * @public
    */
   get deltaDeep () {
-    return /** @type {any} */ (this._deltaDeep ?? (this._deltaDeep = /** @type {any} */ (this.getDelta(noAttributionsManager, { deep: true }))))
+    return /** @type {any} */ (this._deltaDeep ?? (this._deltaDeep = /** @type {any} */ (this.getDelta({ deep: true }))))
   }
 }
 
@@ -158,13 +158,13 @@ export class YEvent {
  *
  * @param {YType} parent
  * @param {YType} child target
- * @param {AbstractAttributionManager} am
+ * @param {AbstractRenderer} renderer
  * @return {Array<string|number>} Path to the target
  *
  * @private
  * @function
  */
-export const getPathTo = (parent, child, am = noAttributionsManager) => {
+export const getPathTo = (parent, child, renderer = baseRenderer) => {
   const path = []
   const doc = /** @type {Doc} */ (parent.doc)
   while (child._item !== null && child !== parent) {
@@ -174,7 +174,7 @@ export const getPathTo = (parent, child, am = noAttributionsManager) => {
     } else {
       const parent = /** @type {import('../ytype.js').YType} */ (child._item.parent)
       // parent is array-ish
-      const apos = /** @type {import('../utils/RelativePosition.js').AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, am))
+      const apos = /** @type {import('../utils/RelativePosition.js').AbsolutePosition} */ (createAbsolutePositionFromRelativePosition(createRelativePosition(parent, child._item.id), doc, false, renderer))
       path.unshift(apos.index)
     }
     child = /** @type {YType} */ (child._item.parent)

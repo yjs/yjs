@@ -20,9 +20,9 @@ export const testRelativePositions = _tc => {
   const v1 = Y.cloneDoc(ydoc)
   ytext.delete(1, 6)
   ytext.insert(1, 'x')
-  const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const rel = Y.createRelativePositionFromTypeIndex(ytext, 9, 1, am) // pos after "hello wo"
-  const abs1 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true, am)
+  const renderer = Y.createDiffRenderer(v1, ydoc)
+  const rel = Y.createRelativePositionFromTypeIndex(ytext, 9, 1, renderer) // pos after "hello wo"
+  const abs1 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true, renderer)
   const abs2 = Y.createAbsolutePositionFromRelativePosition(rel, ydoc, true)
   t.assert(abs1?.index === 9)
   t.assert(abs2?.index === 3)
@@ -39,16 +39,16 @@ export const testAttributedEvents = _tc => {
   ydoc.transact(() => {
     ytext.delete(6, 5)
   })
-  const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.toDelta(am)
+  const renderer = Y.createDiffRenderer(v1, ydoc)
+  const c1 = ytext.toDelta({ renderer })
   t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }).done())
   let calledObserver = false
   ytext.observe(event => {
-    const d = event.getDelta(am)
+    const d = event.getDelta({ renderer })
     t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }).done())
     calledObserver = true
   })
-  ytext.applyDelta(delta.create().retain(11).insert('!').done(), am)
+  ytext.applyDelta(delta.create().retain(11).insert('!').done(), { renderer })
   t.assert(calledObserver)
 }
 
@@ -63,10 +63,10 @@ export const testInsertionsMindingAttributedContent = _tc => {
   ydoc.transact(() => {
     ytext.delete(6, 5)
   })
-  const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.toDelta(am)
+  const renderer = Y.createDiffRenderer(v1, ydoc)
+  const c1 = ytext.toDelta({ renderer })
   t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }).done())
-  ytext.applyDelta(delta.create().retain(11).insert('content').done(), am)
+  ytext.applyDelta(delta.create().retain(11).insert('content').done(), { renderer })
   t.assert(ytext.toString() === 'hello content')
 }
 
@@ -81,10 +81,10 @@ export const testInsertionsIntoAttributedContent = _tc => {
   ydoc.transact(() => {
     ytext.insert(6, 'word')
   })
-  const am = Y.createAttributionManagerFromDiff(v1, ydoc)
-  const c1 = ytext.toDelta(am)
+  const renderer = Y.createDiffRenderer(v1, ydoc)
+  const c1 = ytext.toDelta({ renderer })
   t.compare(c1, delta.create().insert('hello ').insert('word', null, { insert: [] }).done())
-  ytext.applyDelta(delta.create().retain(9).insert('l').done(), am)
+  ytext.applyDelta(delta.create().retain(9).insert('l').done(), { renderer })
   t.assert(ytext.toString() === 'hello world')
 }
 
@@ -151,21 +151,21 @@ export const testAttributionSession1 = tc => {
   text0.insert(0, 'a')
   text1.insert(0, 'b')
   testConnector.flushAllMessages()
-  const d1 = text0.toDelta(Y.createAttributionManagerFromDiff(v1, users[0], { attrs: globalAttributions }))
+  const d1 = text0.toDelta({ renderer: Y.createDiffRenderer(v1, users[0], { attrs: globalAttributions }) })
   t.compare(d1, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { insert: ['1'] }).done())
   const v2 = Y.cloneDoc(users[0])
   text0.delete(1, 1)
   text1.insert(2, 'c')
   testConnector.flushAllMessages()
-  const d2 = text0.toDelta(Y.createAttributionManagerFromDiff(v2, users[0], { attrs: globalAttributions }))
+  const d2 = text0.toDelta({ renderer: Y.createDiffRenderer(v2, users[0], { attrs: globalAttributions }) })
   t.compare(d2, delta.create().insert('a').insert('b', null, { delete: ['0'] }).insert('c', null, { insert: ['1'] }).done())
 
   const onlyUser0ChangesAttributed = {
     inserts: Y.filterIdMap(globalAttributions.inserts, attrs => attrs.some(attr => attr.name === 'insert' && attr.val === '0')),
     deletes: Y.filterIdMap(globalAttributions.deletes, attrs => attrs.some(attr => attr.name === 'delete' && attr.val === '0'))
   }
-  const amUser0 = new Y.TwosetAttributionManager(onlyUser0ChangesAttributed.inserts, onlyUser0ChangesAttributed.deletes)
-  const d3 = text0.toDelta(amUser0)
+  const rendererUser0 = new Y.TwosetRenderer(onlyUser0ChangesAttributed.inserts, onlyUser0ChangesAttributed.deletes)
+  const d3 = text0.toDelta({ renderer: rendererUser0 })
   t.compare(d3, delta.create().insert('a', null, { insert: ['0'] }).insert('b', null, { delete: ['0'] }).insert('c').done())
   Y.undoContentIds(users[0], Y.createContentIdsFromContentMap(onlyUser0ChangesAttributed))
 
@@ -179,10 +179,10 @@ export const testAttributionEvent = () => {
   // <p>hi</p>
   ytype.applyDelta(delta.create().insert([delta.create('p').insert('hi').done()]).done())
   const ydocBase = Y.cloneDoc(ydoc)
-  const am = Y.createAttributionManagerFromDiff(ydocBase, ydoc)
+  const renderer = Y.createDiffRenderer(ydocBase, ydoc)
   let called = false
   ytype.observeDeep(event => {
-    const change = event.getDelta(am)
+    const change = event.getDelta({ renderer })
     const expectedChange = delta.create().modify(delta.create('p').retain(2, null, { delete: [] }), null, { delete: [] }).done()
     t.compare(
       change,
@@ -201,12 +201,12 @@ export const testAttributionChange = () => {
   const ytype = ydoc.get()
   ytype.applyDelta(delta.create().insert('hi').done())
   const ydocClone = Y.cloneDoc(ydoc)
-  const am = Y.createAttributionManagerFromDiff(ydocClone, ydoc)
+  const renderer = Y.createDiffRenderer(ydocClone, ydoc)
   ytype.applyDelta(delta.create().retain(2).insert('!').done())
   let calledHandler = false
-  am.on('change', changes => {
+  renderer.on('change', changes => {
     calledHandler = true
-    const changeUpdate = ytype.toDelta(am, { deep: true, itemsToRender: changes, retainInserts: true, retainDeletes: true })
+    const changeUpdate = ytype.toDelta({ renderer, deep: true, itemsToRender: changes, retainInserts: true, retainDeletes: true })
     const expectedUpdate = delta.create().retain(2).retain(1, null, {})
     t.compare(changeUpdate, expectedUpdate)
     console.log(changeUpdate.toJSON())
