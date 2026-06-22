@@ -3,7 +3,7 @@
 
 // Order matters: follows internals.js ordering to avoid circular dependency issues
 
-export { IdSet, equalIdSets, createDeleteSetFromStructStore, createInsertSetFromStructStore, diffIdSet, createIdSet, mergeIdSets, insertIntoIdSet, iterateStructsByIdSet, readIdSet, IdMap, createIdMap, createContentAttribute, ContentAttribute, diffIdMap, encodeIdMap, createIdMapFromIdSet, insertIntoIdMap, mergeIdMaps, readIdMap, decodeIdMap, filterIdMap } from './utils/ids.js'
+export { IdSet, equalIdSets, createDeleteSetFromStructStore, createInsertSetFromStructStore, diffIdSet, createIdSet, mergeIdSets, insertIntoIdSet, iterateStructsByIdSet, gcIdSet, readIdSet, IdMap, createIdMap, createContentAttribute, ContentAttribute, diffIdMap, encodeIdMap, createIdMapFromIdSet, insertIntoIdMap, mergeIdMaps, readIdMap, decodeIdMap, filterIdMap } from './utils/ids.js'
 export { Doc } from './utils/Doc.js'
 export { UpdateDecoderV1, UpdateDecoderV2 } from './utils/UpdateDecoder.js'
 export { UpdateEncoderV1, UpdateEncoderV2 } from './utils/UpdateEncoder.js'

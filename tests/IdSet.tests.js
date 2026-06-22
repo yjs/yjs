@@ -1,4 +1,5 @@
 import * as t from 'lib0/testing'
+import * as Y from '../src/index.js'
 import * as d from '../src/utils/ids.js'
 import * as math from 'lib0/math'
 import * as prng from 'lib0/prng'
@@ -239,4 +240,129 @@ export const testRepeatRandomIntersects = tc => {
   const diffed1 = d.diffIdSet(ids1, ids2)
   const altDiffed1 = d.diffIdSet(ids1, intersected)
   compareIdSets(diffed1, altDiffed1)
+}
+
+/**
+ * The struct that covers `clock` for the document's local client.
+ *
+ * @param {Y.Doc} doc
+ * @param {number} clock
+ * @return {any}
+ */
+const structAt = (doc, clock) => {
+  const structs = /** @type {Array<any>} */ (doc.store.clients.get(doc.clientID))
+  return structs[Y.findIndexSS(structs, clock)]
+}
+
+/**
+ * `gcIdSet` collects the deleted content referenced by an IdSet on a `gc: false` document,
+ * without changing the observable state, and the result still converges with a peer.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testGcIdSetBasic = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const yarr = doc.get('array')
+  yarr.insert(0, ['a', 'b', 'c', 'd'])
+  yarr.delete(1, 2) // delete 'b' (clock 1) and 'c' (clock 2)
+  // gc is disabled, so the deleted content is retained
+  t.assert(structAt(doc, 1).content instanceof Y.ContentAny)
+
+  Y.gcIdSet(doc, Y.createDeleteSetFromStructStore(doc.store))
+
+  // observable state is unchanged
+  t.compare(yarr.toArray(), ['a', 'd'])
+  // every collectible deleted item is now collected
+  doc.store.clients.forEach(structs => {
+    structs.forEach(struct => {
+      if (struct.constructor === Y.Item && struct.deleted && !struct.keep) {
+        t.assert(struct.content instanceof Y.ContentDeleted)
+      }
+    })
+  })
+  // still converges with a fresh peer
+  const peer = new Y.Doc()
+  Y.applyUpdate(peer, Y.encodeStateAsUpdate(doc))
+  t.compare(peer.get('array').toArray(), ['a', 'd'])
+}
+
+/**
+ * `gcIdSet` splits structs at the IdSet boundaries, so only the exact referenced content is
+ * collected - the rest of a partially-covered deleted run is preserved.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testGcIdSetPartialRange = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const yarr = doc.get('array')
+  yarr.insert(0, ['a', 'b', 'c', 'd', 'e'])
+  yarr.delete(1, 4) // delete 'b','c','d','e' (clocks 1..4), retained because gc is off
+
+  // collect only the middle of the deleted run: clocks 2..3 ('c', 'd')
+  const ids = d.createIdSet()
+  ids.add(doc.clientID, 2, 2)
+  Y.gcIdSet(doc, ids)
+
+  t.compare(yarr.toArray(), ['a'])
+  // 'b' (clock 1) and 'e' (clock 4) are outside the IdSet -> still retained
+  t.assert(structAt(doc, 1).deleted && structAt(doc, 1).content instanceof Y.ContentAny)
+  t.assert(structAt(doc, 4).deleted && structAt(doc, 4).content instanceof Y.ContentAny)
+  // 'c','d' (clocks 2..3) were inside the IdSet -> collected
+  t.assert(structAt(doc, 2).content instanceof Y.ContentDeleted)
+}
+
+/**
+ * Ids that don't reference collectible content (live content) are skipped.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testGcIdSetSkipsLiveContent = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const yarr = doc.get('array')
+  yarr.insert(0, ['a', 'b', 'c'])
+  yarr.delete(1, 1) // delete only 'b'
+
+  // pass *all* ids (live + deleted); only the deleted one is collectible
+  Y.gcIdSet(doc, Y.createInsertSetFromStructStore(doc.store, false))
+
+  t.compare(yarr.toArray(), ['a', 'c'])
+  t.assert(structAt(doc, 0).content instanceof Y.ContentAny) // 'a' is live -> untouched
+  t.assert(structAt(doc, 2).content instanceof Y.ContentAny) // 'c' is live -> untouched
+  t.assert(structAt(doc, 1).content instanceof Y.ContentDeleted) // 'b' was deleted -> collected
+}
+
+/**
+ * Calling `gcIdSet` twice is a no-op the second time.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testGcIdSetIdempotent = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const yarr = doc.get('array')
+  yarr.insert(0, ['a', 'b', 'c'])
+  yarr.delete(0, 2)
+  const ds = Y.createDeleteSetFromStructStore(doc.store)
+  Y.gcIdSet(doc, ds)
+  const encoded = Y.encodeStateAsUpdate(doc)
+  Y.gcIdSet(doc, ds) // second pass changes nothing
+  t.compare(yarr.toArray(), ['c'])
+  t.compare(Y.encodeStateAsUpdate(doc), encoded)
+}
+
+/**
+ * Items flagged with `keep` (e.g. protected by an UndoManager) are not collected.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testGcIdSetRespectsKeep = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const yarr = doc.get('array')
+  yarr.insert(0, ['a', 'b', 'c'])
+  yarr.delete(1, 1) // delete 'b' (clock 1)
+  structAt(doc, 1).keep = true // protect it from gc
+
+  Y.gcIdSet(doc, Y.createDeleteSetFromStructStore(doc.store))
+
+  // 'b' was kept -> still retained, not collected
+  t.assert(structAt(doc, 1).deleted && structAt(doc, 1).content instanceof Y.ContentAny)
 }

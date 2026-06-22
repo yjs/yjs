@@ -7,7 +7,7 @@ import * as rabin from 'lib0/hash/rabin'
 import * as array from 'lib0/array'
 import * as map from 'lib0/map'
 
-import { iterateStructs, findIndexSS, iterateStructsWithoutSplits } from './transaction-helpers.js'
+import { iterateStructs, findIndexSS, iterateStructsWithoutSplits, tryGc } from './transaction-helpers.js'
 import { UpdateEncoderV2, IdSetEncoderV2 } from './UpdateEncoder.js'
 import { IdSetDecoderV2 } from './UpdateDecoder.js'
 
@@ -367,6 +367,27 @@ export const iterateStructsByIdSet = (transaction, ds, f) =>
         iterateStructs(transaction, structs, del.clock, del.len, f)
       }
     }
+  })
+
+/**
+ * Garbage-collect the deleted content referenced by `ids` on `doc`.
+ *
+ * This is useful to retroactively reclaim memory on a document created with `gc: false`
+ * (e.g. once a snapshot, or an UndoManager StackItem, that referenced this content is no
+ * longer needed) - without enabling gc for the whole document. Ids that reference live
+ * (non-deleted) content, already-collected structs, items flagged with `keep`, or items
+ * rejected by `gcFilter` are skipped.
+ *
+ * @param {Doc} doc
+ * @param {IdSet} ids
+ * @param {function(Item):boolean} [gcFilter]
+ */
+export const gcIdSet = (doc, ids, gcFilter = doc.gcFilter) =>
+  doc.transact(tr => {
+    // Split structs exactly at the IdSet boundaries so that only the referenced content is
+    // collected - an arbitrary IdSet need not align with struct boundaries.
+    iterateStructsByIdSet(tr, ids, () => {})
+    tryGc(tr, ids, gcFilter)
   })
 
 /**
