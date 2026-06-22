@@ -786,6 +786,22 @@ export const readIdSet = decoder => {
 }
 
 /**
+ * @param {IdSet} idSet
+ * @return {Uint8Array<ArrayBuffer>}
+ */
+export const encodeIdSet = idSet => {
+  const encoder = new IdSetEncoderV2()
+  writeIdSet(encoder, idSet)
+  return encoder.toUint8Array()
+}
+
+/**
+ * @param {Uint8Array} data
+ * @return {IdSet}
+ */
+export const decodeIdSet = data => readIdSet(new IdSetDecoderV2(decoding.createDecoder(data)))
+
+/**
  * @todo YDecoder also contains references to String and other Decoders. Would make sense to exchange YDecoder.toUint8Array for YDecoder.DsToUint8Array()..
  */
 
