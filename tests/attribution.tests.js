@@ -423,16 +423,8 @@ const collectTypes = root => {
  *
  * @param {prng.PRNG} gen
  * @param {Y.Type<any>} root
- * @param {boolean} [includeFormat] - include `format` ops. Excluded under a diffing renderer because
- *   *removing* a format from attributed content still desyncs the maintained diff-attributed `delta`.
- *   lib0's `apply` is correct (a valid change exists: `apply(prev, delta.diff(prev, next)) === next`);
- *   the bug is in YJS's `toDelta` change-computation (the ContentFormat formatting-attribution block,
- *   src/ytype.js ~L1076-1166): un-formatting emits an invalid deep change — wrong range, spurious
- *   `{attribution:{format:[…]}}` re-asserts, and no `attribution:{format:null}` clear — instead of the
- *   correct `retain(n, { format: null, attribution: { format: null } })`. Format under the
- *   (unattributed) base renderer is exercised separately (`testRdtDeltaFuzz`).
  */
-const applyRandomYTypeOp = (gen, root, includeFormat = true) => {
+const applyRandomYTypeOp = (gen, root) => {
   const target = prng.oneOf(gen, collectTypes(root))
   switch (prng.int32(gen, 0, 5)) {
     case 0: // insert text
@@ -447,8 +439,8 @@ const applyRandomYTypeOp = (gen, root, includeFormat = true) => {
         target.delete(p, prng.int32(gen, 1, math.min(3, target.length - p)))
       }
       break
-    case 3: // format a range (skipped when format is excluded — see @param includeFormat)
-      if (includeFormat && target.length > 0) {
+    case 3: // format a range (add or remove bold)
+      if (target.length > 0) {
         const p = prng.int32(gen, 0, target.length - 1)
         target.format(p, prng.int32(gen, 1, math.min(3, target.length - p)), { bold: prng.bool(gen) ? true : null })
       }
@@ -498,13 +490,146 @@ export const testRdtDeltaSuggestionConvergence = tc => {
   d0.get('root').useRenderer(Y.createDiffRenderer(Y.cloneDoc(d0), d0))
   d1.get('root').useRenderer(Y.createDiffRenderer(Y.cloneDoc(d1), d1))
   for (let i = 0; i < 300; i++) {
-    applyRandomYTypeOp(tc.prng, prng.oneOf(tc.prng, users).get('root'), false) // exclude format (lib0 apply bug)
+    applyRandomYTypeOp(tc.prng, prng.oneOf(tc.prng, users).get('root')) // includes format add/remove
     testConnector.flushAllMessages()
     const a = d0.get('root').delta
     const b = d1.get('root').delta
     t.assert(a.equals(b), `converge iter ${i}`) // the suggestion view is replica-independent
     t.assert(a.equals(d0.get('root').toDelta({ deep: true })), `canonical iter ${i}`) // and matches a fresh render
   }
+}
+
+/**
+ * Regression (deterministic, seed 1): removing a format under a diffing renderer must keep the
+ * incrementally-maintained `.delta` equal to a fresh `toDelta({ deep: true })`. The bug was in the
+ * `ContentFormat` change-mode block of `toDelta` (src/ytype.js): un-formatting cleared the format
+ * *value* but emitted only a context-skip for the format-*attribution*, so the maintained cache kept
+ * a stale `{attribution:{format:{bold:[]}}}` on the un-formatted range and drifted (at iter 35). The
+ * fix emits an explicit `attribution:{format:{<key>:null}}` clear on the retained range (only in a
+ * change/diff render). This test pins that behavior; if it regresses, the drift reappears at iter 35.
+ */
+export const testRdtFormatRemovalDrift = () => {
+  const gen = prng.create(1) // fixed seed → deterministic
+  const docs = [new Y.Doc(), new Y.Doc()]
+  const [d0, d1] = docs
+  const sync = () => {
+    Y.applyUpdate(d1, Y.encodeStateAsUpdate(d0, Y.encodeStateVector(d1)))
+    Y.applyUpdate(d0, Y.encodeStateAsUpdate(d1, Y.encodeStateVector(d0)))
+  }
+  d0.get('root').insert(0, 'shared baseline content')
+  sync()
+  // each replica diffs against its own fixed baseline clone
+  d0.get('root').useRenderer(Y.createDiffRenderer(Y.cloneDoc(d0), d0))
+  d1.get('root').useRenderer(Y.createDiffRenderer(Y.cloneDoc(d1), d1))
+  for (let i = 0; i < 40; i++) {
+    applyRandomYTypeOp(gen, prng.oneOf(gen, docs).get('root'))
+    sync()
+    // read `.delta` every step so it is maintained incrementally (a single read at the end would
+    // recompute fresh and hide the drift). The maintained delta MUST equal a fresh deep render.
+    const cached = d0.get('root').delta
+    const fresh = d0.get('root').toDelta({ deep: true })
+    if (!cached.equals(fresh)) {
+      console.error('iter ' + i + ' cached :', JSON.stringify(cached.toJSON()))
+      console.error('iter ' + i + ' toDelta:', JSON.stringify(fresh.toJSON()))
+    }
+    t.assert(cached.equals(fresh), `iter ${i}: maintained .delta drifted from toDelta({ deep: true })`)
+  }
+}
+
+/**
+ * Regression (minimal, deterministic, no prng): re-bolding content by deleting a transient `bold:null`
+ * marker under a diffing renderer must keep the maintained `delta` equal to a fresh deep render.
+ *
+ * Steps: bold all of "abcdef", un-bold "cd" (inserts a `bold:null` marker), then re-bold "cd" (which
+ * DELETES that marker). The deleted marker surfaces `attrs == null` in the change render, so the
+ * attribution context must be *preserved* (not cleared) for the re-bolded run; a fresh render sees the
+ * resulting attributed `bold:true` marker and renders `{format:{bold:[]}}`, so the cache must match:
+ *
+ *   .delta == toDelta({deep}) == "abcdef"{bold, attr:{format:{bold:[]}}}
+ */
+export const testRdtFormatRebold = () => {
+  const doc = new Y.Doc()
+  const root = doc.get('root')
+  root.insert(0, 'abcdef')
+  // diff against a baseline taken BEFORE formatting => every format change is an attributed suggestion
+  root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc))
+  void root.delta // first access starts maintaining the incremental cache
+  root.format(0, 6, { bold: true }) // all bold
+  root.format(2, 2, { bold: null }) // un-bold "cd" (inserts a transient bold:null marker)
+  root.format(2, 2, { bold: true }) // re-bold "cd" => DELETES that transient marker
+  const cached = root.delta
+  const fresh = root.toDelta({ deep: true })
+  if (!cached.equals(fresh)) {
+    console.error('rebold cached :', JSON.stringify(cached.toJSON()))
+    console.error('rebold toDelta:', JSON.stringify(fresh.toJSON()))
+  }
+  t.assert(cached.equals(fresh), 'maintained .delta drifted from toDelta({ deep: true }) after re-bold')
+}
+
+/**
+ * FAILING (known bug — minimal, deterministic, no prng): inserting an embed (nested `Y.Type`) into a
+ * bold run leaves a spurious `attribution:{format:{bold:null}}` null-leaf on the embed in the
+ * maintained `delta`, where a fresh deep render has none.
+ *
+ * Two ops: bold "ab", then insert an embed between "a" and "b". Inserting into a formatted run makes
+ * Yjs surround the embed with NEGATED markers (`[bold:null] <embed> [bold:true]`) so the embed is not
+ * bold. In the change render of that insert, the new `bold:null` negation marker triggers the
+ * format-attribution clear (a `null` leaf), and because the embed is a FRESH renderContent insert it
+ * inherits that leaf — but unlike a text insert the null-leaf does NOT resolve away for a `ContentType`
+ * (embed) insert, so it sticks in the cache. A full render (insert mode) never emits the leaf:
+ *
+ *   maintained .delta : "a"{bold,attr} | <embed>{attr:{format:{bold:null}, insert:[]}} | "b"{bold,attr}
+ *   toDelta({deep})   : "a"{bold,attr} | <embed>{attr:{insert:[]}}                      | "b"{bold,attr}
+ *
+ * Root cause: the single `usedAttribution` context can't distinguish inserts (need absolute attribution,
+ * no null-leaves) from retains (need the null-leaf clear) — the value dimension already splits these
+ * (`currentAttributes` for inserts vs `changedAttributes` for retains); the attribution dimension does
+ * not. (Note: a *third* op `format(1,1,{bold:null})` to un-bold the embed is a no-op — the embed is
+ * already not bold — so it produces an empty transaction and fires no `'delta'` event.)
+ */
+export const testRdtFormatEmbedInBold = () => {
+  const doc = new Y.Doc()
+  const root = doc.get('root')
+  root.insert(0, 'ab')
+  root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc))
+  void root.delta // first access starts maintaining the incremental cache
+  root.format(0, 2, { bold: true }) // bold "ab"
+  root.insert(1, [new Y.Type()]) // insert an embed inside the bold run: "a<T>b"
+  const cached = root.delta
+  const fresh = root.toDelta({ deep: true })
+  if (!cached.equals(fresh)) {
+    console.error('embed-in-bold cached :', JSON.stringify(cached.toJSON()))
+    console.error('embed-in-bold toDelta:', JSON.stringify(fresh.toJSON()))
+  }
+  t.assert(cached.equals(fresh), 'maintained .delta drifted from toDelta({ deep: true }) after embed-in-bold insert')
+}
+
+/**
+ * FAILING (known bug — minimal, deterministic, no prng): formatting a char and then deleting it under a
+ * diffing renderer leaves the maintained `delta` with a stale bold value + `{format:{bold:[]}}` attribution
+ * on the deleted char, where a fresh deep render keeps only the `{delete:[]}` suggestion.
+ *
+ *   maintained .delta : "a" { format:{bold:true}, attribution:{ format:{bold:[]}, delete:[] } }
+ *   toDelta({deep})   : "a" { attribution:{ delete:[] } }
+ *
+ * This is the remaining stale-`{format:{bold:[]}}`-on-wrong-content (re-assert) class, distinct from the
+ * (fixed) `{format:{bold:null}}` null-leaf.
+ */
+export const testRdtFormatDeleteFormatted = () => {
+  const doc = new Y.Doc()
+  const root = doc.get('root')
+  root.insert(0, 'a')
+  root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc)) // baseline before formatting
+  void root.delta // start maintaining the incremental cache
+  root.format(0, 1, { bold: true }) // bold "a"
+  root.delete(0, 1) // delete "a"
+  const cached = root.delta
+  const fresh = root.toDelta({ deep: true })
+  if (!cached.equals(fresh)) {
+    console.error('delete-formatted cached :', JSON.stringify(cached.toJSON()))
+    console.error('delete-formatted toDelta:', JSON.stringify(fresh.toJSON()))
+  }
+  t.assert(cached.equals(fresh), 'maintained .delta drifted from toDelta({ deep: true }) after format+delete')
 }
 
 /**

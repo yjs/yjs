@@ -1146,11 +1146,26 @@ export class YType extends ObservableV2 {
                  * @type {Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
-                const changedAttributedAttributes = /** @type {{ [key: string]: Array<any> }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
-                if (attribution == null || equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)) {
+                const changedAttributedAttributes = /** @type {{ [key: string]: Array<any>|null }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
+                const sameAsPreviousAttributions = equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)
+                if (attribution == null && !sameAsPreviousAttributions) {
+                  // skip
+                } else if (attribution == null || sameAsPreviousAttributions) {
                   // an unattributed formatting attribute was found or an attributed formatting
-                  // attribute was found that resets to the previous status
-                  delete changedAttributedAttributes[key]
+                  // attribute was found that resets to the previous status. When this format item is
+                  // itself rendered this transaction (`renderContent || renderDelete`) in a change/diff
+                  // render (`itemsToRender != null`), it is the END of an attributed format range:
+                  // emit an explicit clear (a `null` leaf) so the retained content drops any stale
+                  // `{ format: { [key]: [] } }` from the maintained `delta` cache — a bare context-skip
+                  // (`delete`) would leave it in place. For a merely-retained (unchanged) boundary, or a
+                  // full insert render (removal is already modeled as absence in `currentAttributes`),
+                  // just drop the key: a change render must not emit ops for unchanged ranges, and
+                  // inserts must stay free of a spurious `{ format: { [key]: null } }`.
+                  if (attribution != null && itemsToRender != null && (renderContent || renderDelete)) {
+                    changedAttributedAttributes[key] = null
+                  } else {
+                    delete changedAttributedAttributes[key]
+                  }
                   delete previousUnattributedAttributes[key]
                 } else {
                   const by = changedAttributedAttributes[key] = (changedAttributedAttributes[key]?.slice() ?? [])
