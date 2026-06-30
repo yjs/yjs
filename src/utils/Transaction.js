@@ -236,16 +236,28 @@ const cleanupTransactions = (transactionCleanups, i) => {
         })
       )
       fs.push(() => {
-        // deep observe events
+        // deep observe events + the RDT `'delta'` channel. `changedParentTypes` holds the changed
+        // type AND all of its ancestors, so both `observeDeep` and `'delta'` bubble identically.
         transaction.changedParentTypes.forEach((events, type) => {
           // We need to think about the possibility that the user transforms the
           // Y.Doc in the event.
-          if (type._dEH.l.length > 0 && (type._item === null || !type._item.deleted)) {
-            /**
-             * @type {YEvent<any>}
-             */
-            const deepEventHandler = events.find(event => event.target === type) || new YEvent(type, transaction, new Set(null))
+          if (type._item !== null && type._item.deleted) return
+          const hasDeep = type._dEH.l.length > 0
+          const hasDeltaListeners = (type._observers.get('delta')?.size ?? 0) > 0
+          const maintaining = type._delta !== null
+          if (!hasDeep && !hasDeltaListeners && !maintaining) return
+          /**
+           * @type {YEvent<any>}
+           */
+          const deepEventHandler = events.find(event => event.target === type) || new YEvent(type, transaction, new Set(null))
+          if (hasDeep) {
             callEventHandlerListeners(type._dEH, deepEventHandler, transaction)
+          }
+          if (hasDeltaListeners || maintaining) {
+            // the type-rooted deep delta of this transaction (a nested `modify` chain for ancestors)
+            const change = /** @type {any} */ (deepEventHandler.getDelta({ renderer: type._renderer, deep: true }).done())
+            type._delta?.apply(change) // keep the cache current (incl. ancestors and diff-renderer attributions)
+            if (hasDeltaListeners) type.emit('delta', [change])
           }
         })
       })

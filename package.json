@@ -71,7 +71,7 @@
   },
   "homepage": "https://docs.yjs.dev",
   "dependencies": {
-    "lib0": "^1.0.0-rc.15"
+    "lib0": "file:../lib0"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",
@@ -79,7 +79,7 @@
     "@y/y": ".",
     "dpdm": "^4.0.1",
     "markdownlint": "^0.40.0",
-    "markdownlint-cli": "^0.43.0",
+    "markdownlint-cli": "^0.49.0",
     "standard": "^17.1.2",
     "typescript": "^5.9.3"
   },

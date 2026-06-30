@@ -226,6 +226,9 @@ export class Doc extends ObservableV2 {
    */
   destroy () {
     this.isDestroyed = true
+    // Tear down the top-level shared types as RDTs (emits their `'destroy'` event so any bindings
+    // unsubscribe). Only top-level types are destroyed here; nested child types are not recursed.
+    this.share.forEach(type => type.destroy())
     array.from(this.subdocs).forEach(subdoc => subdoc.destroy())
     const item = this._item
     if (item !== null) {

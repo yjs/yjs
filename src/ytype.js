@@ -10,6 +10,7 @@ import * as math from 'lib0/math'
 import * as object from 'lib0/object'
 import * as s from 'lib0/schema'
 import * as traits from 'lib0/traits'
+import { ObservableV2 } from 'lib0/observable'
 import {
   Item,
   ContentAny,
@@ -50,11 +51,12 @@ const maxSearchMarker = 80
  * @todo SHOULD NOT RETURN AN OBJECT!
  * @param {Array<ContentAttribute<any>>?} attrs
  * @param {boolean} deleted - whether the attributed item is deleted
- * @return {Attribution?}
+ * @return {Attribution|undefined} `undefined` when there is no attribution — under lib0's tri-state
+ * that means "skip / inherit the builder's attribution context" (NOT `null`, which would clear it).
  */
 export const createAttributionFromAttributionItems = (attrs, deleted) => {
   if (attrs == null) {
-    return null
+    return undefined
   }
   /**
    * @type {Attribution}
@@ -631,14 +633,25 @@ export const callTypeObservers = (type, transaction, event) => {
 }
 
 /**
- * Abstract Yjs Type class
+ * Abstract Yjs Type class.
+ *
+ * A `YType` is a {@link https://github.com/dmonad/lib0 lib0} `RDT` ("replicated data type", see
+ * `lib0/delta/rdt.js`): it emits a `'delta'` event whenever its state changes, accepts foreign
+ * changes via {@link YType#applyDelta}, exposes its delta {@link YType#$delta schema}, and can be
+ * torn down via {@link YType#destroy}. This lets a `YType` be `bind()`-ed to any other RDT (another
+ * `YType`, an in-memory delta, a DOM subtree, …). The legacy {@link YType#observe `observe`} /
+ * {@link YType#observeDeep `observeDeep`} `YEvent` API continues to work alongside the `'delta'`
+ * channel.
+ *
  * @template {delta.DeltaConf} [DConf=any]
+ * @extends {ObservableV2<{ delta: (delta: delta.Delta<DConf>) => void, destroy: (type: YType<DConf>) => void }>}
  */
-export class YType {
+export class YType extends ObservableV2 {
   /**
    * @param {delta.DeltaConfGetName<DConf>?} name
    */
   constructor (name = null) {
+    super()
     /**
      * @type {delta.DeltaConfGetName<DConf>}
      */
@@ -675,10 +688,12 @@ export class YType {
      */
     this._searchMarker = null
     /**
-     * @type {delta.DeltaBuilder<DConf>}
-     * @private
+     * Maintained deep-delta cache backing {@link YType#delta}. `null` until `delta` is first
+     * accessed; thereafter kept current on every event of this type (incrementally, by applying the
+     * deep change) and re-diffed by {@link YType#useRenderer}. Cleared by {@link YType#clearCache}.
+     * @type {delta.DeltaBuilderAny | null}
      */
-    this._content = /** @type {delta.DeltaBuilderAny} */ (delta.create())
+    this._delta = null
     this._legacyTypeRef = this.name == null ? YXmlFragmentRefID : YXmlElementRefID
     /**
      * @type {Array<ArraySearchMarker>|null}
@@ -689,6 +704,105 @@ export class YType {
      * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
      */
     this._hasFormatting = false
+    /**
+     * The active default renderer. Used by `toDelta`, `applyDelta`, and the events whenever no
+     * explicit renderer is passed. Change it via {@link YType#useRenderer}.
+     * @type {AbstractRenderer}
+     */
+    this._renderer = baseRenderer
+  }
+
+  /**
+   * Schema of the deltas this type produces — part of the lib0 `RDT` interface.
+   *
+   * @type {s.Schema<delta.Delta<DConf>>}
+   */
+  get $delta () {
+    return /** @type {any} */ (delta.$deltaAny)
+  }
+
+  /**
+   * The deep delta of this type (the full nested content tree, children rendered as their own
+   * deltas).
+   *
+   * The returned value is the type's **live** maintained cache: it is materialized on first access
+   * and then kept current on every event fired on this type (and re-diffed by
+   * {@link YType#useRenderer}), so a reference held across edits keeps updating in place. Clone it
+   * (e.g. `type.delta.clone()`) if you need a stable snapshot, and call {@link YType#clearCache} to
+   * drop the cache.
+   *
+   * @type {delta.Delta<DConf>}
+   */
+  get delta () {
+    if (this._delta === null) {
+      this._delta = this._renderDelta()
+    }
+    return /** @type {any} */ (this._delta)
+  }
+
+  /**
+   * Render the full deep current state into a fresh `isFinal` builder (so subsequent `.apply`s of
+   * deep changes update content in place). Uses this type's active renderer.
+   *
+   * @return {delta.DeltaBuilderAny}
+   */
+  _renderDelta () {
+    const state = /** @type {delta.DeltaBuilderAny} */ (delta.create(this.name))
+    state.isFinal = true
+    state.apply(this.toDelta({ deep: true }))
+    return state
+  }
+
+  /**
+   * Discard the cached deep delta backing {@link YType#delta}.
+   *
+   * After `delta` is first accessed, the cache is updated on every event fired on this type (and
+   * re-diffed by {@link YType#useRenderer}). Call this to drop it — e.g. to reclaim memory, or to
+   * force an exact recomputation after editing while a non-base renderer is active (the incremental
+   * updates can drift from a fresh deep render in that case).
+   */
+  clearCache () {
+    this._delta = null
+  }
+
+  /**
+   * Change the default renderer used by this type. After calling `useRenderer(renderer)`, the
+   * `toDelta`, `applyDelta`, and event methods all use `renderer` whenever no explicit renderer is
+   * passed (an explicit `{ renderer }` argument still overrides it per call).
+   *
+   * If the deep-delta cache ({@link YType#delta}) is being maintained, or a `'delta'` listener is
+   * attached, the content is re-rendered with the new renderer and the difference is emitted on the
+   * `'delta'` channel only (a renderer switch is not a CRDT change, so no `YEvent` is produced).
+   *
+   * @param {AbstractRenderer} renderer
+   * @return {this}
+   */
+  useRenderer (renderer) {
+    const prev = this._renderer
+    const hasDeltaListeners = (this._observers.get('delta')?.size ?? 0) > 0
+    if (renderer !== prev && (this._delta !== null || hasDeltaListeners)) {
+      const oldState = this._delta ?? this._renderDelta()
+      this._renderer = renderer
+      const newState = this._renderDelta()
+      if (this._delta !== null) this._delta = newState
+      if (hasDeltaListeners) {
+        const d = /** @type {any} */ (delta.diff(/** @type {any} */ (oldState), /** @type {any} */ (newState)))
+        if (!d.isEmpty()) this.emit('delta', [d])
+      }
+    } else {
+      this._renderer = renderer
+    }
+    return this
+  }
+
+  /**
+   * Tear down this type as an `RDT`: emit the `'destroy'` event and unregister all `'delta'` /
+   * `'destroy'` listeners. The CRDT content and the `observe`/`observeDeep` handlers are left
+   * untouched — this only releases the RDT/binding observers.
+   */
+  destroy () {
+    this.emit('destroy', [this])
+    super.destroy()
   }
 
   /**
@@ -760,6 +874,9 @@ export class YType {
   _callObserver (transaction, parentSubs) {
     const event = new YEvent(/** @type {any} */ (this), transaction, parentSubs)
     callTypeObservers(/** @type {any} */ (this), transaction, event)
+    // Note: the RDT `'delta'` channel (and the deep-delta cache) is driven in the transaction
+    // cleanup's `changedParentTypes` loop (see Transaction.js) so it bubbles to ancestors like
+    // `observeDeep`, not here where only the directly-changed type is visible.
     if (!transaction.local && this._searchMarker) {
       this._searchMarker.length = 0
     }
@@ -821,7 +938,7 @@ export class YType {
    * @template {boolean} [Deep=false]
    *
    * @param {Object} [opts]
-   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to this type's active renderer (see {@link YType#useRenderer}), i.e. `baseRenderer` unless changed
    * @param {IdSet?} [opts.itemsToRender]
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
@@ -833,7 +950,7 @@ export class YType {
    * @public
    */
   toDelta (opts = {}) {
-    const { renderer = baseRenderer, itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, deep = false } = opts
+    const { renderer = this._renderer, itemsToRender = null, retainInserts = false, retainDeletes = false, deletedItems = null, deep = false } = opts
     const { modified = (deep && itemsToRender) ? computeModifiedFromItems(/** @type {Doc} */ (this.doc).store, itemsToRender) : null } = opts
     const renderAttrs = modified?.get(this) || null
     const renderChildren = modified == null || !modified.has(this) || /** @type {Set<string|null>} */ (modified.get(this)).has(null)
@@ -901,7 +1018,7 @@ export class YType {
           const renderDelete = c.render && c.deleted
           // existing content that should be retained, only adding changed attributes
           const retainContent = !c.render && (!c.deleted || c.attrs != null)
-          const attribution = (renderContent || c.content.constructor === ContentFormat) ? createAttributionFromAttributionItems(c.attrs, c.deleted) : null
+          const attribution = (renderContent || c.content.constructor === ContentFormat) ? createAttributionFromAttributionItems(c.attrs, c.deleted) : undefined
           switch (c.content.constructor) {
             case ContentDeleted: {
               if (renderDelete) d.delete(c.content.getLength())
@@ -912,9 +1029,11 @@ export class YType {
                 d.usedAttributes = currentAttributes
                 usingCurrentAttributes = true
                 if (c.deleted ? retainDeletes : retainInserts) {
-                  d.retain(/** @type {ContentString} */ (c.content).str.length, null, attribution ?? {})
+                  // change render: a retained item with no attribution means its attribution was
+                  // removed → emit `null` (clear) rather than `{}` (skip). Present attribution merges.
+                  d.retain(/** @type {ContentString} */ (c.content).str.length, undefined, attribution ?? null)
                 } else {
-                  d.insert(/** @type {ContentString} */ (c.content).str, null, attribution)
+                  d.insert(/** @type {ContentString} */ (c.content).str, undefined, attribution)
                 }
               } else if (renderDelete) {
                 d.delete(c.content.getLength())
@@ -935,14 +1054,14 @@ export class YType {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   if (c.deleted && c.content.constructor === ContentType) {
                     // @todo use current transaction instead
-                    d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll), null, attribution ?? {})
+                    d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll), undefined, attribution ?? null)
                   } else {
-                    d.retain(c.content.getLength(), null, attribution ?? {})
+                    d.retain(c.content.getLength(), undefined, attribution ?? null)
                   }
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], null, attribution)
+                  d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], undefined, attribution)
                 } else {
-                  d.insert(c.content.getContent(), null, attribution)
+                  d.insert(c.content.getContent(), undefined, attribution)
                 }
               } else if (renderDelete) {
                 d.delete(1)
@@ -1061,7 +1180,7 @@ export class YType {
    * attributions.
    *
    * @param {Object} [opts]
-   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to this type's active renderer (see {@link YType#useRenderer}), i.e. `baseRenderer` unless changed
    * @return {delta.Delta<DConf>}
    */
   toDeltaDeep (opts = {}) {
@@ -1073,11 +1192,14 @@ export class YType {
    *
    * @param {delta.DeltaAny} d The changes to apply on this element.
    * @param {Object} [opts]
-   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to this type's active renderer (see {@link YType#useRenderer}), i.e. `baseRenderer` unless changed
+   * @return {null} The lib0 `RDT` "fix" of this apply — always `null`: a `YType` accepts every valid
+   * delta as-is and never needs to self-correct.
    *
    * @public
    */
-  applyDelta (d, { renderer = baseRenderer } = {}) {
+  applyDelta (d, { renderer = this._renderer } = {}) {
+    if (d.isEmpty()) return null
     if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
     } else if (this._item?.deleted !== true) {
@@ -1118,7 +1240,7 @@ export class YType {
         }
       })
     }
-    return this
+    return null
   }
 
   /**
@@ -1922,25 +2044,26 @@ export const typeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
      */
     const cs = []
     renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-    const { deleted, attrs, content, render } = cs[cs.length - 1]
-    if (!render) return
+    if (cs.length === 0) return // the renderer surfaces nothing for this attribute (e.g. a diff renderer hiding an unchanged delete)
+    const { deleted, attrs, content } = cs[cs.length - 1]
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     let c = array.last(content.getContent())
     if (deleted) {
-      if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
-        if (attribution != null) {
-          // Item surfaced under attribution (suggestion view / diff AM,
-          // either in snapshot mode or in an event-driven render). The
-          // attribute is still observable in the rendered state, so emit
-          // a positive `SetAttrOp` carrying the attribution metadata -
-          // matching how content children are rendered for the same case
-          // (positive `InsertOp` with attribution, never `DeleteOp`).
+      if (attribution != null) {
+        // Item surfaced under attribution (suggestion view / diff renderer, either in snapshot mode
+        // or in an event-driven render). The attribute is still observable in the rendered state, so
+        // emit a positive `SetAttrOp` carrying the attribution metadata - matching how content
+        // children are rendered for the same case (positive `InsertOp` with attribution, never
+        // `DeleteOp`).
+        if (itemsToRender == null || itemsToRender.hasId(item.lastId)) {
           d.setAttr(key, c, attribution)
-        } else {
-          // Hard-deleted attribute (no AM-surfaced attribution): emit the
-          // change op so event consumers can apply it.
-          d.deleteAttr(key, attribution, c)
         }
+      } else if (itemsToRender != null && itemsToRender.hasId(item.lastId)) {
+        // Hard-deleted attribute within a change render: emit the `deleteAttr` op so consumers (the
+        // `YEvent` delta, RDT bindings, the maintained `delta` cache) can apply the removal. In
+        // full-state mode (`itemsToRender == null`) the attribute is simply omitted (above renders
+        // run with `render === false` for such items, so nothing was emitted before either).
+        d.deleteAttr(key, attribution, c)
       }
     } else if (deep && c instanceof YType && modified?.has(c)) {
       d.modifyAttr(key, c.toDelta(opts))

@@ -86,13 +86,13 @@ export class YEvent {
   /**
    * @template {boolean} [Deep=false]
    * @param {object} [opts]
-   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to `baseRenderer`
+   * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to the target type's active renderer (see {@link YType#useRenderer}), i.e. `baseRenderer` unless changed
    * @param {Deep} [opts.deep]
    * @return {Deep extends true ? Delta<DConf> : Delta<import('../ytype.js').DeltaConfDeltaToYType<DConf>>} The Delta representation of this type.
    *
    * @public
    */
-  getDelta ({ renderer = baseRenderer, deep } = {}) {
+  getDelta ({ renderer = this.target._renderer, deep } = {}) {
     const itemsToRender = mergeIdSets([diffIdSet(this.transaction.insertSet, this.transaction.deleteSet), diffIdSet(this.transaction.deleteSet, this.transaction.insertSet)])
     /**
      * @todo this should be done only one in the transaction step
