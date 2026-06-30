@@ -605,15 +605,19 @@ export const testRdtFormatEmbedInBold = () => {
 }
 
 /**
- * FAILING (known bug — minimal, deterministic, no prng): formatting a char and then deleting it under a
- * diffing renderer leaves the maintained `delta` with a stale bold value + `{format:{bold:[]}}` attribution
- * on the deleted char, where a fresh deep render keeps only the `{delete:[]}` suggestion.
+ * Regression (minimal, deterministic, no prng): formatting a char and then deleting it under a diffing
+ * renderer used to leave the maintained `delta` with a stale bold value + `{format:{bold:[]}}`
+ * attribution on the deleted char, where a fresh deep render keeps only the `{delete:[]}` suggestion.
  *
- *   maintained .delta : "a" { format:{bold:true}, attribution:{ format:{bold:[]}, delete:[] } }
- *   toDelta({deep})   : "a" { attribution:{ delete:[] } }
+ *   maintained .delta : "a" { format:{bold:true}, attribution:{ format:{bold:[]}, delete:[] } }  (was)
+ *   toDelta({deep})   : "a" { attribution:{ delete:[] } }                                        (correct)
  *
- * This is the remaining stale-`{format:{bold:[]}}`-on-wrong-content (re-assert) class, distinct from the
- * (fixed) `{format:{bold:null}}` null-leaf.
+ * On delete, the format markers around the char are cleaned up (deleted) too; their insert+delete
+ * suggestion nets to no attribution, so the change render skipped them and never undid the value +
+ * attribution the format step had written to the cache. The fix (in `toDelta`): a retain emits the
+ * format *diff* (`changedAttributes`, which carries the `bold→null` clear), and a deleted format marker
+ * that actually removes a format under an attributing renderer emits an explicit `{format:{<key>:null}}`
+ * attribution clear. This was the stale-`{format:{bold:[]}}`-on-deleted-content (re-assert) class.
  */
 export const testRdtFormatDeleteFormatted = () => {
   const doc = new Y.Doc()

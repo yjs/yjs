@@ -1026,13 +1026,19 @@ export class YType extends ObservableV2 {
             }
             case ContentString:
               if (renderContent) {
-                d.usedAttributes = currentAttributes
-                usingCurrentAttributes = true
                 if (c.deleted ? retainDeletes : retainInserts) {
+                  // a retain expresses the format *diff* against existing (cached) content, so use
+                  // `changedAttributes`: a format removed this change (e.g. its marker was deleted)
+                  // is present there as a `null` clear, whereas `currentAttributes` (absolute) can
+                  // only re-assert present formats and would silently keep a stale one.
+                  d.usedAttributes = changedAttributes
+                  usingChangedAttributes = true
                   // change render: a retained item with no attribution means its attribution was
                   // removed → emit `null` (clear) rather than `{}` (skip). Present attribution merges.
                   d.retain(/** @type {ContentString} */ (c.content).str.length, undefined, attribution ?? null)
                 } else {
+                  d.usedAttributes = currentAttributes
+                  usingCurrentAttributes = true
                   d.insert(/** @type {ContentString} */ (c.content).str, undefined, attribution)
                 }
               } else if (renderDelete) {
@@ -1049,9 +1055,10 @@ export class YType extends ObservableV2 {
             case ContentType:
             case ContentBinary:
               if (renderContent) {
-                d.usedAttributes = currentAttributes
-                usingCurrentAttributes = true
                 if (c.deleted ? retainDeletes : retainInserts) {
+                  // a retain expresses the format *diff* → use `changedAttributes` (see ContentString)
+                  d.usedAttributes = changedAttributes
+                  usingChangedAttributes = true
                   if (c.deleted && c.content.constructor === ContentType) {
                     // @todo use current transaction instead
                     d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll), undefined, attribution ?? null)
@@ -1059,8 +1066,12 @@ export class YType extends ObservableV2 {
                     d.retain(c.content.getLength(), undefined, attribution ?? null)
                   }
                 } else if (deep && c.content.constructor === ContentType) {
+                  d.usedAttributes = currentAttributes
+                  usingCurrentAttributes = true
                   d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], undefined, attribution)
                 } else {
+                  d.usedAttributes = currentAttributes
+                  usingCurrentAttributes = true
                   d.insert(c.content.getContent(), undefined, attribution)
                 }
               } else if (renderDelete) {
@@ -1141,14 +1152,28 @@ export class YType extends ObservableV2 {
                 previousAttributes[key] = value
               }
               // # Update Attributions
-              if (attribution != null || object.hasProperty(previousUnattributedAttributes, key)) {
+              // A format marker deleted in a change render under an *attributing* renderer nets to no
+              // attribution (its insert+delete suggestion cancels → `attribution == null`), yet it ends
+              // the attributed range it opened: the following retained content must drop the stale
+              // `{ format: { [key]: [] } }` the marker's insertion wrote to the cache. Emit an explicit
+              // `null` leaf for the key (a context-wide `useAttribution(null)` cannot carry a per-key
+              // clear). Conditions: only an attributing render (`renderer !== baseRenderer`; the base
+              // renderer has no attributions to clear), and only when the deletion actually *removes*
+              // the format — i.e. it reverts to no value (`currAttrVal == null`). If it reverts to a
+              // still-present surrounding value (e.g. deleting a `bold:null` marker re-exposes an
+              // enclosing attributed `bold:true`, as when re-bolding), the attribution is preserved.
+              const isDeletedFormatClear = attribution == null && renderer !== baseRenderer && renderDelete && c.deleted && itemsToRender != null && currAttrVal == null && !equalAttrs(value, currAttrVal)
+              if (attribution != null || isDeletedFormatClear || object.hasProperty(previousUnattributedAttributes, key)) {
                 /**
                  * @type {Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
                 const changedAttributedAttributes = /** @type {{ [key: string]: Array<any>|null }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
                 const sameAsPreviousAttributions = equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)
-                if (attribution == null && !sameAsPreviousAttributions) {
+                if (isDeletedFormatClear) {
+                  changedAttributedAttributes[key] = null
+                  delete previousUnattributedAttributes[key]
+                } else if (attribution == null && !sameAsPreviousAttributions) {
                   // skip
                 } else if (attribution == null || sameAsPreviousAttributions) {
                   // an unattributed formatting attribute was found or an attributed formatting
@@ -1175,8 +1200,8 @@ export class YType extends ObservableV2 {
                 }
                 if (object.isEmpty(changedAttributedAttributes)) {
                   d.useAttribution(null)
-                } else if (attribution != null) {
-                  const attributedAt = (c.deleted ? attribution.deleteAt : attribution.insertAt)
+                } else if (attribution != null || isDeletedFormatClear) {
+                  const attributedAt = (c.deleted ? attribution?.deleteAt : attribution?.insertAt)
                   if (attributedAt != null) formattingAttribution.formatAt = attributedAt
                   d.useAttribution(formattingAttribution)
                 }
