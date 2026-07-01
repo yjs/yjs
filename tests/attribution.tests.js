@@ -553,7 +553,8 @@ export const testRdtFormatRebold = () => {
   root.insert(0, 'abcdef')
   // diff against a baseline taken BEFORE formatting => every format change is an attributed suggestion
   root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc))
-  void root.delta // first access starts maintaining the incremental cache
+  // first access starts maintaining the incremental cache (baseline == current, so no suggestions yet)
+  t.assert(root.delta.equals(delta.create().insert('abcdef').done()))
   root.format(0, 6, { bold: true }) // all bold
   root.format(2, 2, { bold: null }) // un-bold "cd" (inserts a transient bold:null marker)
   root.format(2, 2, { bold: true }) // re-bold "cd" => DELETES that transient marker
@@ -592,7 +593,8 @@ export const testRdtFormatEmbedInBold = () => {
   const root = doc.get('root')
   root.insert(0, 'ab')
   root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc))
-  void root.delta // first access starts maintaining the incremental cache
+  // first access starts maintaining the incremental cache (baseline == current, so no suggestions yet)
+  t.assert(root.delta.equals(delta.create().insert('ab').done()))
   root.format(0, 2, { bold: true }) // bold "ab"
   root.insert(1, [new Y.Type()]) // insert an embed inside the bold run: "a<T>b"
   const cached = root.delta
@@ -624,7 +626,8 @@ export const testRdtFormatDeleteFormatted = () => {
   const root = doc.get('root')
   root.insert(0, 'a')
   root.useRenderer(Y.createDiffRenderer(Y.cloneDoc(doc), doc)) // baseline before formatting
-  void root.delta // start maintaining the incremental cache
+  // start maintaining the incremental cache (baseline == current, so no suggestions yet)
+  t.assert(root.delta.equals(delta.create().insert('a').done()))
   root.format(0, 1, { bold: true }) // bold "a"
   root.delete(0, 1) // delete "a"
   const cached = root.delta
