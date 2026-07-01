@@ -1,4 +1,5 @@
 import * as math from 'lib0/math'
+import * as object from 'lib0/object'
 import * as error from 'lib0/error'
 import * as map from 'lib0/map'
 import * as set from 'lib0/set'
@@ -9,6 +10,13 @@ import { createID } from './ID.js'
  * These modules don't require any imports.
  * These helpers are used by items to integrate themselves
  */
+
+/**
+ * @param {any} a
+ * @param {any} b
+ * @return {boolean}
+ */
+export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
  * Perform a binary search on a sorted array
@@ -389,12 +397,16 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
       if (content.getRef() === 6) { // is ContentFormat
         const { key, value } = /** @type {ContentFormat} */ (content)
         const startAttrValue = startAttributes.get(key) ?? null
-        if (endFormats.get(key) !== content || startAttrValue === value) {
+        if (endFormats.get(key) !== content || equalAttrs(startAttrValue, value)) {
           // Either this format is overwritten or it is not necessary because the attribute already existed.
           start.delete(transaction)
           transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
           cleanups++
-          if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
+          if (
+            !reachedCurr &&
+            equalAttrs((currAttributes.get(key) ?? null), value) &&
+            !equalAttrs(startAttrValue, value)
+          ) {
             if (startAttrValue === null) {
               currAttributes.delete(key)
             } else {
