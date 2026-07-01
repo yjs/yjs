@@ -12,7 +12,7 @@ import { GC } from '../structs/GC.js'
 import { YEvent } from './YEvent.js'
 import { writeUpdateMessageFromTransaction } from './encoding-helpers.js'
 import { UpdateEncoderV1, UpdateEncoderV2 } from './UpdateEncoder.js'
-import { findIndexSS, updateCurrentAttributes, cleanupFormattingGap, tryGcDeleteSet, tryMerge, tryToMergeWithLefts, cleanupContextlessFormattingGap } from './transaction-helpers.js'
+import { findIndexSS, updateCurrentFormats, cleanupFormattingGap, tryGcDeleteSet, tryMerge, tryToMergeWithLefts, cleanupContextlessFormattingGap } from './transaction-helpers.js'
 import * as random from 'lib0/random'
 
 export const generateNewClientId = random.uint53
@@ -168,14 +168,14 @@ export class Transaction {
 /**
  * This function is experimental and subject to change / be removed.
  *
- * Ideally, we don't need this function at all. Formatting attributes should be cleaned up
+ * Ideally, we don't need this function at all. Formats should be cleaned up
  * automatically after each change. This function iterates twice over the complete YText type
- * and removes unnecessary formatting attributes. This is also helpful for testing.
+ * and removes unnecessary formats. This is also helpful for testing.
  *
  * This function won't be exported anymore as soon as there is confidence that the YText type works as intended.
  *
  * @param {YType} type
- * @return {number} How many formatting attributes have been cleaned up.
+ * @return {number} How many formats have been cleaned up.
  */
 export const cleanupYTextFormatting = type => {
   if (!type.doc?.cleanupFormatting) return 0
@@ -183,17 +183,17 @@ export const cleanupYTextFormatting = type => {
   transact(/** @type {Doc} */ (type.doc), transaction => {
     let start = /** @type {Item} */ (type._start)
     let end = type._start
-    let startAttributes = map.create()
-    const currentAttributes = map.copy(startAttributes)
+    let startFormats = map.create()
+    const currentFormats = map.copy(startFormats)
     while (end) {
       if (end.deleted === false) {
         switch (end.content.constructor) {
           case ContentFormat:
-            updateCurrentAttributes(currentAttributes, /** @type {ContentFormat} */ (end.content))
+            updateCurrentFormats(currentFormats, /** @type {ContentFormat} */ (end.content))
             break
           default:
-            res += cleanupFormattingGap(transaction, start, end, startAttributes, currentAttributes)
-            startAttributes = map.copy(currentAttributes)
+            res += cleanupFormattingGap(transaction, start, end, startFormats, currentFormats)
+            startFormats = map.copy(currentFormats)
             start = end
             break
         }
@@ -346,7 +346,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
 
 /**
  * This will be called by the transaction once the event handlers are called to potentially cleanup
- * formatting attributes.
+ * formats.
  *
  * @param {Transaction} transaction
  */
@@ -374,14 +374,14 @@ export const cleanupYTextAfterTransaction = transaction => {
       if (item.content.constructor === ContentFormat) {
         needFullCleanup.add(parent)
       } else {
-        // If no formatting attribute was inserted or deleted, we can make due with contextless
+        // If no format was inserted or deleted, we can make due with contextless
         // formatting cleanups.
-        // Contextless: it is not necessary to compute currentAttributes for the affected position.
+        // Contextless: it is not necessary to compute currentFormats for the affected position.
         cleanupContextlessFormattingGap(t, item)
       }
     })
     // If a formatting item was inserted, we simply clean the whole type.
-    // We need to compute currentAttributes for the current position anyway.
+    // We need to compute currentFormats for the current position anyway.
     for (const yText of needFullCleanup) {
       cleanupYTextFormatting(yText)
     }

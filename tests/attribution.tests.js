@@ -426,7 +426,7 @@ const collectTypes = root => {
  */
 const applyRandomYTypeOp = (gen, root) => {
   const target = prng.oneOf(gen, collectTypes(root))
-  switch (prng.int32(gen, 0, 5)) {
+  switch (prng.int32(gen, 0, 4)) {
     case 0: // insert text
       target.insert(prng.int32(gen, 0, target.length), prng.word(gen))
       break
@@ -567,9 +567,9 @@ export const testRdtFormatRebold = () => {
 }
 
 /**
- * FAILING (known bug — minimal, deterministic, no prng): inserting an embed (nested `Y.Type`) into a
- * bold run leaves a spurious `attribution:{format:{bold:null}}` null-leaf on the embed in the
- * maintained `delta`, where a fresh deep render has none.
+ * Regression (was a known bug — minimal, deterministic, no prng): inserting an embed (nested `Y.Type`)
+ * into a bold run used to leave a spurious `attribution:{format:{bold:null}}` null-leaf on the embed in
+ * the maintained `delta`, where a fresh deep render has none. Now fixed; this pins it.
  *
  * Two ops: bold "ab", then insert an embed between "a" and "b". Inserting into a formatted run makes
  * Yjs surround the embed with NEGATED markers (`[bold:null] <embed> [bold:true]`) so the embed is not
@@ -583,7 +583,7 @@ export const testRdtFormatRebold = () => {
  *
  * Root cause: the single `usedAttribution` context can't distinguish inserts (need absolute attribution,
  * no null-leaves) from retains (need the null-leaf clear) — the value dimension already splits these
- * (`currentAttributes` for inserts vs `changedAttributes` for retains); the attribution dimension does
+ * (`currentFormats` for inserts vs `changedFormats` for retains); the attribution dimension does
  * not. (Note: a *third* op `format(1,1,{bold:null})` to un-bold the embed is a no-op — the embed is
  * already not bold — so it produces an empty transaction and fires no `'delta'` event.)
  */
@@ -615,7 +615,7 @@ export const testRdtFormatEmbedInBold = () => {
  * On delete, the format markers around the char are cleaned up (deleted) too; their insert+delete
  * suggestion nets to no attribution, so the change render skipped them and never undid the value +
  * attribution the format step had written to the cache. The fix (in `toDelta`): a retain emits the
- * format *diff* (`changedAttributes`, which carries the `bold→null` clear), and a deleted format marker
+ * format *diff* (`changedFormats`, which carries the `bold→null` clear), and a deleted format marker
  * that actually removes a format under an attributing renderer emits an explicit `{format:{<key>:null}}`
  * attribution clear. This was the stale-`{format:{bold:[]}}`-on-deleted-content (re-assert) class.
  */

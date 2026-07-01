@@ -100,14 +100,14 @@ export class ItemTextListPosition {
    * @param {Item|null} left
    * @param {Item|null} right
    * @param {number} index
-   * @param {Map<string,any>} currentAttributes
+   * @param {Map<string,any>} currentFormats
    * @param {AbstractRenderer} renderer
    */
-  constructor (left, right, index, currentAttributes, renderer) {
+  constructor (left, right, index, currentFormats, renderer) {
     this.left = left
     this.right = right
     this.index = index
-    this.currentAttributes = currentAttributes
+    this.currentFormats = currentFormats
     this.renderer = renderer
   }
 
@@ -121,7 +121,7 @@ export class ItemTextListPosition {
     switch (this.right.content.constructor) {
       case ContentFormat:
         if (!this.right.deleted) {
-          updateCurrentAttributes(this.currentAttributes, /** @type {ContentFormat} */ (this.right.content))
+          updateCurrentFormats(this.currentFormats, /** @type {ContentFormat} */ (this.right.content))
         }
         break
       default:
@@ -136,22 +136,22 @@ export class ItemTextListPosition {
    * @param {Transaction} transaction
    * @param {YType} parent
    * @param {number} length
-   * @param {Object<string,any>} attributes
+   * @param {Object<string,any>} formats
    *
    * @function
    */
-  formatText (transaction, parent, length, attributes) {
-    minimizeAttributeChanges(this, attributes)
-    const negatedAttributes = insertAttributes(transaction, parent, this, attributes)
+  formatText (transaction, parent, length, formats) {
+    minimizeFormatChanges(this, formats)
+    const negatedFormats = insertFormats(transaction, parent, this, formats)
     // iterate until first non-format or null is found
-    // delete all formats with attributes[format.key] != null
-    // also check the attributes after the first non-format as we do not want to insert redundant negated attributes there
+    // delete all formats with formats[format.key] != null
+    // also check the formats after the first non-format as we do not want to insert redundant negated formats there
     // eslint-disable-next-line no-labels
     iterationLoop: while (
       this.right !== null &&
       (length > 0 ||
         (
-          negatedAttributes.size > 0 &&
+          negatedFormats.size > 0 &&
           ((this.right.deleted && this.renderer.contentLength(this.right) === 0) || this.right.content.constructor === ContentFormat)
         )
       )
@@ -160,21 +160,21 @@ export class ItemTextListPosition {
         case ContentFormat: {
           if (!this.right.deleted) {
             const { key, value } = /** @type {ContentFormat} */ (this.right.content)
-            const attr = attributes[key]
+            const attr = formats[key]
             if (attr !== undefined) {
-              if (equalAttrs(attr, value)) {
-                negatedAttributes.delete(key)
+              if (equalFormats(attr, value)) {
+                negatedFormats.delete(key)
               } else {
                 if (length === 0) {
-                  // no need to further extend negatedAttributes
+                  // no need to further extend negatedFormats
                   // eslint-disable-next-line no-labels
                   break iterationLoop
                 }
-                negatedAttributes.set(key, value)
+                negatedFormats.set(key, value)
               }
               this.right.delete(transaction)
             } else {
-              this.currentAttributes.set(key, value)
+              this.currentFormats.set(key, value)
             }
           }
           break
@@ -210,7 +210,7 @@ export class ItemTextListPosition {
     if (length > 0) {
       throw new Error('Exceeded content range')
     }
-    insertNegatedAttributes(transaction, parent, this, negatedAttributes)
+    insertNegatedFormats(transaction, parent, this, negatedFormats)
   }
 }
 
@@ -220,29 +220,29 @@ export class ItemTextListPosition {
  * @param {Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
- * @param {Map<string,any>} negatedAttributes
+ * @param {Map<string,any>} negatedFormats
  *
  * @private
  * @function
  */
-const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes) => {
-  // check if we really need to remove attributes
+const insertNegatedFormats = (transaction, parent, currPos, negatedFormats) => {
+  // check if we really need to remove formats
   while (
     currPos.right !== null && (
       (currPos.right.deleted && (currPos.renderer === baseRenderer || currPos.renderer.contentLength(currPos.right) === 0)) || (
         currPos.right.content.constructor === ContentFormat &&
-        equalAttrs(negatedAttributes.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
+        equalFormats(negatedFormats.get(/** @type {ContentFormat} */ (currPos.right.content).key), /** @type {ContentFormat} */ (currPos.right.content).value)
       )
     )
   ) {
     if (!currPos.right.deleted) {
-      negatedAttributes.delete(/** @type {ContentFormat} */ (currPos.right.content).key)
+      negatedFormats.delete(/** @type {ContentFormat} */ (currPos.right.content).key)
     }
     currPos.forward()
   }
   const doc = transaction.doc
   const ownClientId = doc.clientID
-  negatedAttributes.forEach((val, key) => {
+  negatedFormats.forEach((val, key) => {
     const left = currPos.left
     const right = currPos.right
     const nextFormat = new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
@@ -253,34 +253,34 @@ const insertNegatedAttributes = (transaction, parent, currPos, negatedAttributes
 }
 
 /**
- * @param {Map<string,any>} currentAttributes
+ * @param {Map<string,any>} currentFormats
  * @param {ContentFormat} format
  *
  * @private
  * @function
  */
-const updateCurrentAttributes = (currentAttributes, format) => {
+const updateCurrentFormats = (currentFormats, format) => {
   const { key, value } = format
   if (value === null) {
-    currentAttributes.delete(key)
+    currentFormats.delete(key)
   } else {
-    currentAttributes.set(key, value)
+    currentFormats.set(key, value)
   }
 }
 
 /**
  * @param {ItemTextListPosition} currPos
- * @param {Object<string,any>} attributes
+ * @param {Object<string,any>} formats
  *
  * @private
  * @function
  */
-const minimizeAttributeChanges = (currPos, attributes) => {
-  // go right while attributes[right.key] === right.value (or right is deleted)
+const minimizeFormatChanges = (currPos, formats) => {
+  // go right while formats[right.key] === right.value (or right is deleted)
   while (true) {
     if (currPos.right === null) {
       break
-    } else if (currPos.right.deleted ? (currPos.renderer.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalAttrs(attributes[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
+    } else if (currPos.right.deleted ? (currPos.renderer.contentLength(currPos.right) === 0) : (!currPos.right.deleted && currPos.right.content.constructor === ContentFormat && equalFormats(formats[(/** @type {ContentFormat} */ (currPos.right.content)).key] ?? null, /** @type {ContentFormat} */ (currPos.right.content).value))) {
       //
     } else {
       break
@@ -293,30 +293,30 @@ const minimizeAttributeChanges = (currPos, attributes) => {
  * @param {Transaction} transaction
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
- * @param {Object<string,any>} attributes
+ * @param {Object<string,any>} formats
  * @return {Map<string,any>}
  *
  * @private
  * @function
  **/
-const insertAttributes = (transaction, parent, currPos, attributes) => {
+const insertFormats = (transaction, parent, currPos, formats) => {
   const doc = transaction.doc
   const ownClientId = doc.clientID
-  const negatedAttributes = new Map()
+  const negatedFormats = new Map()
   // insert format-start items
-  for (const key in attributes) {
-    const val = attributes[key]
-    const currentVal = currPos.currentAttributes.get(key) ?? null
-    if (!equalAttrs(currentVal, val)) {
-      // save negated attribute (set null if currentVal undefined)
-      negatedAttributes.set(key, currentVal)
+  for (const key in formats) {
+    const val = formats[key]
+    const currentVal = currPos.currentFormats.get(key) ?? null
+    if (!equalFormats(currentVal, val)) {
+      // save negated format (set null if currentVal undefined)
+      negatedFormats.set(key, currentVal)
       const { left, right } = currPos
       currPos.right = new Item(createID(ownClientId, doc.store.getClock(ownClientId)), left, left && left.lastId, right, right && right.id, parent, null, new ContentFormat(key, val))
       currPos.right.integrate(transaction, 0)
       currPos.forward()
     }
   }
-  return negatedAttributes
+  return negatedFormats
 }
 
 /**
@@ -324,21 +324,21 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {import('./structs/Item.js').AbstractContent} content
- * @param {Object<string,any>} attributes
+ * @param {Object<string,any>} formats
  *
  * @private
  * @function
  **/
-export const insertContent = (transaction, parent, currPos, content, attributes) => {
-  currPos.currentAttributes.forEach((_val, key) => {
-    if (attributes[key] === undefined) {
-      attributes[key] = null
+export const insertContent = (transaction, parent, currPos, content, formats) => {
+  currPos.currentFormats.forEach((_val, key) => {
+    if (formats[key] === undefined) {
+      formats[key] = null
     }
   })
   const doc = transaction.doc
   const ownClientId = doc.clientID
-  minimizeAttributeChanges(currPos, attributes)
-  const negatedAttributes = insertAttributes(transaction, parent, currPos, attributes)
+  minimizeFormatChanges(currPos, formats)
+  const negatedFormats = insertFormats(transaction, parent, currPos, formats)
   let { left, right, index } = currPos
   if (parent._searchMarker) {
     updateMarkerChanges(parent._searchMarker, currPos.index, content.getLength())
@@ -348,7 +348,7 @@ export const insertContent = (transaction, parent, currPos, content, attributes)
   currPos.right = right
   currPos.index = index
   currPos.forward()
-  insertNegatedAttributes(transaction, parent, currPos, negatedAttributes)
+  insertNegatedFormats(transaction, parent, currPos, negatedFormats)
 }
 
 /**
@@ -356,27 +356,27 @@ export const insertContent = (transaction, parent, currPos, content, attributes)
  * @param {YType} parent
  * @param {ItemTextListPosition} currPos
  * @param {Array<any>|string} insert
- * @param {Object<string,any>} attributes
+ * @param {Object<string,any>} formats
  */
-export const insertContentHelper = (transaction, parent, currPos, insert, attributes) => {
+export const insertContentHelper = (transaction, parent, currPos, insert, formats) => {
   if (s.$string.check(insert)) {
-    insertContent(transaction, parent, currPos, new ContentString(insert), attributes)
+    insertContent(transaction, parent, currPos, new ContentString(insert), formats)
   } else {
     insert = insert.map(ins => delta.$deltaAny.check(ins) ? YType.from(ins) : ins)
     for (let i = 0; i < insert.length;) {
       const first = insert[i]
       if (first instanceof YType) {
-        insertContent(transaction, parent, currPos, new ContentType(first), attributes)
+        insertContent(transaction, parent, currPos, new ContentType(first), formats)
         i++
       } else if ($ydoc.check(first)) {
-        insertContent(transaction, parent, currPos, createContentDocFromDoc(first), attributes)
+        insertContent(transaction, parent, currPos, createContentDocFromDoc(first), formats)
         i++
       } else {
         // insert "any" content
         // compute slice len
         let j = i + 1
         for (; j < insert.length && !(insert[j] instanceof YType || $ydoc.check(insert[j])); j++) { /* nop */ }
-        insertContent(transaction, parent, currPos, new ContentAny((i === 0 && j === insert.length) ? insert : insert.slice(i, j)), attributes)
+        insertContent(transaction, parent, currPos, new ContentAny((i === 0 && j === insert.length) ? insert : insert.slice(i, j)), formats)
         i = j
       }
     }
@@ -394,7 +394,7 @@ export const insertContentHelper = (transaction, parent, currPos, insert, attrib
  */
 export const deleteText = (transaction, currPos, length) => {
   const startLength = length
-  const startAttrs = map.copy(currPos.currentAttributes)
+  const startFormats = map.copy(currPos.currentFormats)
   const start = currPos.right
   while (length > 0 && currPos.right !== null) {
     const item = currPos.right
@@ -430,7 +430,7 @@ export const deleteText = (transaction, currPos, length) => {
     currPos.forward()
   }
   if (start) {
-    cleanupFormattingGap(transaction, start, currPos.right, startAttrs, currPos.currentAttributes)
+    cleanupFormattingGap(transaction, start, currPos.right, startFormats, currPos.currentFormats)
   }
   const parent = /** @type {YType<any>} */ (/** @type {Item} */ (currPos.left || currPos.right).parent)
   if (parent._searchMarker) {
@@ -700,7 +700,7 @@ export class YType extends ObservableV2 {
      */
     this._searchMarker = []
     /**
-     * Whether this YText contains formatting attributes.
+     * Whether this YText contains formats.
      * This flag is updated when a formatting item is integrated (see ContentFormat.integrate)
      */
     this._hasFormatting = false
@@ -963,29 +963,29 @@ export class YType extends ObservableV2 {
     typeMapGetDelta(d, /** @type {any} */ (this), renderAttrs, renderer, deep, modified, deletedItems, itemsToRender, optsAll, optsAll)
     if (renderChildren) {
       /**
-       * @type {delta.FormattingAttributes}
+       * @type {delta.Formats}
        */
-      let currentAttributes = {} // saves all current attributes for insert
-      let usingCurrentAttributes = false
+      let currentFormats = {} // saves all current formats for insert
+      let usingCurrentFormats = false
       /**
-       * @type {delta.FormattingAttributes}
+       * @type {delta.Formats}
        */
-      let changedAttributes = {} // saves changed attributes for retain
-      let usingChangedAttributes = false
+      let changedFormats = {} // saves changed formats for retain
+      let usingChangedFormats = false
       /**
-       * Logic for formatting attribute attribution
-       * Everything that comes after an formatting attribute is formatted by the user that created it.
+       * Logic for format attribution
+       * Everything that comes after a format is formatted by the user that created it.
        * Two exceptions:
        * - the user resets formatting to the previously known formatting that is not attributed
-       * - the user deletes a formatting attribute and hence restores the previously known formatting
+       * - the user deletes a format and hence restores the previously known formatting
        *   that is not attributed.
-       * @type {delta.FormattingAttributes}
+       * @type {delta.Formats}
        */
-      const previousUnattributedAttributes = {} // contains previously known unattributed formatting
+      const previousUnattributedFormats = {} // contains previously known unattributed formatting
       /**
-       * @type {delta.FormattingAttributes}
+       * @type {delta.Formats}
        */
-      const previousAttributes = {} // The value before changes
+      const previousFormats = {} // The value before changes
       /**
        * @type {Array<AttributedContent<any>>}
        */
@@ -1014,9 +1014,9 @@ export class YType extends ObservableV2 {
           // render (attributed) content even if it was deleted
           const renderContent = c.render && (!c.deleted || c.attrs != null)
           // content that was just deleted. It is not rendered as an insertion, because it doesn't
-          // have any attributes.
+          // have any formats.
           const renderDelete = c.render && c.deleted
-          // existing content that should be retained, only adding changed attributes
+          // existing content that should be retained, only adding changed formats
           const retainContent = !c.render && (!c.deleted || c.attrs != null)
           const attribution = (renderContent || c.content.constructor === ContentFormat) ? createAttributionFromAttributionItems(c.attrs, c.deleted) : undefined
           switch (c.content.constructor) {
@@ -1028,24 +1028,24 @@ export class YType extends ObservableV2 {
               if (renderContent) {
                 if (c.deleted ? retainDeletes : retainInserts) {
                   // a retain expresses the format *diff* against existing (cached) content, so use
-                  // `changedAttributes`: a format removed this change (e.g. its marker was deleted)
-                  // is present there as a `null` clear, whereas `currentAttributes` (absolute) can
+                  // `changedFormats`: a format removed this change (e.g. its marker was deleted)
+                  // is present there as a `null` clear, whereas `currentFormats` (absolute) can
                   // only re-assert present formats and would silently keep a stale one.
-                  d.usedAttributes = changedAttributes
-                  usingChangedAttributes = true
+                  d.usedFormats = changedFormats
+                  usingChangedFormats = true
                   // change render: a retained item with no attribution means its attribution was
                   // removed → emit `null` (clear) rather than `{}` (skip). Present attribution merges.
                   d.retain(/** @type {ContentString} */ (c.content).str.length, undefined, attribution ?? null)
                 } else {
-                  d.usedAttributes = currentAttributes
-                  usingCurrentAttributes = true
+                  d.usedFormats = currentFormats
+                  usingCurrentFormats = true
                   d.insert(/** @type {ContentString} */ (c.content).str, undefined, attribution)
                 }
               } else if (renderDelete) {
                 d.delete(c.content.getLength())
               } else if (retainContent) {
-                d.usedAttributes = changedAttributes
-                usingChangedAttributes = true
+                d.usedFormats = changedFormats
+                usingChangedFormats = true
                 d.retain(c.content.getLength())
               }
               break
@@ -1056,9 +1056,9 @@ export class YType extends ObservableV2 {
             case ContentBinary:
               if (renderContent) {
                 if (c.deleted ? retainDeletes : retainInserts) {
-                  // a retain expresses the format *diff* → use `changedAttributes` (see ContentString)
-                  d.usedAttributes = changedAttributes
-                  usingChangedAttributes = true
+                  // a retain expresses the format *diff* → use `changedFormats` (see ContentString)
+                  d.usedFormats = changedFormats
+                  usingChangedFormats = true
                   if (c.deleted && c.content.constructor === ContentType) {
                     // @todo use current transaction instead
                     d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll), undefined, attribution ?? null)
@@ -1066,12 +1066,12 @@ export class YType extends ObservableV2 {
                     d.retain(c.content.getLength(), undefined, attribution ?? null)
                   }
                 } else if (deep && c.content.constructor === ContentType) {
-                  d.usedAttributes = currentAttributes
-                  usingCurrentAttributes = true
+                  d.usedFormats = currentFormats
+                  usingCurrentFormats = true
                   d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], undefined, attribution)
                 } else {
-                  d.usedAttributes = currentAttributes
-                  usingCurrentAttributes = true
+                  d.usedFormats = currentFormats
+                  usingCurrentFormats = true
                   d.insert(c.content.getContent(), undefined, attribution)
                 }
               } else if (renderDelete) {
@@ -1081,75 +1081,75 @@ export class YType extends ObservableV2 {
                   // @todo use current transaction instead
                   d.modify(/** @type {any} */ (c.content).type.toDelta(optsAll))
                 } else {
-                  d.usedAttributes = changedAttributes
-                  usingChangedAttributes = true
+                  d.usedFormats = changedFormats
+                  usingChangedFormats = true
                   d.retain(1)
                 }
               }
               break
             case ContentFormat: {
               const { key, value } = /** @type {ContentFormat} */ (c.content)
-              const currAttrVal = currentAttributes[key] ?? null
-              if (attribution != null && (c.deleted || !object.hasProperty(previousUnattributedAttributes, key))) {
-                previousUnattributedAttributes[key] = c.deleted ? value : currAttrVal
+              const currFormatVal = currentFormats[key] ?? null
+              if (attribution != null && (c.deleted || !object.hasProperty(previousUnattributedFormats, key))) {
+                previousUnattributedFormats[key] = c.deleted ? value : currFormatVal
               }
-              // @todo write a function "updateCurrentAttributes" and "updateChangedAttributes"
-              // # Update Attributes
+              // @todo write a function "updateCurrentFormats" and "updateChangedFormats"
+              // # Update Formats
               if (renderContent || renderDelete) {
                 // create fresh references
-                if (usingCurrentAttributes) {
-                  currentAttributes = object.assign({}, currentAttributes)
-                  usingCurrentAttributes = false
+                if (usingCurrentFormats) {
+                  currentFormats = object.assign({}, currentFormats)
+                  usingCurrentFormats = false
                 }
-                if (usingChangedAttributes) {
-                  usingChangedAttributes = false
-                  changedAttributes = object.assign({}, changedAttributes)
+                if (usingChangedFormats) {
+                  usingChangedFormats = false
+                  changedFormats = object.assign({}, changedFormats)
                 }
               }
               if (renderContent || renderDelete) {
                 if (c.deleted) {
                   // content was deleted, but is possibly attributed
-                  if (!equalAttrs(value, currAttrVal)) { // do nothing if nothing changed
-                    if (equalAttrs(currAttrVal, previousAttributes[key] ?? null) && changedAttributes[key] !== undefined) {
-                      delete changedAttributes[key]
+                  if (!equalFormats(value, currFormatVal)) { // do nothing if nothing changed
+                    if (equalFormats(currFormatVal, previousFormats[key] ?? null) && changedFormats[key] !== undefined) {
+                      delete changedFormats[key]
                     } else {
-                      changedAttributes[key] = currAttrVal
+                      changedFormats[key] = currFormatVal
                     }
-                    // current attributes doesn't change
-                    previousAttributes[key] = value
+                    // current formats doesn't change
+                    previousFormats[key] = value
                   }
                 } else { // !c.deleted
                   // content was inserted, and is possibly attributed
-                  if (equalAttrs(value, currAttrVal)) {
+                  if (equalFormats(value, currFormatVal)) {
                     // item.delete(transaction)
-                  } else if (equalAttrs(value, previousAttributes[key] ?? null)) {
-                    delete changedAttributes[key]
+                  } else if (equalFormats(value, previousFormats[key] ?? null)) {
+                    delete changedFormats[key]
                   } else {
-                    changedAttributes[key] = value
+                    changedFormats[key] = value
                   }
                   if (value == null) {
-                    delete currentAttributes[key]
+                    delete currentFormats[key]
                   } else {
-                    currentAttributes[key] = value
+                    currentFormats[key] = value
                   }
                 }
               } else if (retainContent && !c.deleted) {
-                // fresh reference to currentAttributes only
-                if (usingCurrentAttributes) {
-                  currentAttributes = object.assign({}, currentAttributes)
-                  usingCurrentAttributes = false
+                // fresh reference to currentFormats only
+                if (usingCurrentFormats) {
+                  currentFormats = object.assign({}, currentFormats)
+                  usingCurrentFormats = false
                 }
-                if (usingChangedAttributes && changedAttributes[key] !== undefined) {
-                  usingChangedAttributes = false
-                  changedAttributes = object.assign({}, changedAttributes)
+                if (usingChangedFormats && changedFormats[key] !== undefined) {
+                  usingChangedFormats = false
+                  changedFormats = object.assign({}, changedFormats)
                 }
                 if (value == null) {
-                  delete currentAttributes[key]
+                  delete currentFormats[key]
                 } else {
-                  currentAttributes[key] = value
+                  currentFormats[key] = value
                 }
-                delete changedAttributes[key]
-                previousAttributes[key] = value
+                delete changedFormats[key]
+                previousFormats[key] = value
               }
               // # Update Attributions
               // A format marker deleted in a change render under an *attributing* renderer nets to no
@@ -1159,46 +1159,46 @@ export class YType extends ObservableV2 {
               // `null` leaf for the key (a context-wide `useAttribution(null)` cannot carry a per-key
               // clear). Conditions: only an attributing render (`renderer !== baseRenderer`; the base
               // renderer has no attributions to clear), and only when the deletion actually *removes*
-              // the format — i.e. it reverts to no value (`currAttrVal == null`). If it reverts to a
+              // the format — i.e. it reverts to no value (`currFormatVal == null`). If it reverts to a
               // still-present surrounding value (e.g. deleting a `bold:null` marker re-exposes an
               // enclosing attributed `bold:true`, as when re-bolding), the attribution is preserved.
-              const isDeletedFormatClear = attribution == null && renderer !== baseRenderer && renderDelete && c.deleted && itemsToRender != null && currAttrVal == null && !equalAttrs(value, currAttrVal)
-              if (attribution != null || isDeletedFormatClear || object.hasProperty(previousUnattributedAttributes, key)) {
+              const isDeletedFormatClear = attribution == null && renderer !== baseRenderer && renderDelete && c.deleted && itemsToRender != null && currFormatVal == null && !equalFormats(value, currFormatVal)
+              if (attribution != null || isDeletedFormatClear || object.hasProperty(previousUnattributedFormats, key)) {
                 /**
                  * @type {Attribution}
                  */
                 const formattingAttribution = object.assign({}, d.usedAttribution)
-                const changedAttributedAttributes = /** @type {{ [key: string]: Array<any>|null }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
-                const sameAsPreviousAttributions = equalAttrs(previousUnattributedAttributes[key], currentAttributes[key] ?? null)
+                const changedAttributedFormats = /** @type {{ [key: string]: Array<any>|null }} */ (formattingAttribution.format = object.assign({}, formattingAttribution.format ?? {}))
+                const sameAsPreviousAttributions = equalFormats(previousUnattributedFormats[key], currentFormats[key] ?? null)
                 if (isDeletedFormatClear) {
-                  changedAttributedAttributes[key] = null
-                  delete previousUnattributedAttributes[key]
+                  changedAttributedFormats[key] = null
+                  delete previousUnattributedFormats[key]
                 } else if (attribution == null && !sameAsPreviousAttributions) {
                   // skip
                 } else if (attribution == null || sameAsPreviousAttributions) {
-                  // an unattributed formatting attribute was found or an attributed formatting
-                  // attribute was found that resets to the previous status. When this format item is
+                  // an unattributed format was found or an attributed format
+                  // was found that resets to the previous status. When this format item is
                   // itself rendered this transaction (`renderContent || renderDelete`) in a change/diff
                   // render (`itemsToRender != null`), it is the END of an attributed format range:
                   // emit an explicit clear (a `null` leaf) so the retained content drops any stale
                   // `{ format: { [key]: [] } }` from the maintained `delta` cache — a bare context-skip
                   // (`delete`) would leave it in place. For a merely-retained (unchanged) boundary, or a
-                  // full insert render (removal is already modeled as absence in `currentAttributes`),
+                  // full insert render (removal is already modeled as absence in `currentFormats`),
                   // just drop the key: a change render must not emit ops for unchanged ranges, and
                   // inserts must stay free of a spurious `{ format: { [key]: null } }`.
                   if (attribution != null && itemsToRender != null && (renderContent || renderDelete)) {
-                    changedAttributedAttributes[key] = null
+                    changedAttributedFormats[key] = null
                   } else {
-                    delete changedAttributedAttributes[key]
+                    delete changedAttributedFormats[key]
                   }
-                  delete previousUnattributedAttributes[key]
+                  delete previousUnattributedFormats[key]
                 } else {
-                  const by = changedAttributedAttributes[key] = (changedAttributedAttributes[key]?.slice() ?? [])
+                  const by = changedAttributedFormats[key] = (changedAttributedFormats[key]?.slice() ?? [])
                   by.push(...((c.deleted ? attribution.delete : attribution.insert) ?? []))
                   const attributedAt = (c.deleted ? attribution.deleteAt : attribution.insertAt)
                   if (attributedAt) formattingAttribution.formatAt = attributedAt
                 }
-                if (object.isEmpty(changedAttributedAttributes)) {
+                if (object.isEmpty(changedAttributedFormats)) {
                   d.useAttribution(null)
                 } else if (attribution != null || isDeletedFormatClear) {
                   const attributedAt = (c.deleted ? attribution?.deleteAt : attribution?.insertAt)
@@ -1386,7 +1386,7 @@ export class YType extends ObservableV2 {
    *
    * @param {number} index The index to insert content at.
    * @param {Array<delta.DeltaConfGetChildren<DConf>>|delta.DeltaConfGetText<DConf>} content Array of content to append.
-   * @param {delta.FormattingAttributes} [format]
+   * @param {delta.Formats} [format]
    */
   insert (index, content, format) {
     this.applyDelta(delta.create().retain(index).insert(/** @type {any} */ (content), format).done())
@@ -1407,7 +1407,7 @@ export class YType extends ObservableV2 {
    *
    * @param {number} index The index to insert content at.
    * @param {number} length The index to insert content at.
-   * @param {delta.FormattingAttributes} formats
+   * @param {delta.Formats} formats
    *
    */
   format (index, length, formats) {
@@ -1681,7 +1681,7 @@ export const computeModifiedFromItems = (store, items) => {
  * @param {any} b
  * @return {boolean}
  */
-export const equalAttrs = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
+export const equalFormats = (a, b) => a === b || (typeof a === 'object' && typeof b === 'object' && a && b && object.equalFlat(a, b))
 
 /**
  * @template {delta.DeltaConf} DConf

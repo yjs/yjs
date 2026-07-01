@@ -334,17 +334,17 @@ export const cleanupContextlessFormattingGap = (transaction, item) => {
 }
 
 /**
- * @param {Map<string,any>} currentAttributes
+ * @param {Map<string,any>} currentFormats
  * @param {ContentFormat} format
  *
  * @private
  * @function
  */
-export const updateCurrentAttributes = (currentAttributes, { key, value }) => {
+export const updateCurrentFormats = (currentFormats, { key, value }) => {
   if (value === null) {
-    currentAttributes.delete(key)
+    currentFormats.delete(key)
   } else {
-    currentAttributes.set(key, value)
+    currentFormats.set(key, value)
   }
 }
 
@@ -355,13 +355,13 @@ export const updateCurrentAttributes = (currentAttributes, { key, value }) => {
  * @param {Transaction} transaction
  * @param {Item} start
  * @param {Item|null} curr exclusive end, automatically iterates to the next Content Item
- * @param {Map<string,any>} startAttributes
- * @param {Map<string,any>} currAttributes
+ * @param {Map<string,any>} startFormats
+ * @param {Map<string,any>} currFormats
  * @return {number} The amount of formatting Items deleted.
  *
  * @function
  */
-export const cleanupFormattingGap = (transaction, start, curr, startAttributes, currAttributes) => {
+export const cleanupFormattingGap = (transaction, start, curr, startFormats, currFormats) => {
   if (!transaction.doc.cleanupFormatting) return 0
   /**
    * @type {Item|null}
@@ -388,22 +388,22 @@ export const cleanupFormattingGap = (transaction, start, curr, startAttributes, 
       const content = start.content
       if (content.getRef() === 6) { // is ContentFormat
         const { key, value } = /** @type {ContentFormat} */ (content)
-        const startAttrValue = startAttributes.get(key) ?? null
-        if (endFormats.get(key) !== content || startAttrValue === value) {
-          // Either this format is overwritten or it is not necessary because the attribute already existed.
+        const startFormatValue = startFormats.get(key) ?? null
+        if (endFormats.get(key) !== content || startFormatValue === value) {
+          // Either this format is overwritten or it is not necessary because the format already existed.
           start.delete(transaction)
           transaction.cleanUps.add(start.id.client, start.id.clock, start.length)
           cleanups++
-          if (!reachedCurr && (currAttributes.get(key) ?? null) === value && startAttrValue !== value) {
-            if (startAttrValue === null) {
-              currAttributes.delete(key)
+          if (!reachedCurr && (currFormats.get(key) ?? null) === value && startFormatValue !== value) {
+            if (startFormatValue === null) {
+              currFormats.delete(key)
             } else {
-              currAttributes.set(key, startAttrValue)
+              currFormats.set(key, startFormatValue)
             }
           }
         }
         if (!reachedCurr && !start.deleted) {
-          updateCurrentAttributes(currAttributes, /** @type {ContentFormat} */ (content))
+          updateCurrentFormats(currFormats, /** @type {ContentFormat} */ (content))
         }
       }
     }
