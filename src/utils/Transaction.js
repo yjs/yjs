@@ -257,7 +257,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
             // the type-rooted deep delta of this transaction (a nested `modify` chain for ancestors)
             const change = /** @type {any} */ (deepEventHandler.getDelta({ renderer: type._renderer, deep: true }).done())
             type._delta?.apply(change) // keep the cache current (incl. ancestors and diff-renderer attributions)
-            if (hasDeltaListeners) type.emit('delta', [change])
+            if (hasDeltaListeners) type.emit('delta', [change, transaction.origin])
           }
         })
       })

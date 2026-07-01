@@ -636,7 +636,8 @@ export const callTypeObservers = (type, transaction, event) => {
  * Abstract Yjs Type class.
  *
  * A `YType` is a {@link https://github.com/dmonad/lib0 lib0} `RDT` ("replicated data type", see
- * `lib0/delta/rdt.js`): it emits a `'delta'` event whenever its state changes, accepts foreign
+ * `lib0/delta/rdt.js`): it emits a `'delta'` event whenever its state changes (carrying the change
+ * and the origin of the transaction that caused it), accepts foreign
  * changes via {@link YType#applyDelta}, exposes its delta {@link YType#$delta schema}, and can be
  * torn down via {@link YType#destroy}. This lets a `YType` be `bind()`-ed to any other RDT (another
  * `YType`, an in-memory delta, a DOM subtree, …). The legacy {@link YType#observe `observe`} /
@@ -644,7 +645,7 @@ export const callTypeObservers = (type, transaction, event) => {
  * channel.
  *
  * @template {delta.DeltaConf} [DConf=any]
- * @extends {ObservableV2<{ delta: (delta: delta.Delta<DConf>) => void, destroy: (type: YType<DConf>) => void }>}
+ * @extends {ObservableV2<{ delta: (delta: delta.Delta<DConf>, origin: any) => void, destroy: (type: YType<DConf>) => void }>}
  */
 export class YType extends ObservableV2 {
   /**
@@ -731,6 +732,11 @@ export class YType extends ObservableV2 {
    * (e.g. `type.delta.clone()`) if you need a stable snapshot, and call {@link YType#clearCache} to
    * drop the cache.
    *
+   * Consider the returned delta **done** — it must not be edited from the outside. It is
+   * deliberately typed as a `Delta` (not a `DeltaBuilder`) so the mutating builder API is not
+   * reachable; editing it anyway would corrupt the cache without changing the CRDT. The proper way
+   * to change this type is {@link YType#applyDelta}.
+   *
    * @type {delta.Delta<DConf>}
    */
   get delta () {
@@ -772,7 +778,8 @@ export class YType extends ObservableV2 {
    *
    * If the deep-delta cache ({@link YType#delta}) is being maintained, or a `'delta'` listener is
    * attached, the content is re-rendered with the new renderer and the difference is emitted on the
-   * `'delta'` channel only (a renderer switch is not a CRDT change, so no `YEvent` is produced).
+   * `'delta'` channel only (a renderer switch is not a CRDT change, so no `YEvent` is produced, and
+   * the emitted origin is `null` as no transaction is involved).
    *
    * @param {AbstractRenderer} renderer
    * @return {this}
@@ -787,7 +794,7 @@ export class YType extends ObservableV2 {
       if (this._delta !== null) this._delta = newState
       if (hasDeltaListeners) {
         const d = /** @type {any} */ (delta.diff(/** @type {any} */ (oldState), /** @type {any} */ (newState)))
-        if (!d.isEmpty()) this.emit('delta', [d])
+        if (!d.isEmpty()) this.emit('delta', [d, null])
       }
     } else {
       this._renderer = renderer

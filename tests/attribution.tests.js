@@ -257,6 +257,28 @@ export const testRdtDeltaEvent = () => {
 }
 
 /**
+ * The `'delta'` event carries the transaction origin as its second argument.
+ */
+export const testRdtDeltaEventOrigin = () => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.get()
+  /**
+   * @type {any}
+   */
+  let capturedOrigin = null
+  ytext.on('delta', (_d, origin) => { capturedOrigin = origin })
+  const myOrigin = {}
+  ydoc.transact(() => {
+    ytext.insert(0, 'hello')
+  }, myOrigin)
+  t.assert(capturedOrigin === myOrigin)
+  // without an explicit origin, `null` is emitted
+  capturedOrigin = myOrigin
+  ytext.insert(5, ' world')
+  t.assert(capturedOrigin === null)
+}
+
+/**
  * `useRenderer` changes the default renderer used by `toDelta` (and friends). Calling `toDelta()`
  * with no argument afterwards is equivalent to passing the renderer explicitly.
  */
