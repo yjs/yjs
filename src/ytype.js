@@ -1238,6 +1238,9 @@ export class YType extends ObservableV2 {
    * Apply a {@link Delta} on this shared type.
    *
    * @param {delta.DeltaAny} d The changes to apply on this element.
+   * @param {any} [origin] Origin of the transaction that applies this delta (stored on
+   * `transaction.origin` and forwarded verbatim on the emitted `'delta'` event, so listeners can
+   * recognize — and skip — changes they produced themselves; see the lib0 `RDT` spec). Defaults to `null`.
    * @param {Object} [opts]
    * @param {AbstractRenderer} [opts.renderer] - renders the content (with attributions); defaults to this type's active renderer (see {@link YType#useRenderer}), i.e. `baseRenderer` unless changed
    * @return {null} The lib0 `RDT` "fix" of this apply — always `null`: a `YType` accepts every valid
@@ -1245,7 +1248,7 @@ export class YType extends ObservableV2 {
    *
    * @public
    */
-  applyDelta (d, { renderer = this._renderer } = {}) {
+  applyDelta (d, origin = null, { renderer = this._renderer } = {}) {
     if (d.isEmpty()) return null
     if (this.doc == null) {
       (this._prelim || (this._prelim = /** @type {any} */ (delta.create()))).apply(d)
@@ -1266,7 +1269,7 @@ export class YType extends ObservableV2 {
             let item = currPos.right
             while (item != null && (item.deleted || !item.countable)) { item = item.next }
             if (item == null || item.content.constructor !== ContentType) { error.unexpectedCase() }
-            /** @type {ContentType} */ (item.content).type.applyDelta(op.value, { renderer })
+            /** @type {ContentType} */ (item.content).type.applyDelta(op.value, origin, { renderer })
             currPos.formatText(transaction, /** @type {any} */ (this), 1, op.format || {})
           } else {
             error.unexpectedCase()
@@ -1282,10 +1285,10 @@ export class YType extends ObservableV2 {
             if (!(sub instanceof YType)) {
               error.unexpectedCase()
             }
-            sub.applyDelta(op.value, { renderer })
+            sub.applyDelta(op.value, origin, { renderer })
           }
         }
-      })
+      }, origin)
     }
     return null
   }

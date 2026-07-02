@@ -191,7 +191,7 @@ export const testAttributions = _tc => {
    * UNattributed: 'world!'
    */
   // Apply a change to the attributed content
-  ytype.applyDelta(delta.create().retain(11).insert('!').done(), { renderer })
+  ytype.applyDelta(delta.create().retain(11).insert('!').done(), null, { renderer })
   // // Equivalent to applying a change to the UNattributed content:
   // ytype.applyDelta(delta.create().retain(5).insert('!'))
 }

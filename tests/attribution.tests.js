@@ -51,7 +51,7 @@ export const testAttributedEvents = _tc => {
     t.compare(d, delta.create().retain(11).insert('!', null, { insert: [] }).done())
     calledObserver = true
   })
-  ytext.applyDelta(delta.create().retain(11).insert('!').done(), { renderer })
+  ytext.applyDelta(delta.create().retain(11).insert('!').done(), null, { renderer })
   t.assert(calledObserver)
 }
 
@@ -69,7 +69,7 @@ export const testInsertionsMindingAttributedContent = _tc => {
   const renderer = Y.createDiffRenderer(v1, ydoc)
   const c1 = ytext.toDelta({ renderer })
   t.compare(c1, delta.create().insert('hello ').insert('world', null, { delete: [] }).done())
-  ytext.applyDelta(delta.create().retain(11).insert('content').done(), { renderer })
+  ytext.applyDelta(delta.create().retain(11).insert('content').done(), null, { renderer })
   t.assert(ytext.toString() === 'hello content')
 }
 
@@ -87,7 +87,7 @@ export const testInsertionsIntoAttributedContent = _tc => {
   const renderer = Y.createDiffRenderer(v1, ydoc)
   const c1 = ytext.toDelta({ renderer })
   t.compare(c1, delta.create().insert('hello ').insert('word', null, { insert: [] }).done())
-  ytext.applyDelta(delta.create().retain(9).insert('l').done(), { renderer })
+  ytext.applyDelta(delta.create().retain(9).insert('l').done(), null, { renderer })
   t.assert(ytext.toString() === 'hello world')
 }
 
@@ -275,6 +275,14 @@ export const testRdtDeltaEventOrigin = () => {
   // without an explicit origin, `null` is emitted
   capturedOrigin = myOrigin
   ytext.insert(5, ' world')
+  t.assert(capturedOrigin === null)
+  // the origin passed to `applyDelta` becomes the transaction origin and is forwarded on the event
+  const applyOrigin = {}
+  ytext.applyDelta(delta.create().retain(11).insert('!').done(), applyOrigin)
+  t.assert(capturedOrigin === applyOrigin)
+  // `applyDelta` without an explicit origin emits `null`
+  capturedOrigin = applyOrigin
+  ytext.applyDelta(delta.create().retain(12).insert('?').done())
   t.assert(capturedOrigin === null)
 }
 

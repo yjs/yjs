@@ -48,70 +48,67 @@ Deleted content is represented in attributed results to maintain authorship info
 
 ## API Reference
 
-### YText
+### Y.Type
 
-#### `getDelta([renderer])`
+In Yjs v14 all shared types (text, array, map, xml) are instances of the unified
+`Y.Type`.
 
-Returns the delta representation of the YText content, optionally with attribution information.
+#### `toDelta([{ renderer }])`
+
+Returns the delta representation (lib0/delta) of the type's content, optionally
+with attribution information.
 
 **Parameters:**
 - `renderer` (optional): The renderer instance
 
 **Returns:**
-- Array of delta operations, with attribution metadata if `renderer` is provided
+- A `Delta` describing the content, with attribution metadata if `renderer` is provided
 
 **Examples:**
 
 ```javascript
-const ytext = new Y.Text()
+const ytext = ydoc.get()
 // Content is inserted during collaborative editing
 // Attribution is handled automatically by the server
 
 // Without attribution
-const delta = ytext.getDelta()
+const d = ytext.toDelta()
 // [{ insert: 'hello world' }]
 
 // With attribution
-const attributedDelta = ytext.getDelta({ renderer })
+const attributedDelta = ytext.toDelta({ renderer })
 // [
 //   { insert: 'hello', attribution: { insert: ['kevin'] } },
 //   { insert: ' world', attribution: { insert: ['alice'] } }
 // ]
 ```
 
-#### `toDelta([renderer])`
+#### `applyDelta(delta, [origin], [{ renderer }])`
 
-Returns the content representation with optional attribution information.
+Applies a delta (lib0/delta) on the shared type. The optional `origin` is stored
+on the transaction (`transaction.origin`) and forwarded verbatim on the emitted
+`'delta'` event (lib0 RDT spec), so listeners can recognize — and skip — changes
+they produced themselves. When a `renderer` is provided, positions in the delta
+are interpreted relative to the attributed (rendered) content.
+
+**Parameters:**
+- `delta`: The changes to apply
+- `origin` (optional): Origin of the transaction that applies this delta; defaults to `null`
+- `renderer` (optional): The renderer instance
+
+### YEvent
+
+#### `getDelta([{ renderer, deep }])`
+
+Returns the changes of an event as a delta, optionally rendered with attribution
+information.
 
 **Parameters:**
 - `renderer` (optional): The renderer instance
+- `deep` (optional): Render child types as deltas
 
 **Returns:**
-- Content representation with attribution metadata if `renderer` is provided
-
-### YArray
-
-#### `toDelta([renderer])`
-
-Returns the array content with optional attribution information for each element.
-
-**Parameters:**
-- `renderer` (optional): The renderer instance
-
-**Returns:**
-- Array content with attribution metadata if `renderer` is provided
-
-### YMap
-
-#### `toDelta([renderer])`
-
-Returns the map content with optional attribution information for each key-value pair.
-
-**Parameters:**
-- `renderer` (optional): The renderer instance
-
-**Returns:**
-- Map content with attribution metadata if `renderer` is provided
+- A `Delta` describing the changes, with attribution metadata if `renderer` is provided
 
 ## Position Adjustments
 
@@ -124,7 +121,7 @@ When working with attributed content, position calculations must account for del
 ytext.toString() // "world"
 
 // Attributed content (includes deleted content)
-ytext.getDelta({ renderer })
+ytext.toDelta({ renderer })
 // [
 //   { insert: 'hello ', attribution: { delete: ['kevin'] } },  // positions 0-5
 //   { insert: 'world' }                                         // positions 6-10
@@ -176,9 +173,9 @@ Display content with visual indicators of who created each part:
 
 ```javascript
 function renderWithAuthorship(ytext, renderer) {
-  const attributedDelta = ytext.getDelta({ renderer })
+  const attributedDelta = ytext.toDelta({ renderer })
   
-  return attributedDelta.map(op => {
+  return attributedDelta.children.map(op => {
     const author = op.attribution?.insert?.[0] || 'unknown'
     const isDeleted = op.attribution?.delete
     
@@ -199,9 +196,9 @@ Track who made specific changes to content:
 ```javascript
 function trackChanges(ytext, renderer) {
   ytext.observe((event, transaction) => {
-    const changes = event.changes.getAttributedDelta?.(renderer) || event.changes.delta
+    const changes = event.getDelta({ renderer })
     
-    changes.forEach(change => {
+    changes.children.forEach(change => {
       if (change.attribution) {
         console.log(`Change by ${change.attribution.insert?.[0] || change.attribution.delete?.[0]}:`, change)
       }

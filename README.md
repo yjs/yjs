@@ -687,9 +687,9 @@ assign properties to ranges in the text. This makes it possible to implement
 rich-text bindings to this type.
   </p>
   <p>
-This type can also be transformed to the
-<a href="https://quilljs.com/docs/delta">delta format</a>. Similarly the
-YTextEvents compute changes as deltas.
+This type can also be transformed to a delta
+(<a href="https://github.com/dmonad/lib0">lib0/delta</a>). Similarly the
+events compute changes as deltas.
   </p>
   <pre>const ytext = new Y.Text()</pre>
   <dl>
@@ -704,11 +704,17 @@ YTextEvents compute changes as deltas.
     <dd></dd>
     <b><code>format(index:number, length:number, formattingAttributes:Object&lt;string,string&gt;)</code></b>
     <dd>Assign formatting attributes to a range in the text</dd>
-    <b><code>applyDelta(delta: Delta, opts:Object&lt;string,any&gt;)</code></b>
+    <b><code>applyDelta(delta: Delta, [origin: any], [opts: {renderer: AbstractRenderer}])</code></b>
     <dd>
-        See <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
-        Can set options for preventing remove ending newLines, default is true.
-        <pre>ytext.applyDelta(delta, { sanitize: false })</pre>
+        Apply a delta (<a href="https://github.com/dmonad/lib0">lib0/delta</a>)
+        on this shared type. The optional <var>origin</var> is stored on the
+        transaction (<code>transaction.origin</code>) and forwarded verbatim
+        on the emitted <code>'delta'</code> event, so listeners can recognize
+        — and skip — changes they produced themselves (see the lib0
+        <code>RDT</code> spec). <code>opts.renderer</code> renders the content
+        with attributions; positions in the delta are then interpreted
+        relative to the attributed content.
+        <pre>ytext.applyDelta(delta.create().retain(5).insert('!').done(), origin)</pre>
     </dd>
     <b><code>length:number</code></b>
     <dd></dd>
@@ -716,9 +722,10 @@ YTextEvents compute changes as deltas.
     <dd>Transforms this type, without formatting options, into a string.</dd>
     <b><code>toJSON():string</code></b>
     <dd>See <code>toString</code></dd>
-    <b><code>toDelta():Delta</code></b>
+    <b><code>toDelta([opts: { renderer: AbstractRenderer }]):Delta</code></b>
     <dd>
-Transforms this type to a <a href="https://quilljs.com/docs/delta/">Quill Delta</a>
+Transforms this type to a delta (<a href="https://github.com/dmonad/lib0">lib0/delta</a>),
+optionally rendering attributed content with <code>opts.renderer</code>.
     </dd>
     <b><code>observe(function(YTextEvent, Transaction):void)</code></b>
     <dd>
