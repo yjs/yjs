@@ -269,8 +269,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
     /**
      * @type {Array<Item>}
      */
-    const itemsToRemarkAsDeleted = [];
-    const parentsOfItemsToRemarkAsDeleted = [];
+    const itemsToReMarkAsDeleted = [];
     iterateDeletedStructs(transaction, ds, (item) => {
       if(item instanceof Item && item.deletedImplicitly) {
         // Unmark this implicitly-deleted item so it appears in the oldValue of YMapEvents.
@@ -278,8 +277,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
         item.deletedImplicitly = false // Allow it to be garbage collected when returned
 
         // Implicitly-deleted items were still deleted so must be remarked before garbage collection!
-        itemsToRemarkAsDeleted.push(item)
-        parentsOfItemsToRemarkAsDeleted.push(item.parent)
+        itemsToReMarkAsDeleted.push(item)
       }
     })
 
@@ -341,7 +339,7 @@ const cleanupTransactions = (transactionCleanups, i) => {
 
       callAll(fs, [])
     } finally {
-      itemsToRemarkAsDeleted.forEach((item, i) => {
+      itemsToReMarkAsDeleted.forEach((item, i) => {
         item.deleted = true
       })
 
