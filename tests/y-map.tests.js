@@ -533,33 +533,63 @@ export const testChangeEvent = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testNestedMapChangeEvent = tc => {
-  // Unlike the previous test, these tests have the assertion deliberately in the observer functions.
+export const testYmapEventWithYmapOldValue = tc => {
+  // Unlike the previous test, this test has the assertion deliberately in the observer functions.
   // This is because deliberately, the Yjs-shared-type oldValue objects are only ensured to contain their
   // previous states during the observer function itself. After the observer has finished, for example,
   // garbage collection deletes the elements from the deleted nmap, before deleting the whole map itself
   // from the document.
+
+  // This test won't fail if observe or observeDeep aren't ever called, but checking observe and
+  // observeDeep get called is other tests' responsibility.
   const { map0, users } = init(tc, { users: 2 })
   const nmap = new Y.Map()
   const nnmap = new Y.Map()
 
   const setObserver = (/** @type {any} */e) => {
+    console.log("Set observer called")
     const keyChange = e.changes.keys.get('map')
     t.assert(e.changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
   }
+  const setDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Set deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        setObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
 
   map0.observe(setObserver)
+  map0.observeDeep(setDeepObserver)
   map0.set('map', nmap)
   map0.unobserve(setObserver)
+  map0.unobserveDeep(setDeepObserver)
 
   const transactObserver = (/** @type {any} */e) => {
+    console.log("Transact observer called")
     const keyChange = e.changes.keys.get('map')
     t.assert(e.changes !== null && keyChange.action === 'delete' &&
     !keyChange.oldValue.has('x') && keyChange.oldValue.get('map') == nnmap
     && keyChange.oldValue.get('map').get('z') == 2 && keyChange.oldValue.get('y') == 1)
   }
+  const transactDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Transact deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        transactObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
 
   map0.observe(transactObserver)
+  map0.observeDeep(transactDeepObserver)
   users[0].transact(() => {
     nmap.set('x', 0)
     nmap.set('map', nnmap)
@@ -570,6 +600,179 @@ export const testNestedMapChangeEvent = tc => {
     map0.delete('map')
   })
   map0.unobserve(transactObserver)
+  map0.unobserveDeep(transactDeepObserver)
+
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testYmapEventWithYtextOldValue = tc => {
+  // Like the previous test, this test has the assertion deliberately in the observer functions.
+  const { map0, users } = init(tc, { users: 2 })
+
+  const ytext0 = new Y.Text()
+  ytext0.insert(0, 'Hello')
+  const ytext1 = new Y.Text()
+
+  const setObserver = (/** @type {any} */e) => {
+    console.log("Set observer called")
+    const keyChange = e.changes.keys.get('text')
+    t.assert(e.changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  }
+  const setDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Set deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        setObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(setObserver)
+  map0.observeDeep(setDeepObserver)
+  map0.set('text', ytext0)
+  map0.unobserve(setObserver)
+  map0.unobserveDeep(setDeepObserver)
+
+  const updateObserver = (/** @type {any} */e) => {
+    console.log("Update observer called")
+    const keyChange = e.changes.keys.get('text')
+    console.log(keyChange.oldValue === ytext0, keyChange.oldValue._item.content)
+    t.assert(e.changes !== null && keyChange.action === 'update' && keyChange.oldValue === ytext0 && keyChange.oldValue.toString() == 'Hello')
+  }
+  const updateDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Update deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        updateObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(updateObserver)
+  map0.observeDeep(updateDeepObserver)
+  map0.set('text', ytext1)
+  map0.unobserve(updateObserver)
+  map0.unobserveDeep(updateDeepObserver)
+
+  ytext1.insert(0, 'World')
+
+  const deleteObserver = (/** @type {any} */e) => {
+    console.log("Delete observer called")
+    const keyChange = e.changes.keys.get('text')
+    t.assert(e.changes !== null && keyChange.action === 'delete' && keyChange.oldValue === ytext1 && keyChange.oldValue.toString() == 'World')
+  }
+  const deleteDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Delete deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        deleteObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(deleteObserver)
+  map0.observeDeep(deleteDeepObserver)
+  map0.delete('text')
+  map0.unobserve(deleteObserver)
+  map0.unobserveDeep(deleteDeepObserver)
+
+  compare(users)
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testYmapEventWithYarrayOldValue = tc => {
+  // Like the previous test, this test has the assertion deliberately in the observer functions.
+  const { map0, users } = init(tc, { users: 2 })
+
+  const yarray0 = new Y.Array()
+  yarray0.insert(0, [1,2,3])
+  const yarray1 = new Y.Array()
+
+  const setObserver = (/** @type {any} */e) => {
+    console.log("Set observer called", e)
+    const keyChange = e.changes.keys.get('arr')
+    t.assert(e.changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+  }
+  const setDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Set deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        setObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(setObserver)
+  map0.observeDeep(setDeepObserver)
+  map0.set('arr', yarray0)
+  map0.unobserve(setObserver)
+  map0.unobserveDeep(setDeepObserver)
+
+  const updateObserver = (/** @type {any} */e) => {
+    console.log("Update observer called")
+    const keyChange = e.changes.keys.get('arr')
+    console.log(keyChange.oldValue === yarray0, keyChange.oldValue._item.content)
+    t.assert(e.changes !== null && keyChange.action === 'update' && keyChange.oldValue === yarray0 && keyChange.oldValue.get(0) == 1 && keyChange.oldValue.get(1) == 2 && keyChange.oldValue.get(2) == 3)
+  }
+  const updateDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Update deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        updateObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(updateObserver)
+  map0.observeDeep(updateDeepObserver)
+  map0.set('arr', yarray1)
+  map0.unobserve(updateObserver)
+  map0.unobserveDeep(updateDeepObserver)
+
+  yarray1.insert(0, [3, 2, 1])
+
+  const deleteObserver = (/** @type {any} */e) => {
+    console.log("Delete observer called")
+    const keyChange = e.changes.keys.get('arr')
+    t.assert(e.changes !== null && keyChange.action === 'delete' && keyChange.oldValue === yarray1 && keyChange.oldValue.get(0) == 3 && keyChange.oldValue.get(1) == 2 && keyChange.oldValue.get(2) == 1)
+  }
+  const deleteDeepObserver = (/** @type {any} */events, /** @type {any} */transaction) => {
+    console.log("Delete deep observer called")
+    let hasEventWithMap0Target = false
+    for(const evt of events) {
+      if(evt.target === map0) {
+        deleteObserver(evt)
+        hasEventWithMap0Target = true
+      }
+    }
+    t.assert(hasEventWithMap0Target)
+  }
+
+  map0.observe(deleteObserver)
+  map0.observeDeep(deleteDeepObserver)
+  map0.delete('arr')
+  map0.unobserve(deleteObserver)
+  map0.unobserveDeep(deleteDeepObserver)
 
   compare(users)
 }
