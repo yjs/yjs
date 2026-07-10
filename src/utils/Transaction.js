@@ -4,6 +4,7 @@ import {
   writeDeleteSet,
   DeleteSet,
   sortAndMergeDeleteSet,
+  iterateDeletedStructs,
   getStateVector,
   findIndexSS,
   callEventHandlerListeners,
@@ -276,6 +277,22 @@ const cleanupTransactions = (transactionCleanups, i) => {
        * @type {Array<function():void>}
        */
       const fs = []
+
+      /**
+       * @type {Array<Item>}
+       */
+      const itemsToRemarkAsDeleted = [];
+      iterateDeletedStructs(transaction, ds, (item) => {
+        if(item instanceof Item && item.deletedImplicitly) {
+          // Unmark this implicitly-deleted item so it appears in the oldValue of YMapEvents.
+          item.deleted = false
+          item.deletedImplicitly = false // Allow it to be garbage collected when returned
+
+          // Implicitly-deleted items were still deleted so must be remarked before garbage collection!
+          itemsToRemarkAsDeleted.push(item)
+        }
+      })
+
       // observe events on changed types
       transaction.changed.forEach((subs, itemtype) =>
         fs.push(() => {
@@ -310,6 +327,11 @@ const cleanupTransactions = (transactionCleanups, i) => {
             })
           }
         })
+
+        itemsToRemarkAsDeleted.forEach((item) => {
+          item.deleted = true
+        })
+
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
         fs.push(() => {
           if (transaction._needFormattingCleanup) {

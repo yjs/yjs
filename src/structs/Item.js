@@ -310,6 +310,13 @@ export class Item extends AbstractStruct {
      * @type {number} byte
      */
     this.info = this.content.isCountable() ? binary.BIT2 : 0
+
+    /**
+     * Has meaning only when this.deleted: True if this item was deleted only implicitly,
+     * due to the deletion of a map containing this item under a key; False in all other
+     * kinds of deletion.
+    */
+    this.deletedImplicitly = false;
   }
 
   /**
@@ -612,18 +619,27 @@ export class Item extends AbstractStruct {
    * Mark this Item as deleted.
    *
    * @param {Transaction} transaction
+   * @param {Boolean} implicitly True if this deletion was implicit,
+   * due to the deletion of a map containing this item under a key;
+   * False in all other kinds of deletion.
    */
-  delete (transaction) {
+  delete (transaction, implicitly=false) {
     if (!this.deleted) {
       const parent = /** @type {AbstractType<any>} */ (this.parent)
       // adjust the length of parent
       if (this.countable && this.parentSub === null) {
         parent._length -= this.length
       }
+      if(implicitly) {
+        this.deletedImplicitly = true;
+      }
       this.markDeleted()
       addToDeleteSet(transaction.deleteSet, this.id.client, this.id.clock, this.length)
       addChangedTypeToTransaction(transaction, parent, this.parentSub)
       this.content.delete(transaction)
+    } else if(!implicitly) {
+      // Previously deleted implicitly, but now deleted explicitly.
+      this.deletedImplicitly = false;
     }
   }
 

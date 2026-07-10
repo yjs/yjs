@@ -118,7 +118,7 @@ export class ContentType {
     }
     this.type._map.forEach(item => {
       if (!item.deleted) {
-        item.delete(transaction)
+        item.delete(transaction, true)
       } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
         // same as above
         transaction._mergeStructs.push(item)
