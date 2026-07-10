@@ -313,8 +313,8 @@ export class Item extends AbstractStruct {
 
     /**
      * Has meaning only when this.deleted: True if this item was deleted only implicitly,
-     * due to the deletion of a map containing this item under a key; False in all other
-     * kinds of deletion.
+     * due to the deletion of a map containing this item under a key, AND the transaction
+     * for this implicit deletion has not yet happened; False in all other kinds of deletion.
     */
     this.deletedImplicitly = false;
   }
