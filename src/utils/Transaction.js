@@ -12,7 +12,7 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
-  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
+  UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, ID, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
 import * as map from 'lib0/map'
@@ -265,6 +265,24 @@ const cleanupTransactions = (transactionCleanups, i) => {
     const store = doc.store
     const ds = transaction.deleteSet
     const mergeStructs = transaction._mergeStructs
+
+    /**
+     * @type {Array<Item>}
+     */
+    const itemsToRemarkAsDeleted = [];
+    const parentsOfItemsToRemarkAsDeleted = [];
+    iterateDeletedStructs(transaction, ds, (item) => {
+      if(item instanceof Item && item.deletedImplicitly) {
+        // Unmark this implicitly-deleted item so it appears in the oldValue of YMapEvents.
+        item.deleted = false
+        item.deletedImplicitly = false // Allow it to be garbage collected when returned
+
+        // Implicitly-deleted items were still deleted so must be remarked before garbage collection!
+        itemsToRemarkAsDeleted.push(item)
+        parentsOfItemsToRemarkAsDeleted.push(item.parent)
+      }
+    })
+
     try {
       sortAndMergeDeleteSet(ds)
       transaction.afterState = getStateVector(transaction.doc.store)
@@ -277,21 +295,6 @@ const cleanupTransactions = (transactionCleanups, i) => {
        * @type {Array<function():void>}
        */
       const fs = []
-
-      /**
-       * @type {Array<Item>}
-       */
-      const itemsToRemarkAsDeleted = [];
-      iterateDeletedStructs(transaction, ds, (item) => {
-        if(item instanceof Item && item.deletedImplicitly) {
-          // Unmark this implicitly-deleted item so it appears in the oldValue of YMapEvents.
-          item.deleted = false
-          item.deletedImplicitly = false // Allow it to be garbage collected when returned
-
-          // Implicitly-deleted items were still deleted so must be remarked before garbage collection!
-          itemsToRemarkAsDeleted.push(item)
-        }
-      })
 
       // observe events on changed types
       transaction.changed.forEach((subs, itemtype) =>
@@ -328,10 +331,6 @@ const cleanupTransactions = (transactionCleanups, i) => {
           }
         })
 
-        itemsToRemarkAsDeleted.forEach((item) => {
-          item.deleted = true
-        })
-
         fs.push(() => doc.emit('afterTransaction', [transaction, doc]))
         fs.push(() => {
           if (transaction._needFormattingCleanup) {
@@ -339,8 +338,13 @@ const cleanupTransactions = (transactionCleanups, i) => {
           }
         })
       })
+
       callAll(fs, [])
     } finally {
+      itemsToRemarkAsDeleted.forEach((item, i) => {
+        item.deleted = true
+      })
+
       // Replace deleted items with ItemDeleted / GC.
       // This is where content is actually remove from the Yjs Doc.
       if (doc.gc) {
