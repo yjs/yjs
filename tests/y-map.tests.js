@@ -531,6 +531,51 @@ export const testChangeEvent = tc => {
 }
 
 /**
+ * @param {t.TestCase} tc
+ */
+export const testNestedMapChangeEvent = tc => {
+  const { map0, users } = init(tc, { users: 2 })
+  const nmap = new Y.Map()
+  const nnmap = new Y.Map()
+
+  /**
+   * @type {any}
+   */
+  let changes = null
+  /**
+   * @type {any}
+   */
+  let keyChange = null
+  map0.observe(e => {
+    changes = e.changes
+  })
+  map0.set('map', nmap)
+  keyChange = changes.keys.get('map')
+  t.assert(changes !== null && keyChange.action === 'add' && keyChange.oldValue === undefined)
+
+  users[0].transact(() => {
+    nmap.set('x', 0)
+    nmap.set('map', nnmap)
+    nmap.set('y', 1)
+    nnmap.set('z', 2)
+
+    nmap.delete('x')
+    map0.delete('map')
+  })
+  keyChange = changes.keys.get('map')
+
+  console.log(changes !== null)
+  console.log(keyChange.action === 'delete')
+  console.log(!keyChange.oldValue.has('x'))
+  console.log(keyChange.oldValue.get('map').get('z') == 2)
+  console.log(keyChange.oldValue.get('y') == 1)
+
+  t.assert(changes !== null && keyChange.action === 'delete' &&
+  !keyChange.oldValue.has('x') && keyChange.oldValue.get('map') == nnmap && keyChange.oldValue.get('map').get('z') == 2 && keyChange.oldValue.get('y') == 1)
+  compare(users)
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testYmapEventExceptionsShouldCompleteTransaction = _tc => {
