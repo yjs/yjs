@@ -1,6 +1,6 @@
 import {
   isDeleted,
-  Item, AbstractType, Transaction, AbstractStruct // eslint-disable-line
+  Item, AbstractType, ContentType, Transaction, AbstractStruct // eslint-disable-line
 } from '../internals.js'
 
 import * as set from 'lib0/set'
@@ -8,6 +8,122 @@ import * as array from 'lib0/array'
 import * as error from 'lib0/error'
 
 const errorComputeChanges = 'You must not compute changes after the event-handler fired.'
+
+
+/**
+ * Change the object content in-place to its state before the transaction (currently incomplete:
+ * nested YMaps are rolled back to pre-transaction state but no other shared types in the value are).
+ *
+ * @param {YEvent<AbstractType<any>>} yevent
+ * @param {any} obj
+ *
+ * @private
+ * @function
+ */
+const rollBackToOldValue = (yevent, obj) => {
+  yevent._rolledBack = true
+
+  if(obj instanceof AbstractType) {
+    obj._map.forEach((item, key) => {
+      const actionAndOldItem = getActionAndOldItem(yevent, item)
+      if(actionAndOldItem !== undefined && actionAndOldItem.oldItem !== undefined) {
+        rollBackToOldValue(yevent, array.last(actionAndOldItem.oldItem.content.getContent()))
+        if(yevent.deletes(item)) {
+          actionAndOldItem.oldItem.deleted = false // TODO: check
+        }
+        obj._map.set(key, actionAndOldItem.oldItem)
+      }
+    })
+  }
+}
+
+/**
+ * After calling _rollBackToOldValue, call this to revert the status of a values nested shared types
+ * to the end of the transaction this event is associated with.
+ *
+ * @param {YEvent<AbstractType<any>>} yevent
+ * @param {any} obj
+ */
+export const rollForwardToCurrentValue = (yevent, obj) => {
+  if(!yevent._rolledBack) {
+    return
+  }
+
+  if(obj instanceof AbstractType) {
+    obj._map.forEach((item, key) => {
+      while(item.right !== null) {
+        item.deleted = true // TODO: check
+        item = item.right
+      }
+      if(yevent.deletes(item)) {
+        item.deleted = true // TODO: check
+      } else if(yevent.adds(item)) {
+        item.deleted = false
+      }
+
+      if(item.content instanceof ContentType) {
+        rollForwardToCurrentValue(yevent, item.content.getContent()[0]) // Don't construct new
+      }
+      obj._map.set(key, item)
+    })
+  }
+
+  // Force keys to be calculated next time it is accessed, so it is rolled back again
+  yevent._keys = null
+  yevent._changes = null
+}
+
+/**
+ * @param {YEvent<AbstractType<any>>} yevent
+ * @param {Item} item The item from a map's value (a linked list in which
+ * only the last element is current).
+ * @returns {{action: 'add' | 'update' | 'delete', oldItem: Item | undefined}
+ * | undefined} The action which occurred during this event's transaction, and
+ * the value of the item before the transaction (currently nested YMaps of YMaps
+ * are also rolled back to pre-transaction state but no other shared types are).
+ *
+ * @private
+ * @function
+ */
+const getActionAndOldItem = (yevent, item) => {
+  /**
+   * @type {'delete' | 'add' | 'update'}
+   */
+  let action
+  /** @type {Item | undefined} */let oldItem
+
+  if (yevent.adds(item)) {
+    let prev = item.left
+    while (prev !== null && yevent.adds(prev)) {
+      prev = prev.left
+    }
+    if (yevent.deletes(item)) {
+      if (prev !== null && yevent.deletes(prev)) {
+        action = 'delete'
+        oldItem = prev
+      } else {
+        return
+      }
+    } else {
+      if (prev !== null && yevent.deletes(prev)) {
+        action = 'update'
+        oldItem = prev
+      } else {
+        action = 'add'
+        oldItem = undefined
+      }
+    }
+  } else {
+    if (yevent.deletes(item)) {
+      action = 'delete'
+      oldItem = item
+    } else {
+      return // nop
+    }
+  }
+  return { action, oldItem }
+}
+
 
 /**
  * @template {AbstractType<any>} T
@@ -50,6 +166,13 @@ export class YEvent {
      * @type {Array<string|number>|null}
      */
     this._path = null
+
+
+    /**
+     * @type {Boolean} Whether _rollBackToOldValue has been called.
+     *
+     */
+    this._rolledBack = false
   }
 
   /**
@@ -95,41 +218,16 @@ export class YEvent {
       changed.forEach(key => {
         if (key !== null) {
           const item = /** @type {Item} */ (target._map.get(key))
-          /**
-           * @type {'delete' | 'add' | 'update'}
-           */
-          let action
-          let oldValue
-          if (this.adds(item)) {
-            let prev = item.left
-            while (prev !== null && this.adds(prev)) {
-              prev = prev.left
-            }
-            if (this.deletes(item)) {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'delete'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                return
-              }
-            } else {
-              if (prev !== null && this.deletes(prev)) {
-                action = 'update'
-                oldValue = array.last(prev.content.getContent())
-              } else {
-                action = 'add'
-                oldValue = undefined
-              }
-            }
+          const actionAndOldItem = getActionAndOldItem(this, item)
+          if(actionAndOldItem === undefined) return // nop
+          if(actionAndOldItem.oldItem === undefined) {
+            // why TF TODO delete - item.deleted = true
+            keys.set(key, { action: actionAndOldItem.action, oldValue: undefined })
           } else {
-            if (this.deletes(item)) {
-              action = 'delete'
-              oldValue = array.last(/** @type {Item} */ item.content.getContent())
-            } else {
-              return // nop
-            }
+            const oldValue = array.last(actionAndOldItem.oldItem.content.getContent())
+            rollBackToOldValue(this, oldValue)
+            keys.set(key, { action: actionAndOldItem.action, oldValue })
           }
-          keys.set(key, { action, oldValue })
         }
       })
       this._keys = keys
