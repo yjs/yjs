@@ -221,7 +221,6 @@ export class YEvent {
           const actionAndOldItem = getActionAndOldItem(this, item)
           if(actionAndOldItem === undefined) return // nop
           if(actionAndOldItem.oldItem === undefined) {
-            // why TF TODO delete - item.deleted = true
             keys.set(key, { action: actionAndOldItem.action, oldValue: undefined })
           } else {
             const oldValue = array.last(actionAndOldItem.oldItem.content.getContent())
