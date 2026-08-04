@@ -228,6 +228,15 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       left = parentType._map.get(item.parentSub) || null
     }
   }
+  if (left !== null && right !== null) {
+    let next = left.right
+    while (next !== null && next !== right) {
+      next = next.right
+    }
+    if (next === null) {
+      right = left.right
+    }
+  }
   const nextClock = getState(store, ownClientID)
   const nextId = createID(ownClientID, nextClock)
   const redoneItem = new Item(
