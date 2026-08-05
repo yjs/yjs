@@ -11,6 +11,7 @@ import {
   generateNewClientId,
   createID,
   cleanupYTextAfterTransaction,
+  rollForwardToCurrentValue,
   UpdateEncoderV1, UpdateEncoderV2, GC, StructStore, AbstractType, AbstractStruct, YEvent, Doc // eslint-disable-line
 } from '../internals.js'
 
@@ -307,6 +308,9 @@ const cleanupTransactions = (transactionCleanups, i) => {
               // We don't need to check for events.length
               // because we know it has at least one element
               callEventHandlerListeners(type._dEH, events, transaction)
+              events.forEach(event => {
+                if(event instanceof YEvent) rollForwardToCurrentValue(event, type)
+              })
             })
           }
         })
