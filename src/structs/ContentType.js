@@ -106,7 +106,13 @@ export class ContentType {
     let item = this.type._start
     while (item !== null) {
       if (!item.deleted) {
-        item.delete(transaction)
+        if(item != this.type._start) {
+          // Explicitly
+          item.delete(transaction, false)
+        } else {
+          // Implicitly
+          item.delete(transaction, true)
+        }
       } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
         // This will be gc'd later and we want to merge it if possible
         // We try to merge all deleted items after each transaction,
@@ -118,7 +124,7 @@ export class ContentType {
     }
     this.type._map.forEach(item => {
       if (!item.deleted) {
-        item.delete(transaction)
+        item.delete(transaction, true)
       } else if (item.id.clock < (transaction.beforeState.get(item.id.client) || 0)) {
         // same as above
         transaction._mergeStructs.push(item)
