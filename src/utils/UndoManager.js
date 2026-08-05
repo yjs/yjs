@@ -7,7 +7,6 @@ import {
   redoItem,
   isParentOf,
   followRedone,
-  getItemCleanStart,
   isDeleted,
   addToDeleteSet,
   YEvent, Transaction, Doc, Item, GC, DeleteSet, AbstractType // eslint-disable-line
@@ -72,16 +71,30 @@ const popStackItem = (undoManager, stack, eventType) => {
        */
       const itemsToDelete = []
       let performedChange = false
+
+      /**
+       * @param {Item} item
+       */
+      const shouldDelete = item => !item.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ item))
+
       iterateDeletedStructs(transaction, stackItem.insertions, struct => {
         if (struct instanceof Item) {
           if (struct.redone !== null) {
-            let { item, diff } = followRedone(store, struct.id)
+            const { diff } = followRedone(store, struct.id)
             if (diff > 0) {
-              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
+              // The item was split, and this struct points to a position in the middle of an item.
+              // We should skip this struct because the item at the start of the range will be processed separately.
+              return
             }
-            struct = item
-          }
-          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ (struct)))) {
+            // The original struct may have been split into multiple items.
+            // We need to follow the redone chain for each position in the original range.
+            for (let i = 0; i < struct.length; i++) {
+              const { item: currentItem } = followRedone(store, createID(struct.id.client, struct.id.clock + i))
+              if (shouldDelete(currentItem)) {
+                itemsToDelete.push(currentItem)
+              }
+            }
+          } else if (shouldDelete(struct)) {
             itemsToDelete.push(struct)
           }
         }
