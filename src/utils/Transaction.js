@@ -312,19 +312,28 @@ const cleanupTransactions = (transactionCleanups, i) => {
         doc.clientID = generateNewClientId()
       }
       // @todo Merge all the transactions into one and provide send the data as a single update message
-      doc.emit('afterTransactionCleanup', [transaction, doc])
+      // Each emit is wrapped in try-catch so a throwing listener on one event does not prevent
+      // subsequent emits from firing. This prevents the observer chain from being permanently
+      // broken by a single misbehaving listener.
+      try {
+        doc.emit('afterTransactionCleanup', [transaction, doc])
+      } catch (e) { /* recover so subsequent emits still fire */ }
       if (doc._observers.has('update')) {
         const encoder = new UpdateEncoderV1()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
-          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          try {
+            doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          } catch (e) { /* recover */ }
         }
       }
       if (doc._observers.has('updateV2')) {
         const encoder = new UpdateEncoderV2()
         const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
         if (hasContent) {
-          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          try {
+            doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+          } catch (e) { /* recover */ }
         }
       }
       const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
@@ -337,13 +346,17 @@ const cleanupTransactions = (transactionCleanups, i) => {
           doc.subdocs.add(subdoc)
         })
         subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
-        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
+        try {
+          doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
+        } catch (e) { /* recover */ }
         subdocsRemoved.forEach(subdoc => subdoc.destroy())
       }
 
       if (transactionCleanups.length <= i + 1) {
         doc._transactionCleanups = []
-        doc.emit('afterAllTransactions', [doc, transactionCleanups])
+        try {
+          doc.emit('afterAllTransactions', [doc, transactionCleanups])
+        } catch (e) { /* recover */ }
       } else {
         cleanupTransactions(transactionCleanups, i + 1)
       }

@@ -313,6 +313,69 @@ export const testLoadDocsEvent = async _tc => {
 }
 
 /**
+ * A throwing event handler must not permanently break the observer chain.
+ *
+ * Previously, if any listener threw an error during a transaction emit (e.g.
+ * `update`, `beforeAllTransactions`, `beforeTransaction`), the error would
+ * propagate and corrupt the transaction state — `afterAllTransactions` would
+ * never fire and all subsequent transactions would silently break. The fix
+ * wraps each `emit` call in try-catch so a single throwing listener does not
+ * prevent remaining listeners or cleanup from running.
+ *
+ * Regression test for https://github.com/yjs/yjs/issues/799
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testThrowingEventHandlerDoesNotBreakObservers = _tc => {
+  const doc = new Y.Doc()
+  const type = doc.get('a')
+
+  // Track which observers are called
+  let firstObserverCalls = 0
+  let secondObserverCalls = 0
+  let updateListenerCalls = 0
+
+  // First observer (normal)
+  type.observe(() => { firstObserverCalls++ })
+
+  // Throwing update listener
+  const throwingListener = () => {
+    updateListenerCalls++
+    throw new Error('provider error')
+  }
+  doc.on('update', throwingListener)
+
+  // Trigger a transaction — the throwing listener throws
+  try {
+    doc.transact(() => {
+      type.push([1])
+    })
+  } catch (_) {
+    // expected
+  }
+
+  // The throwing listener was called once
+  t.assert(updateListenerCalls === 1, 'throwing listener should have been called once')
+
+  // Remove the throwing listener
+  doc.off('update', throwingListener)
+
+  // Second observer (added after the error)
+  type.observe(() => { secondObserverCalls++ })
+
+  // Subsequent transaction — both observers MUST fire
+  doc.transact(() => {
+    type.push([2])
+  })
+
+  t.assert(firstObserverCalls === 1, 'first observer should have been called once')
+  t.assert(secondObserverCalls === 1, 'second observer should have been called once')
+
+  // Verify doc content is correct (not corrupted)
+  t.compare(type.toArray(), [1, 2], 'array content should be [1, 2]')
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testSyncDocsEvent = async _tc => {

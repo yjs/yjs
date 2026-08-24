@@ -1,5 +1,3 @@
-import * as f from 'lib0/function'
-
 /**
  * General event handler implementation.
  *
@@ -75,6 +73,11 @@ export const removeAllEventHandlerListeners = eventHandler => {
  * Call all event listeners that were added via
  * {@link EventHandler#addEventListener}.
  *
+ * Each listener is called in a try-catch. If one throws, the error is
+ * re-thrown after all remaining listeners have been called. This ensures
+ * that a single throwing listener cannot permanently break the observer
+ * chain — all other listeners still receive the event.
+ *
  * @template ARG0,ARG1
  * @param {EventHandler<ARG0,ARG1>} eventHandler
  * @param {ARG0} arg0
@@ -83,5 +86,17 @@ export const removeAllEventHandlerListeners = eventHandler => {
  * @private
  * @function
  */
-export const callEventHandlerListeners = (eventHandler, arg0, arg1) =>
-  f.callAll(eventHandler.l, [arg0, arg1])
+export const callEventHandlerListeners = (eventHandler, arg0, arg1) => {
+  const listeners = eventHandler.l
+  let err = null
+  for (let i = 0; i < listeners.length; i++) {
+    try {
+      listeners[i](arg0, arg1)
+    } catch (e) {
+      err = e
+    }
+  }
+  if (err !== undefined) {
+    throw err
+  }
+}
