@@ -413,6 +413,81 @@ export const testPathsOfSiblingEvents = tc => {
   compare(users)
 }
 
+/**
+ * Multiple deep observers attached to a parent and one of its children must
+ * each see the same change with a path relative to their own `currentTarget`.
+ *
+ * Regression test for issue #768: in v13.6.29, deep event handler calls were
+ * deferred via `callAll`. Because the same `YEvent` instance is added to
+ * `changedParentTypes` for every ancestor type that has a deep observer, the
+ * `event.currentTarget` mutation that runs inside the deep-event setup loop
+ * was being overwritten by the next iteration before the previously-prepared
+ * handler was called, so observers on the outer type saw the inner type as
+ * `currentTarget` and an empty `path`.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testDeepObserveMultipleAncestors = tc => {
+  const doc = new Y.Doc()
+  const a = doc.getMap('a')
+  a.set('b', new Y.Map())
+  a.set('c', new Y.Map())
+  /**
+   * @type {Array<{ currentTarget: 'a' | 'a.c', path: Array<string|number> }>}
+   */
+  const aObserver = []
+  a.observeDeep(events => {
+    events.forEach(event => {
+      aObserver.push({
+        currentTarget: /** @type {'a' | 'a.c'} */ (event.currentTarget === a ? 'a' : 'a.c'),
+        path: event.path
+      })
+    })
+  })
+  // First transact — only the `a` deep observer exists. Both `b.foo` and
+  // `c.foo` should be reported with the path relative to `a`.
+  doc.transact(() => {
+    a.get('b').set('foo', 'bar')
+    a.get('c').set('foo', 'bar')
+  })
+  t.compare(aObserver, [
+    { currentTarget: 'a', path: ['b'] },
+    { currentTarget: 'a', path: ['c'] }
+  ])
+  // Add a second deep observer on `a.c`.
+  /**
+   * @type {Array<{ currentTarget: 'a' | 'a.c', path: Array<string|number> }>}
+   */
+  const cObserver = []
+  /**
+   * @param {Array<Y.YEvent<Y.AbstractType<any>>>} events
+   */
+  const collectCObserver = events => {
+    events.forEach(event => {
+      cObserver.push({
+        currentTarget: /** @type {'a' | 'a.c'} */ (event.currentTarget === a ? 'a' : 'a.c'),
+        path: event.path
+      })
+    })
+  }
+  a.get('c').observeDeep(collectCObserver)
+  // Second transact — both observers should fire and each must see its own
+  // `currentTarget` and a path relative to it.
+  doc.transact(() => {
+    a.get('b').set('foo', 'baz')
+    a.get('c').set('foo', 'baz')
+  })
+  t.compare(aObserver.slice(2), [
+    { currentTarget: 'a', path: ['b'] },
+    { currentTarget: 'a', path: ['c'] }
+  ])
+  // The `a.c` observer sees only the change inside `c`, with a path relative
+  // to `a.c` (which is `[]`).
+  t.compare(cObserver, [
+    { currentTarget: 'a.c', path: [] }
+  ])
+}
+
 // TODO: Test events in Y.Map
 /**
  * @param {Object<string,any>} is
