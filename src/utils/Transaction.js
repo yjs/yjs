@@ -294,16 +294,20 @@ const cleanupTransactions = (transactionCleanups, i) => {
               .filter(event =>
                 event.target._item === null || !event.target._item.deleted
               )
-            events
-              .forEach(event => {
+            // Defer `event.currentTarget` mutation and the call to deep event
+            // listeners so that an error in one observer does not prevent the
+            // next one from firing, and so that the same `YEvent` instance shared
+            // by multiple parent types (added in `callTypeObservers`) ends up
+            // with the correct `currentTarget` for each observer. See #768.
+            fs.push(() => {
+              events.forEach(event => {
                 event.currentTarget = type
                 // path is relative to the current target
                 event._path = null
               })
-            // sort events by path length so that top-level events are fired first.
-            events
-              .sort((event1, event2) => event1.path.length - event2.path.length)
-            fs.push(() => {
+              // sort events by path length so that top-level events are fired first.
+              events
+                .sort((event1, event2) => event1.path.length - event2.path.length)
               // We don't need to check for events.length
               // because we know it has at least one element
               callEventHandlerListeners(type._dEH, events, transaction)
