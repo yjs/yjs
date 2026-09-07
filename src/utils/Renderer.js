@@ -3,7 +3,7 @@ import * as encoding from 'lib0/encoding'
 
 import { getItemCleanStart } from './transaction-helpers.js'
 import { diffIdSet, createInsertSetFromStructStore, createDeleteSetFromStructStore, insertIntoIdSet, mergeIdSets, intersectSets, createIdSet, createIdSetFromIdMap, writeIdSet, createIdMapFromIdSet, insertIntoIdMap, diffIdMap, createIdMap, mergeIdMaps, intersectMaps, createMaybeAttrRange, createContentAttribute } from './ids.js'
-import { ContentDeleted, ContentFormat } from '../structs/Item.js'
+import { ContentDeleted, ContentFormat, ContentType } from '../structs/Item.js'
 import { createID } from './ID.js'
 import { writeStructsFromIdSet } from './encoding-helpers.js'
 import { applyUpdate, encodeStateAsUpdate } from './encoding.js'
@@ -215,11 +215,44 @@ const getItemContent = (store, client, clock, len) => {
 }
 
 /**
+ * Collect the whole subtree of an accepted pending node insert. A nested item can only exist in
+ * the suggestion doc if its parent does, so every attribute entry and every child of an accepted
+ * node belongs to the same suggestion - the attributes in particular: shipped without them, the
+ * node that reaches the base doc is not the node that was suggested (an image without its `src`,
+ * a paragraph without its text). Deleted nested items are transient (inserted and deleted within
+ * the suggestion) and are collected like the top-level `collectAll` case; the receiving document
+ * filters what it already holds.
+ *
+ * @param {import('../ynode.js').YNode} type
+ * @param {IdSet} inserts
+ * @param {IdSet} deletes
+ */
+const collectSubtree = (type, inserts, deletes) => {
+  /**
+   * @type {Array<Item|null>}
+   */
+  const chains = [type._start]
+  type._map.forEach(item => { chains.push(item) })
+  for (const chain of chains) {
+    // list items chain to the right, map entries to the left (their overwritten values)
+    for (let item = chain; item != null; item = item.parentSub != null ? item.left : item.right) {
+      inserts.add(item.id.client, item.id.clock, item.length)
+      if (item.deleted) {
+        deletes.add(item.id.client, item.id.clock, item.length)
+      } else if (item.content instanceof ContentType) {
+        collectSubtree(item.content.type, inserts, deletes)
+      }
+    }
+  }
+}
+
+/**
  * @param {Transaction?} tr - only specify this if you want to fill the content of deleted content
  * @param {DiffRenderer} renderer
  * @param {ID} start
  * @param {ID} end
  * @param {boolean} collectAll - collect as many items as possible. Accept adding redundant changes.
+ *   An accepted node insert then also collects its subtree (see {@link collectSubtree}).
  */
 const collectSuggestedChanges = (tr, renderer, start, end, collectAll) => {
   const inserts = createIdSet()
@@ -250,6 +283,9 @@ const collectSuggestedChanges = (tr, renderer, start, end, collectAll) => {
           const s = slice[i]
           if (s.attrs == null) break
           inserts.add(item.id.client, s.clock, s.len)
+          if (collectAll && item.content instanceof ContentType) {
+            collectSubtree(item.content.type, inserts, deletes)
+          }
         }
         item = item.right
         break
@@ -294,6 +330,9 @@ const collectSuggestedChanges = (tr, renderer, start, end, collectAll) => {
         const s = slice[i]
         if (s.attrs != null) {
           inserts.add(itemClient, s.clock, s.len)
+          if (collectAll && item.content instanceof ContentType) {
+            collectSubtree(item.content.type, inserts, deletes)
+          }
         } else if (foundEndItem && openedCollectedFormats.size === 0) {
           // eslint-disable-next-line
           break itemLoop

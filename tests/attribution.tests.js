@@ -11,6 +11,7 @@ import * as delta from 'lib0/delta'
 import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import { bind, $rdt } from 'lib0/delta/rdt'
+import { writeStructsFromIdSet } from '../src/utils/encoding-helpers.js'
 import { init } from './testHelper.js' // eslint-disable-line
 
 /**
@@ -1545,10 +1546,12 @@ export const testRdtAcceptingNodeInsertRenderedAsSuggestion = () => {
 /**
  * Guards the id-scoped heal design: unattributing an accepted node must never cascade into a
  * blanket subtree clear, because children may still be attributed. Here only the node's OWN
- * insert-suggestion is accepted (`acceptChanges` with a range covering just the node id) — the
- * node commits to base as an empty paragraph while its text children remain pending
- * suggestions. The heal must clear the node's attribution, keep the children's `{insert: []}`,
- * and keep the maintained cache equal to a fresh render.
+ * insert struct is committed to base — `acceptChanges` ships an accepted node together with its
+ * subtree (see {@link testRdtRangeAcceptShipsNestedStructs}), so the partial state is built by
+ * hand through the raw struct path the accept uses — the node commits to base as an empty
+ * paragraph while its text children remain pending suggestions. The heal must clear the node's
+ * attribution, keep the children's `{insert: []}`, and keep the maintained cache equal to a fresh
+ * render.
  */
 export const testRdtPartialAcceptKeepsPendingChildSuggestions = () => {
   const doc = new Y.Doc({ gc: false })
@@ -1565,8 +1568,13 @@ export const testRdtPartialAcceptKeepsPendingChildSuggestions = () => {
   // suggestion 2: more text inside the suggested node
   ynode.applyDelta(delta.create().retain(1).modify(delta.create().retain(1).insert('Q')).done())
   t.assert(ynode.delta.equals(ynode.toDelta({ deep: true })), 'consistent before the partial accept')
-  // accept ONLY the node's own id (clock 0); every child stays a pending suggestion
-  renderer.acceptChanges(Y.createID(client, 0))
+  // commit ONLY the node's own struct (clock 0); every child stays a pending suggestion
+  const encoder = new Y.UpdateEncoderV1()
+  const nodeOnly = Y.createIdSet()
+  nodeOnly.add(client, 0, 1)
+  writeStructsFromIdSet(encoder, suggestionDoc.store, nodeOnly)
+  Y.writeIdSet(encoder, Y.createIdSet())
+  Y.applyUpdate(doc, encoder.toUint8Array())
   const cached = ynode.delta
   const fresh = ynode.toDelta({ deep: true })
   const freshJson = /** @type {any} */ (fresh.toJSON())
@@ -1581,6 +1589,63 @@ export const testRdtPartialAcceptKeepsPendingChildSuggestions = () => {
     console.error('fresh :', JSON.stringify(fresh.toJSON()))
   }
   t.assert(cached.equals(fresh), 'maintained .delta must equal a fresh deep render after the partial accept')
+}
+
+/**
+ * A range accept ships an accepted node together with its subtree. `collectSuggestedChanges` used
+ * to collect only the top-level item chain of the accepted range, so accepting a pending node
+ * insert committed the bare node struct: an image reached the base doc without its `src`, a
+ * paragraph without its text, a blockquote without its paragraphs (found through y-prosemirror's
+ * cohort fuzz — its known issue 7 — where a base-bound editor then threw on the image without its
+ * required attr). A nested item can only exist in the suggestion doc if its parent does, so the
+ * subtree is part of the same suggestion.
+ */
+export const testRdtRangeAcceptShipsNestedStructs = () => {
+  /**
+   * @param {string} label
+   * @param {(snode: any) => void} suggest one suggested node insert whose node struct takes clock 0
+   * @param {(baseJson: string) => boolean} committed what the base doc's deep render must hold
+   */
+  const check = (label, suggest, committed) => {
+    const base = new Y.Doc({ gc: false })
+    base.clientID = 0
+    const sugg = new Y.Doc({ isSuggestionDoc: true, gc: false })
+    sugg.clientID = 1
+    const renderer = Y.createDiffRenderer(base, sugg, { attributions: Y.createContentMap() })
+    renderer.suggestionMode = true
+    const bnode = base.get('prosemirror')
+    const snode = sugg.get('prosemirror')
+    bnode.applyDelta(delta.create().insert([delta.create('paragraph', {}, 'ab')]).done())
+    snode.useRenderer(renderer)
+    t.assert(snode.delta != null) // materialize the maintained cache
+    suggest(snode)
+    t.assert(JSON.stringify(snode.toDelta({ deep: true }).toJSON()).includes('"attribution":{"insert":[]}'), `${label}: suggested`)
+    renderer.acceptChanges(Y.createID(1, 0), Y.createID(1, 0))
+    const baseJson = JSON.stringify(bnode.toDeltaDeep().toJSON())
+    t.assert(committed(baseJson), `${label}: the accepted node reached the base doc with its subtree (${baseJson})`)
+    const fresh = snode.toDelta({ deep: true })
+    t.assert(!JSON.stringify(fresh.toJSON()).includes('"attribution"'), `${label}: nothing is left presented as a suggestion`)
+    t.assert(snode.delta.equals(fresh), `${label}: maintained .delta equals a fresh deep render after the accept`)
+  }
+  check(
+    'image with a required attr',
+    snode => {
+      // untyped builders keep tsc's inference shallow here
+      const paragraph = /** @type {any} */ (delta.create()).retain(1).insert([delta.create('image', { src: 'x.png' })])
+      snode.applyDelta(/** @type {any} */ (delta.create()).modify(paragraph).done())
+    },
+    json => json.includes('"name":"image"') && json.includes('"src":{"type":"insert","value":"x.png"}')
+  )
+  check(
+    'paragraph with text',
+    snode => snode.applyDelta(delta.create().retain(1).insert([delta.create('paragraph', {}, 'text')]).done()),
+    json => json.split('"paragraph"').length === 3 && json.includes('"insert":"text"')
+  )
+  check(
+    'blockquote with a nested paragraph',
+    snode => snode.applyDelta(delta.create().retain(1).insert([delta.create('blockquote', {}, [delta.create('paragraph', {}, 'deep')])]).done()),
+    json => json.includes('"name":"blockquote"') && json.includes('"insert":"deep"')
+  )
 }
 
 /**
