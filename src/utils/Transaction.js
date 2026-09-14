@@ -311,42 +311,59 @@ const cleanupTransactions = (transactionCleanups, i) => {
         logging.print(logging.ORANGE, logging.BOLD, '[yjs] ', logging.UNBOLD, logging.RED, 'Changed the client-id because another client seems to be using it.')
         doc.clientID = generateNewClientId()
       }
-      // @todo Merge all the transactions into one and provide send the data as a single update message
-      doc.emit('afterTransactionCleanup', [transaction, doc])
-      if (doc._observers.has('update')) {
-        const encoder = new UpdateEncoderV1()
-        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
-        if (hasContent) {
-          doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
-        }
-      }
-      if (doc._observers.has('updateV2')) {
-        const encoder = new UpdateEncoderV2()
-        const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
-        if (hasContent) {
-          doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
-        }
-      }
       const { subdocsAdded, subdocsLoaded, subdocsRemoved } = transaction
-      if (subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0) {
-        subdocsAdded.forEach(subdoc => {
-          subdoc.clientID = doc.clientID
-          if (subdoc.collectionid == null) {
-            subdoc.collectionid = doc.collectionid
+      const hasSubdocChanges = subdocsAdded.size > 0 || subdocsRemoved.size > 0 || subdocsLoaded.size > 0
+      // Each step runs even if a listener in an earlier one throws. Otherwise
+      // the transaction is never removed from `doc._transactionCleanups`, and no
+      // later transaction calls observers or emits updates again.
+      // @todo Merge all the transactions into one and provide send the data as a single update message
+      callAll([
+        () => doc.emit('afterTransactionCleanup', [transaction, doc]),
+        () => {
+          if (doc._observers.has('update')) {
+            const encoder = new UpdateEncoderV1()
+            const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+            if (hasContent) {
+              doc.emit('update', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+            }
           }
-          doc.subdocs.add(subdoc)
-        })
-        subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
-        doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
-        subdocsRemoved.forEach(subdoc => subdoc.destroy())
-      }
-
-      if (transactionCleanups.length <= i + 1) {
-        doc._transactionCleanups = []
-        doc.emit('afterAllTransactions', [doc, transactionCleanups])
-      } else {
-        cleanupTransactions(transactionCleanups, i + 1)
-      }
+        },
+        () => {
+          if (doc._observers.has('updateV2')) {
+            const encoder = new UpdateEncoderV2()
+            const hasContent = writeUpdateMessageFromTransaction(encoder, transaction)
+            if (hasContent) {
+              doc.emit('updateV2', [encoder.toUint8Array(), transaction.origin, doc, transaction])
+            }
+          }
+        },
+        () => {
+          if (hasSubdocChanges) {
+            subdocsAdded.forEach(subdoc => {
+              subdoc.clientID = doc.clientID
+              if (subdoc.collectionid == null) {
+                subdoc.collectionid = doc.collectionid
+              }
+              doc.subdocs.add(subdoc)
+            })
+            subdocsRemoved.forEach(subdoc => doc.subdocs.delete(subdoc))
+            doc.emit('subdocs', [{ loaded: subdocsLoaded, added: subdocsAdded, removed: subdocsRemoved }, doc, transaction])
+          }
+        },
+        () => {
+          if (hasSubdocChanges) {
+            subdocsRemoved.forEach(subdoc => subdoc.destroy())
+          }
+        },
+        () => {
+          if (transactionCleanups.length <= i + 1) {
+            doc._transactionCleanups = []
+            doc.emit('afterAllTransactions', [doc, transactionCleanups])
+          } else {
+            cleanupTransactions(transactionCleanups, i + 1)
+          }
+        }
+      ], [])
     }
   }
 }
@@ -418,12 +435,16 @@ export const transact = (doc, f, origin = null, local = true) => {
     initialCall = true
     doc._transaction = new Transaction(doc, origin, local)
     transactionCleanups.push(doc._transaction)
-    if (transactionCleanups.length === 1) {
-      doc.emit('beforeAllTransactions', [doc])
-    }
-    doc.emit('beforeTransaction', [doc._transaction, doc])
   }
   try {
+    if (initialCall) {
+      // emitted inside the try block, so a throwing listener still closes the
+      // transaction and runs the cleanup below
+      if (transactionCleanups.length === 1) {
+        doc.emit('beforeAllTransactions', [doc])
+      }
+      doc.emit('beforeTransaction', [doc._transaction, doc])
+    }
     result = f(doc._transaction)
   } finally {
     if (initialCall) {
