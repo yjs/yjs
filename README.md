@@ -413,6 +413,7 @@ language bindings to other languages
 * [ycs](https://github.com/yjs/ycs) - .Net compatible C# implementation.
 * [ygo](https://github.com/reearth/ygo) - Go implementation.
 * [ygo (Deln0r/ygo)](https://github.com/Deln0r/ygo) - Go implementation.
+* [go-yjs](https://github.com/antst/go-yjs) - Go implementation.
 
 ## Getting Started
 
