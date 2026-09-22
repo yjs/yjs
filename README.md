@@ -29,8 +29,10 @@ Otherwise you can find help on our community [discussion board](https://discuss.
 
 ## Sponsorship
 
-Please contribute to the project financially - especially if your company relies
-on Yjs. [![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
+Yjs is MIT licensed and free to use. However, if you use Yjs in a commercial
+application, there is a **social expectation to sponsor** the project
+financially. It's what keeps Yjs maintained.
+[![Become a Sponsor](https://img.shields.io/static/v1?label=Become%20a%20Sponsor&message=%E2%9D%A4&logo=GitHub&style=flat&color=d42f2d)](https://github.com/sponsors/dmonad)
 
 ## Professional Support
 
