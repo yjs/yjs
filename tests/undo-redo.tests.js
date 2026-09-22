@@ -823,3 +823,202 @@ export const testUndoDoingStackItem = async (_tc) => {
   t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
   t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
 }
+
+/**
+ * Restored nested sequence items must retain a valid causal insertion interval.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoNestedSequenceRoundTrip = _tc => {
+  const docs = [11, 22].map(clientID => {
+    const doc = new Y.Doc({ gc: false })
+    doc.clientID = clientID
+    return doc
+  })
+  const roots = docs.map(doc => doc.get('sequence'))
+
+  /** @param {string} value */
+  const item = value => {
+    const result = new Y.Type()
+    result.insert(0, value)
+    return result
+  }
+
+  /** @param {string} value */
+  const nested = value => {
+    const result = new Y.Type()
+    result.insert(0, [item(value)])
+    return result
+  }
+
+  docs[0].transact(() => {
+    roots[0].insert(0, [item('a'), nested('bc'), item('d')])
+  }, 'initial')
+
+  const undoManager = new Y.UndoManager(roots[1], { captureTimeout: 0 })
+  const sync = () => {
+    for (const [source, target] of [[0, 1], [1, 0]]) {
+      Y.applyUpdate(docs[target], Y.encodeStateAsUpdate(docs[source], Y.encodeStateVector(docs[target])), 'remote')
+    }
+  }
+
+  roots[0].insert(0, [nested('d')])
+  sync()
+
+  const firstInner = /** @type {Y.Type} */ (roots[0].get(2))
+  firstInner.insert(0, [item('d')])
+  const secondInner = /** @type {Y.Type} */ (roots[1].get(2))
+  const secondValue = /** @type {Y.Type} */ (secondInner.get(0))
+  secondValue.insert(0, 'b')
+  docs[1].transact(() => {
+    const inner = /** @type {Y.Type} */ (/** @type {Y.Type} */ (roots[1].get(2)).get(0))
+    inner.delete(0, inner.length)
+    inner.insert(0, 'c')
+    roots[1].delete(0, 1)
+    roots[1].insert(0, [item('cr')])
+  })
+  undoManager.undo()
+
+  roots[0].insert(1, [item('b')])
+  sync()
+
+  docs[1].transact(() => {
+    roots[1].delete(0, roots[1].length)
+    roots[1].insert(0, [nested('a'), item('ar')])
+  })
+  const markedSequence = /** @type {Y.Type} */ (roots[0].get(3))
+  const markedValue = /** @type {Y.Type} */ (markedSequence.get(1))
+  markedValue.format(1, 1, { mark: true })
+  docs[1].transact(() => {
+    roots[1].delete(1, 1)
+    roots[1].insert(1, [nested('c')])
+  })
+  sync()
+  undoManager.undo()
+
+  const firstRestoredClock = Y.decodeStateVector(Y.encodeStateVector(docs[1])).get(docs[1].clientID) || 0
+  undoManager.undo()
+
+  /**
+   * @param {Y.Type} sequence
+   * @returns {Array<any>}
+   */
+  const values = sequence => sequence.toArray().map(value =>
+    value instanceof Y.Type ? values(value) : value
+  )
+
+  const expected = [[['d']], ['b'], ['a'], [['d'], ['bbc']], ['d']]
+  t.compare(values(roots[1]), expected)
+
+  const fresh = new Y.Doc({ gc: false })
+  Y.applyUpdate(fresh, Y.encodeStateAsUpdate(docs[1]))
+  t.compare(values(fresh.get('sequence')), expected)
+
+  sync()
+  t.compare(Y.encodeStateVector(docs[0]), Y.encodeStateVector(docs[1]))
+  t.compare(values(roots[0]), expected)
+
+  const structs = /** @type {Array<Y.Item>} */ (docs[1].store.clients.get(docs[1].clientID))
+  for (const restored of structs) {
+    if (restored.id.clock < firstRestoredClock || restored.parentSub !== null ||
+        restored.origin === null || restored.rightOrigin === null) continue
+
+    const origin = restored.origin
+    const rightOrigin = restored.rightOrigin
+    const leftStructs = /** @type {Array<Y.Item>} */ (docs[1].store.clients.get(origin.client))
+    const rightStructs = /** @type {Array<Y.Item>} */ (docs[1].store.clients.get(rightOrigin.client))
+    const left = leftStructs.find(value => value.id.clock <= origin.clock &&
+      origin.clock < value.id.clock + value.length)
+    const right = rightStructs.find(value => value.id.clock <= rightOrigin.clock &&
+      rightOrigin.clock < value.id.clock + value.length)
+    t.assert(left instanceof Y.Item && right instanceof Y.Item,
+      'restored sequence origins must resolve to sequence items')
+    if (!(left instanceof Y.Item) || !(right instanceof Y.Item)) continue
+    t.assert(left.parent === restored.parent && right.parent === restored.parent,
+      'restored sequence origins must belong to the same sequence')
+
+    let next = left.right
+    while (next !== null && next !== right) next = next.right
+    t.assert(next === right,
+      'the right origin of a restored sequence item must follow its left origin')
+  }
+}
+
+/**
+ * Snapshot-rendered insertion must not make a single-writer undo unserializable.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoSnapshotRenderedNestedSequenceRoundTrip = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  doc.clientID = 11
+  const sequence = doc.get('sequence')
+
+  doc.transact(() => {
+    const inner = new Y.Type()
+    inner.insert(0, ['b'])
+    sequence.insert(0, [inner, 'd'])
+  }, 'initial')
+
+  const undoManager = new Y.UndoManager(sequence, { captureTimeout: 0 })
+  const inner = /** @type {Y.Type} */ (sequence.get(0))
+
+  inner.insert(1, ['j'])
+  const beforeDeletion = Y.snapshot(doc)
+  inner.delete(0, inner.length)
+  const afterDeletion = Y.snapshot(doc)
+  undoManager.undo()
+
+  const restoredInner = /** @type {Y.Type} */ (sequence.get(0))
+  restoredInner.applyDelta(
+    restoredInner.change.retain(3).insert([new Y.Type()]).done(),
+    null,
+    { renderer: Y.createSnapshotRenderer(beforeDeletion, afterDeletion) }
+  )
+  sequence.delete(0, 1)
+
+  const firstRestoredClock = Y.decodeStateVector(Y.encodeStateVector(doc)).get(doc.clientID) || 0
+  undoManager.undo()
+
+  /**
+   * @param {Y.Type} value
+   * @returns {Array<any>}
+   */
+  const values = value => value.toArray().map(item =>
+    item instanceof Y.Type ? values(item) : item
+  )
+
+  const expected = [['b', 'j', []], 'd']
+  t.compare(values(sequence), expected)
+
+  const fresh = new Y.Doc({ gc: false })
+  Y.applyUpdate(fresh, Y.encodeStateAsUpdate(doc))
+  t.compare(values(fresh.get('sequence')), expected)
+
+  const structs = /** @type {Array<Y.Item>} */ (doc.store.clients.get(doc.clientID))
+  let checkedRestorations = 0
+  for (const restored of structs) {
+    if (restored.id.clock < firstRestoredClock || restored.parentSub !== null) continue
+    checkedRestorations++
+    if (restored.origin === null || restored.rightOrigin === null) continue
+
+    const origin = restored.origin
+    const rightOrigin = restored.rightOrigin
+    const left = structs.find(item => item.id.clock <= origin.clock &&
+      origin.clock < item.id.clock + item.length)
+    const right = structs.find(item => item.id.clock <= rightOrigin.clock &&
+      rightOrigin.clock < item.id.clock + item.length)
+
+    t.assert(left instanceof Y.Item && right instanceof Y.Item,
+      'restored sequence origins must resolve to sequence items')
+    if (!(left instanceof Y.Item) || !(right instanceof Y.Item)) continue
+    t.assert(left.parent === restored.parent && right.parent === restored.parent,
+      'restored sequence origins must belong to the same sequence')
+
+    let next = left.right
+    while (next !== null && next !== right) next = next.right
+    t.assert(next === right,
+      'the right origin of a restored sequence item must follow its left origin')
+  }
+  t.assert(checkedRestorations > 0, 'undo must restore at least one sequence item')
+}
