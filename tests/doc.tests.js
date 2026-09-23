@@ -313,6 +313,70 @@ export const testLoadDocsEvent = async _tc => {
 }
 
 /**
+ * A throwing document event handler must still finish transaction cleanup.
+ * The error still propagates, but later transactions must keep firing
+ * observers and update listeners.
+ *
+ * @see https://github.com/yjs/yjs/issues/799
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testThrowingDocEventHandlerDoesNotBreakLaterTransactions = _tc => {
+  /**
+   * @param {'update' | 'updateV2' | 'afterTransactionCleanup' | 'beforeTransaction' | 'beforeAllTransactions' | 'subdocs'} eventName
+   * @param {function(Y.Doc):void} trigger
+   */
+  const assertDocSurvivesThrowingHandler = (eventName, trigger) => {
+    const doc = new Y.Doc()
+    const yarray = doc.get('a')
+    const throwing = () => {
+      throw new Error('provider error')
+    }
+    let afterAllCount = 0
+    doc.on('afterAllTransactions', () => {
+      afterAllCount++
+    })
+    doc.on(eventName, throwing)
+    t.fails(() => {
+      trigger(doc)
+    })
+    t.assert(afterAllCount === 1, `${eventName}: transaction cleanup must finish`)
+    doc.off(eventName, throwing)
+
+    let observeCount = 0
+    yarray.observe(() => {
+      observeCount++
+    })
+    let updateCount = 0
+    doc.on('update', () => {
+      updateCount++
+    })
+    yarray.push([1])
+    t.assert(observeCount === 1, `${eventName}: observer must fire after throwing handler is removed`)
+    t.assert(updateCount === 1, `${eventName}: update must fire after throwing handler is removed`)
+  }
+
+  assertDocSurvivesThrowingHandler('update', doc => {
+    doc.get('a').push([0])
+  })
+  assertDocSurvivesThrowingHandler('updateV2', doc => {
+    doc.get('a').push([0])
+  })
+  assertDocSurvivesThrowingHandler('afterTransactionCleanup', doc => {
+    doc.get('a').push([0])
+  })
+  assertDocSurvivesThrowingHandler('beforeTransaction', doc => {
+    doc.get('a').push([0])
+  })
+  assertDocSurvivesThrowingHandler('beforeAllTransactions', doc => {
+    doc.get('a').push([0])
+  })
+  assertDocSurvivesThrowingHandler('subdocs', doc => {
+    doc.get('mysubdocs').setAttr('a', new Y.Doc({ guid: 'a' }))
+  })
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testSyncDocsEvent = async _tc => {
