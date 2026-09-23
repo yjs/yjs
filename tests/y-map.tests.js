@@ -413,6 +413,68 @@ export const testPathsOfSiblingEvents = tc => {
   compare(users)
 }
 
+/**
+ * Deep event paths must stay relative to the type each observer was attached
+ * to, even when multiple deep observers exist at different nesting levels.
+ *
+ * @see https://github.com/yjs/yjs/issues/768
+ * @param {t.TestCase} _tc
+ */
+export const testDeepEventPathsWithMultipleDeepObservers = _tc => {
+  const doc = new Y.Doc()
+  const a = doc.getMap('a')
+  const b = a.set('b', new Y.Map())
+  const c = a.set('c', new Y.Map())
+  /**
+   * Order in which observers and the afterTransaction event are called.
+   *
+   * @type {Array<string>}
+   */
+  const calls = []
+  /**
+   * @type {Array<{ path: Array<string|number>, currentTarget: Y.AbstractType<any> }>}
+   */
+  const observedA = []
+  a.observeDeep(events => {
+    calls.push('observeDeep a')
+    events.forEach(event => {
+      observedA.push({ path: event.path, currentTarget: event.currentTarget })
+    })
+  })
+  /**
+   * @type {Array<{ path: Array<string|number>, currentTarget: Y.AbstractType<any> }>}
+   */
+  const observedC = []
+  // a second deep observer at a deeper nesting level must not affect the
+  // paths reported to the observer on `a`
+  c.observeDeep(events => {
+    calls.push('observeDeep c')
+    events.forEach(event => {
+      observedC.push({ path: event.path, currentTarget: event.currentTarget })
+    })
+  })
+  c.observe(() => {
+    calls.push('observe c')
+  })
+  doc.on('afterTransaction', () => {
+    calls.push('afterTransaction')
+  })
+  doc.transact(() => {
+    b.set('foo', 'bar')
+    c.set('foo', 'bar')
+  })
+  // afterTransaction must be fired after all (deep) observers were called
+  t.compare(calls, ['observe c', 'observeDeep a', 'observeDeep c', 'afterTransaction'])
+  t.assert(observedA.length === 2)
+  t.compare(observedA[0].path, ['b'])
+  t.assert(observedA[0].currentTarget === a)
+  t.compare(observedA[1].path, ['c'])
+  t.assert(observedA[1].currentTarget === a)
+  t.assert(observedC.length === 1)
+  t.compare(observedC[0].path, [])
+  t.assert(observedC[0].currentTarget === c)
+}
+
 // TODO: Test events in Y.Map
 /**
  * @param {Object<string,any>} is
