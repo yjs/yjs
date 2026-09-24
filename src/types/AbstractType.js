@@ -10,6 +10,7 @@ import {
   ContentAny,
   ContentBinary,
   getItemCleanStart,
+  rollForwardToCurrentValue,
   ContentDoc, YText, YArray, UpdateEncoderV1, UpdateEncoderV2, Doc, Snapshot, Transaction, EventHandler, YEvent, Item, // eslint-disable-line
 } from '../internals.js'
 
@@ -252,6 +253,7 @@ export const callTypeObservers = (type, transaction, event) => {
     type = /** @type {AbstractType<any>} */ (type._item.parent)
   }
   callEventHandlerListeners(changedType._eH, event, transaction)
+  if(event instanceof YEvent) rollForwardToCurrentValue(event, type)
 }
 
 /**
