@@ -7,7 +7,7 @@ import * as encoding from 'lib0/encoding'
 import * as number from 'lib0/number'
 
 import { createID, ID } from './ID.js'
-import { Item } from '../structs/Item.js'
+import { Item, ContentDeleted } from '../structs/Item.js'
 import { readItemContent } from '../ynode.js'
 import { findIndexCleanStart } from './transaction-helpers.js'
 import { Skip } from '../structs/Skip.js'
@@ -108,6 +108,36 @@ class BlockRange {
   }
 }
 
+/**
+ * Rank the encodings of a block by how much content they retain:
+ * Item with content > Item with ContentDeleted (gc'd item) > GC > Skip
+ *
+ * @param {Item|GC|Skip} block
+ */
+const contentRank = block => block.constructor === Item
+  ? (/** @type {Item} */ (block).content.constructor === ContentDeleted ? 1 : 2)
+  : (block.constructor === GC ? 0 : -1)
+
+/**
+ * Forward `range` to the first block that contains content starting at `clock` or later. The
+ * returned block is trimmed so that it doesn't start before `clock`.
+ *
+ * @param {BlockRange} range
+ * @param {number} clock
+ * @return {Item|GC|undefined}
+ */
+const nextBlock = (range, clock) => {
+  const refs = range.refs
+  let block = refs[range.i]
+  while (block !== undefined && (block.constructor === Skip || block.id.clock + block.length <= clock)) {
+    block = refs[++range.i]
+  }
+  if (block !== undefined && block.id.clock < clock) {
+    block = refs[range.i] = sliceStruct(block, clock - block.id.clock)
+  }
+  return /** @type {Item|GC|undefined} */ (block)
+}
+
 export class BlockSet {
   constructor () {
     /**
@@ -199,88 +229,48 @@ export class BlockSet {
           }
           ranges.refs = leftRanges
         } else {
-          // requires more computation because we need to filter duplicates
+          // Requires more computation because we need to filter duplicates.
+          // The same id always denotes the same operation. Two encodings of a block can only
+          // differ in their gc state, so we keep the encoding that retains the most content.
           /**
            * @type {Array<GC|Item|Skip>}
            */
           const result = []
+          const left = new BlockRange(leftRanges)
+          const right = new BlockRange(rightRanges)
           let nextExpectedClock = leftRanges[0].id.clock
-          /**
-           * @param {Item|GC|Skip} block
-           */
-          const addToResult = block => {
-            result.push(block)
-            nextExpectedClock = block.id.clock + block.length
-          }
-          let li = 0
-          let ri = 0
-          /**
-           * @type {Item|GC|Skip|undefined}
-           */
-          let lblock = leftRanges[li]
-          /**
-           * @type {Item|GC|Skip|undefined}
-           */
-          let rblock = rightRanges[ri]
-          const applyLeft = () => {
-            if (lblock === undefined) return
-            // first try to consume left
-            // left: filter skips and known ops
-            while (lblock !== undefined && (lblock.constructor === Skip || lblock.id.clock + lblock.length <= nextExpectedClock)) {
-              lblock = leftRanges[++li]
-            }
-            // left: trim first op
-            if (lblock !== undefined && lblock.id.clock < nextExpectedClock && lblock.id.clock + lblock.length > nextExpectedClock) {
-              lblock = sliceStruct(lblock, lblock.id.clock + lblock.length - nextExpectedClock)
-            }
-            // left: add to result
-            while (lblock !== undefined && lblock.id.clock === nextExpectedClock && lblock.constructor !== Skip) {
-              addToResult(lblock)
-              lblock = leftRanges[++li]
-            }
-          }
-          const applyRight = () => {
-            // right: filter skips and known ops
-            while (rblock !== undefined && (rblock.constructor === Skip || rblock.id.clock + rblock.length <= nextExpectedClock)) {
-              rblock = rightRanges[++ri]
-            }
-            // right: trim first op
-            if (rblock !== undefined && rblock.id.clock < nextExpectedClock && rblock.id.clock + rblock.length > nextExpectedClock) {
-              rblock = sliceStruct(rblock, rblock.id.clock + rblock.length - nextExpectedClock)
-            }
-            // right: add to result
-            while (rblock !== undefined && rblock.id.clock === nextExpectedClock && rblock.constructor !== Skip) {
-              addToResult(rblock)
-              rblock = rightRanges[++ri]
-            }
-          }
-          for (; li < leftRanges.length && ri < rightRanges.length;) {
-            applyLeft()
-            applyRight()
-            // add skip if necessary
-            const minNextClock = math.min(lblock?.id.clock || 0, rblock?.id.clock || 0)
-            const gapSize = minNextClock - nextExpectedClock
+          while (true) {
+            const lblock = nextBlock(left, nextExpectedClock)
+            const rblock = nextBlock(right, nextExpectedClock)
+            if (lblock === undefined && rblock === undefined) break
+            const lclock = lblock === undefined ? number.MAX_SAFE_INTEGER : lblock.id.clock
+            const rclock = rblock === undefined ? number.MAX_SAFE_INTEGER : rblock.id.clock
+            const gapSize = math.min(lclock, rclock) - nextExpectedClock
             if (gapSize > 0) {
-              addToResult(new Skip(new ID(clientid, nextExpectedClock), gapSize))
+              result.push(new Skip(new ID(clientid, nextExpectedClock), gapSize))
+              nextExpectedClock += gapSize
             }
-          }
-          while (li < leftRanges.length) {
-            applyLeft()
-            if (lblock !== undefined) {
-              const gapSize = lblock.id.clock - nextExpectedClock
-              if (gapSize > 0) {
-                addToResult(new Skip(new ID(clientid, nextExpectedClock), gapSize))
+            const useLeft = rclock > nextExpectedClock || (lclock === nextExpectedClock && contentRank(/** @type {Item|GC} */ (lblock)) >= contentRank(/** @type {Item|GC} */ (rblock)))
+            const winner = useLeft ? left : right
+            const other = useLeft ? right : left
+            const block = /** @type {Item|GC} */ (useLeft ? lblock : rblock)
+            const rank = contentRank(block)
+            const blockEnd = nextExpectedClock + block.length
+            winner.i++
+            if (rank < 2) {
+              // the other side might retain more content for a part of this block
+              for (let i = other.i; i < other.refs.length && other.refs[i].id.clock < blockEnd; i++) {
+                const oblock = other.refs[i]
+                if (oblock.id.clock > nextExpectedClock && contentRank(oblock) > rank) {
+                  const diff = oblock.id.clock - nextExpectedClock
+                  winner.refs[--winner.i] = sliceStruct(block, diff)
+                  block.length = diff
+                  break
+                }
               }
             }
-          }
-          while (ri < rightRanges.length) {
-            applyRight()
-            if (rblock !== undefined) {
-              const gapSize = rblock.id.clock - nextExpectedClock
-              if (gapSize > 0) {
-                addToResult(new Skip(new ID(clientid, nextExpectedClock), gapSize))
-              }
-            }
+            result.push(block)
+            nextExpectedClock += block.length
           }
           ranges.refs = result
         }
