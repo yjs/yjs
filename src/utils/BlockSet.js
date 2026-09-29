@@ -2,12 +2,11 @@ import * as decoding from 'lib0/decoding'
 import * as binary from 'lib0/binary'
 import * as map from 'lib0/map'
 import * as array from 'lib0/array'
-import * as math from 'lib0/math'
 import * as encoding from 'lib0/encoding'
 import * as number from 'lib0/number'
 
 import { createID, ID } from './ID.js'
-import { Item, ContentDeleted } from '../structs/Item.js'
+import { Item } from '../structs/Item.js'
 import { readItemContent } from '../ynode.js'
 import { findIndexCleanStart } from './transaction-helpers.js'
 import { Skip } from '../structs/Skip.js'
@@ -108,36 +107,6 @@ class BlockRange {
   }
 }
 
-/**
- * Rank the encodings of a block by how much content they retain:
- * Item with content > Item with ContentDeleted (gc'd item) > GC > Skip
- *
- * @param {Item|GC|Skip} block
- */
-const contentRank = block => block.constructor === Item
-  ? (/** @type {Item} */ (block).content.constructor === ContentDeleted ? 1 : 2)
-  : (block.constructor === GC ? 0 : -1)
-
-/**
- * Forward `range` to the first block that contains content starting at `clock` or later. The
- * returned block is trimmed so that it doesn't start before `clock`.
- *
- * @param {BlockRange} range
- * @param {number} clock
- * @return {Item|GC|undefined}
- */
-const nextBlock = (range, clock) => {
-  const refs = range.refs
-  let block = refs[range.i]
-  while (block !== undefined && (block.constructor === Skip || block.id.clock + block.length <= clock)) {
-    block = refs[++range.i]
-  }
-  if (block !== undefined && block.id.clock < clock) {
-    block = refs[range.i] = sliceStruct(block, clock - block.id.clock)
-  }
-  return /** @type {Item|GC|undefined} */ (block)
-}
-
 export class BlockSet {
   constructor () {
     /**
@@ -205,6 +174,12 @@ export class BlockSet {
   }
 
   /**
+   * Insert the blocks of a later update into this BlockSet.
+   *
+   * The same id always denotes the same operation, but the encodings may differ (e.g. if one of
+   * them is garbage-collected). We always retain the blocks that are already in this BlockSet.
+   * `inserts` only fills the gaps. This is also how `applyUpdate` behaves.
+   *
    * @param {BlockSet} inserts
    */
   insertInto (inserts) {
@@ -229,48 +204,67 @@ export class BlockSet {
           }
           ranges.refs = leftRanges
         } else {
-          // Requires more computation because we need to filter duplicates.
-          // The same id always denotes the same operation. Two encodings of a block can only
-          // differ in their gc state, so we keep the encoding that retains the most content.
+          // requires more computation because we need to filter duplicates
+          const localRanges = ranges.refs
+          const newRanges = newranges.refs
           /**
            * @type {Array<GC|Item|Skip>}
            */
           const result = []
-          const left = new BlockRange(leftRanges)
-          const right = new BlockRange(rightRanges)
-          let nextExpectedClock = leftRanges[0].id.clock
-          while (true) {
-            const lblock = nextBlock(left, nextExpectedClock)
-            const rblock = nextBlock(right, nextExpectedClock)
-            if (lblock === undefined && rblock === undefined) break
-            const lclock = lblock === undefined ? number.MAX_SAFE_INTEGER : lblock.id.clock
-            const rclock = rblock === undefined ? number.MAX_SAFE_INTEGER : rblock.id.clock
-            const gapSize = math.min(lclock, rclock) - nextExpectedClock
-            if (gapSize > 0) {
-              result.push(new Skip(new ID(clientid, nextExpectedClock), gapSize))
-              nextExpectedClock += gapSize
-            }
-            const useLeft = rclock > nextExpectedClock || (lclock === nextExpectedClock && contentRank(/** @type {Item|GC} */ (lblock)) >= contentRank(/** @type {Item|GC} */ (rblock)))
-            const winner = useLeft ? left : right
-            const other = useLeft ? right : left
-            const block = /** @type {Item|GC} */ (useLeft ? lblock : rblock)
-            const rank = contentRank(block)
-            const blockEnd = nextExpectedClock + block.length
-            winner.i++
-            if (rank < 2) {
-              // the other side might retain more content for a part of this block
-              for (let i = other.i; i < other.refs.length && other.refs[i].id.clock < blockEnd; i++) {
-                const oblock = other.refs[i]
-                if (oblock.id.clock > nextExpectedClock && contentRank(oblock) > rank) {
-                  const diff = oblock.id.clock - nextExpectedClock
-                  winner.refs[--winner.i] = sliceStruct(block, diff)
-                  block.length = diff
-                  break
-                }
+          // everything before `clock` is already handled
+          let clock = leftRanges[0].id.clock
+          let ni = 0
+          /**
+           * @type {Item|GC|Skip|undefined}
+           */
+          let nblock = newRanges[0]
+          const localLen = localRanges.length
+          for (let li = 0; li <= localLen; li++) {
+            const lblock = localRanges[li]
+            if (lblock !== undefined) {
+              if (lblock.constructor === Skip) continue
+              if (lblock.id.clock === clock) {
+                // default case: no gap
+                result.push(lblock)
+                clock += lblock.length
+                continue
               }
             }
-            result.push(block)
-            nextExpectedClock += block.length
+            // Fill the gap between `clock` and the next local block (`end`) using the new blocks.
+            // After the last local block, we add all remaining new blocks.
+            const end = lblock === undefined ? number.MAX_SAFE_INTEGER : lblock.id.clock
+            while (clock < end && nblock !== undefined) {
+              const nclock = nblock.id.clock
+              if (nclock >= end) break
+              const nend = nclock + nblock.length
+              if (nend <= clock || nblock.constructor === Skip) {
+                nblock = newRanges[++ni]
+                continue
+              }
+              if (nclock < clock) {
+                nblock = sliceStruct(nblock, clock - nclock)
+              } else if (nclock > clock) {
+                result.push(new Skip(new ID(clientid, clock), nclock - clock))
+                clock = nclock
+              }
+              result.push(nblock)
+              if (nend > end) {
+                // only the beginning fits into the gap, the rest might fit into another gap
+                const rest = sliceStruct(nblock, end - clock)
+                nblock.length = end - clock
+                nblock = rest
+                clock = end
+              } else {
+                clock = nend
+                nblock = newRanges[++ni]
+              }
+            }
+            if (lblock === undefined) break
+            if (clock < end) {
+              result.push(new Skip(new ID(clientid, clock), end - clock))
+            }
+            result.push(lblock)
+            clock = end + lblock.length
           }
           ranges.refs = result
         }

@@ -1093,7 +1093,10 @@ differences to the update message.
   <dd>
 Merge several document updates into a single document update while removing
 duplicate information. The merged document update is always smaller than
-the separate updates because of the compressed encoding.
+the separate updates because of the compressed encoding. If several updates
+contain the same content, the merged update retains the encoding of the update
+that comes first (e.g. if only one of them is garbage-collected). This is
+also how <code>Y.applyUpdate</code> behaves.
   </dd>
   <b><code>Y.encodeStateVectorFromUpdate(Uint8Array): Uint8Array</code></b>
   <dd>

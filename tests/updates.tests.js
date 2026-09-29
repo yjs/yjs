@@ -497,17 +497,17 @@ const insertIds = (client, clock, len) => {
 }
 
 const mergeFunctions = [
-  { merge: Y.mergeUpdates, encode: Y.encodeStateAsUpdate, apply: Y.applyUpdate, decode: Y.decodeUpdate, intersect: Y.intersectUpdateWithContentIds, contentIds: Y.createContentIdsFromUpdate },
-  { merge: Y.mergeUpdatesV2, encode: Y.encodeStateAsUpdateV2, apply: Y.applyUpdateV2, decode: Y.decodeUpdateV2, intersect: Y.intersectUpdateWithContentIdsV2, contentIds: Y.createContentIdsFromUpdateV2 }
+  { merge: Y.mergeUpdates, encode: Y.encodeStateAsUpdate, apply: Y.applyUpdate, decode: Y.decodeUpdate, intersect: Y.intersectUpdateWithContentIds, contentIds: Y.createContentIdsFromUpdate, v2: false },
+  { merge: Y.mergeUpdatesV2, encode: Y.encodeStateAsUpdateV2, apply: Y.applyUpdateV2, decode: Y.decodeUpdateV2, intersect: Y.intersectUpdateWithContentIdsV2, contentIds: Y.createContentIdsFromUpdateV2, v2: true }
 ]
 
 /**
- * Merging a gc'd encoding with a non-gc'd encoding of the same history must retain the content,
- * independent of the order of the updates.
+ * If the updates contain different encodings of the same block (with content, or gc'd), the merged
+ * update retains the encoding of the update that comes first.
  *
  * @param {t.TestCase} _tc
  */
-export const testMergeUpdatesRetainsGcdContent = _tc => {
+export const testMergeUpdatesRetainsFirstEncoding = _tc => {
   mergeFunctions.forEach(enc => {
     const server = new Y.Doc({ gc: false })
     server.get().applyDelta(delta.create().insert('abc').done())
@@ -520,30 +520,33 @@ export const testMergeUpdatesRetainsGcdContent = _tc => {
     client.get().applyDelta(delta.create().insert('d').done())
     const patch = enc.encode(client)
     const tailIds = insertIds(server.clientID, 1, 2)
-    const expected = describeStructs(enc.decode(enc.merge([nongc, enc.intersect(patch, insertIds(client.clientID, 0, 1))])).structs)
-    t.assert(expected.some(desc => desc === `${server.clientID}:1:ContentString:"b"`))
+    const clientIds = insertIds(client.clientID, 0, 1)
+    const expectedContent = describeStructs(enc.decode(enc.merge([nongc, enc.intersect(patch, clientIds)])).structs)
+    t.assert(expectedContent.some(desc => desc === `${server.clientID}:1:ContentString:"b"`))
+    const expectedStub = describeStructs(enc.decode(patch).structs)
+    t.assert(expectedStub.some(desc => desc === `${server.clientID}:1:ContentDeleted:undefined`))
     // equal start, local starts earlier, local starts later - each with the stub on either side
     ;[
-      [nongc, patch],
-      [patch, nongc],
-      [patch, enc.intersect(nongc, tailIds)],
-      [enc.intersect(nongc, tailIds), patch],
-      [nongc, enc.intersect(patch, tailIds), enc.intersect(patch, insertIds(client.clientID, 0, 1))],
-      [enc.intersect(patch, tailIds), nongc, enc.intersect(patch, insertIds(client.clientID, 0, 1))]
-    ].forEach(updates => {
+      { updates: [nongc, patch], stubIsFirst: false },
+      { updates: [patch, nongc], stubIsFirst: true },
+      { updates: [patch, enc.intersect(nongc, tailIds)], stubIsFirst: true },
+      { updates: [enc.intersect(nongc, tailIds), patch], stubIsFirst: false },
+      { updates: [nongc, enc.intersect(patch, tailIds), enc.intersect(patch, clientIds)], stubIsFirst: false },
+      { updates: [enc.intersect(patch, tailIds), nongc, enc.intersect(patch, clientIds)], stubIsFirst: true }
+    ].forEach(({ updates, stubIsFirst }) => {
       const merged = enc.merge(updates)
-      t.compare(describeStructs(enc.decode(merged).structs), expected)
+      t.compare(describeStructs(enc.decode(merged).structs), stubIsFirst ? expectedStub : expectedContent)
       const ydoc = new Y.Doc({ gc: false })
       enc.apply(ydoc, merged)
       t.compare(ydoc.get().toDelta().toJSON().children, [{ type: 'insert', insert: 'dac' }])
       Y.undoContentIds(ydoc, { inserts: Y.createIdSet(), deletes: enc.contentIds(merged).deletes }, { ignoreRemoteAttributeChanges: true })
-      t.compare(ydoc.get().toDelta().toJSON().children, [{ type: 'insert', insert: 'dabc' }])
+      t.compare(ydoc.get().toDelta().toJSON().children, [{ type: 'insert', insert: stubIsFirst ? 'dac' : 'dabc' }])
     })
   })
 }
 
 /**
- * A stub that covers [0,3) must be sliced around content that covers [1,2).
+ * A later update only fills the gaps of the earlier updates. If necessary, its blocks are sliced.
  *
  * @param {t.TestCase} _tc
  */
@@ -559,46 +562,25 @@ export const testMergeUpdatesPartialOverlapWithStub = _tc => {
     const stub = enc.encode(gcDoc)
     t.compare(enc.decode(stub).structs.map(s => [s.id.clock, s.length]), [[0, 3]])
     const content = enc.intersect(nongc, insertIds(clientid, 1, 1))
-    const expected = [`${clientid}:0:ContentDeleted:undefined`, `${clientid}:1:ContentString:"b"`, `${clientid}:2:ContentDeleted:undefined`]
-    t.compare(describeStructs(enc.decode(enc.merge([stub, content])).structs), expected)
-    t.compare(describeStructs(enc.decode(enc.merge([content, stub])).structs), expected)
-  })
-}
-
-/**
- * When both sides are stubs, the merge retains the encoding that knows more (Item with
- * ContentDeleted > GC).
- *
- * @param {t.TestCase} _tc
- */
-export const testMergeUpdatesStubs = _tc => {
-  mergeFunctions.forEach(enc => {
-    const ydoc = new Y.Doc({ gc: false })
-    const clientid = ydoc.clientID
-    ydoc.get().insert(0, [Y.Node.from(delta.create().insert('ab'))])
-    const insertOnly = enc.encode(ydoc)
-    // gc only the content of the nested type
-    const gcChildren = new Y.Doc({ gc: true })
-    enc.apply(gcChildren, insertOnly)
-    gcChildren.get().get(0).delete(0, 2)
-    const childStubs = enc.encode(gcChildren)
-    // gc the nested type and its content
-    const gcAll = new Y.Doc({ gc: true })
-    enc.apply(gcAll, insertOnly)
-    gcAll.get().delete(0, 1)
-    const gcStubs = enc.encode(gcAll)
-    const expected = [`${clientid}:0:ContentType:node`, `${clientid}:1:ContentDeleted:undefined`, `${clientid}:2:ContentDeleted:undefined`]
-    t.compare(describeStructs(enc.decode(childStubs).structs).filter(desc => !desc.startsWith(gcChildren.clientID + ':')), expected)
-    t.compare(describeStructs(enc.decode(gcStubs).structs).filter(desc => !desc.startsWith(gcAll.clientID + ':')), [`${clientid}:0:ContentDeleted:undefined`, `${clientid}:1:GC`, `${clientid}:2:GC`])
-    const ownStructs = enc.intersect(childStubs, insertIds(clientid, 0, 3))
-    t.compare(describeStructs(enc.decode(enc.merge([ownStructs, gcStubs])).structs), expected)
-    t.compare(describeStructs(enc.decode(enc.merge([gcStubs, ownStructs])).structs), expected)
+    const stubDesc = describeStructs(enc.decode(stub).structs)
+    const contentDesc = describeStructs(enc.decode(nongc).structs)
+    t.compare(stubDesc, [0, 1, 2].map(clock => `${clientid}:${clock}:ContentDeleted:undefined`))
+    // the stub comes first and covers everything
+    t.compare(describeStructs(enc.decode(enc.merge([stub, content])).structs), stubDesc)
+    t.compare(describeStructs(enc.decode(enc.merge([stub, nongc])).structs), stubDesc)
+    // the stub is sliced around the content
+    t.compare(describeStructs(enc.decode(enc.merge([content, stub])).structs), [stubDesc[0], contentDesc[1], stubDesc[2]])
+    // the content is sliced around the stubs
+    const stubFirst = enc.intersect(stub, insertIds(clientid, 0, 1))
+    const stubLast = enc.intersect(stub, insertIds(clientid, 2, 1))
+    t.compare(describeStructs(enc.decode(enc.merge([stubFirst, stubLast, nongc])).structs), [stubDesc[0], contentDesc[1], stubDesc[2]])
+    t.compare(describeStructs(enc.decode(enc.merge([stubLast, stubFirst, nongc])).structs), [stubDesc[0], contentDesc[1], stubDesc[2]])
   })
 }
 
 /**
  * Merge several encodings of the same history, with random subsets of the deleted content gc'd, in
- * random order. The result must always retain the full history.
+ * random order. Every id must retain the encoding of the first update that contains it.
  *
  * @param {t.TestCase} tc
  */
@@ -610,7 +592,7 @@ export const testRepeatMergeUpdatesWithGcdEncodings = tc => {
     const ydoc = new Y.Doc({ gc: false })
     ydoc.clientID = i + 1
     ydoc.on('updateV2', update => {
-      updates.push(enc.merge === Y.mergeUpdates ? Y.convertUpdateFormatV2ToV1(update) : update)
+      updates.push(!enc.v2 ? Y.convertUpdateFormatV2ToV1(update) : update)
     })
     return ydoc
   })
@@ -649,8 +631,9 @@ export const testRepeatMergeUpdatesWithGcdEncodings = tc => {
   }
   const expected = describeUpdate(enc.merge(updates))
   const splitAt = prng.int31(gen, 1, updates.length - 1)
-  // the first two encodings retain the full history
-  const encodings = [enc.merge(updates.slice(0, splitAt)), enc.merge(updates.slice(splitAt))]
+  // these two encodings retain the full history
+  const fullHistory = [enc.merge(updates.slice(0, splitAt)), enc.merge(updates.slice(splitAt))]
+  const encodings = fullHistory.slice()
   for (let i = prng.int31(gen, 1, 4); i > 0; i--) {
     const ydoc = new Y.Doc({ gc: prng.bool(gen), gcFilter: () => prng.bool(gen) })
     updates.slice(0, prng.int31(gen, 1, updates.length)).forEach(update => {
@@ -663,14 +646,28 @@ export const testRepeatMergeUpdatesWithGcdEncodings = tc => {
       const k = prng.int31(gen, 0, j)
       ;[encodings[j], encodings[k]] = [encodings[k], encodings[j]]
     }
+    // every id retains the encoding of the first update that contains it
+    /**
+     * @type {Map<string, string>}
+     */
+    const firstEncodings = new Map()
+    encodings.forEach(update => {
+      describeStructs(enc.decode(update).structs).forEach(desc => {
+        const id = desc.split(':', 2).join(':')
+        firstEncodings.has(id) || firstEncodings.set(id, desc)
+      })
+    })
+    const expectedStructs = array.from(firstEncodings.values()).sort()
+    const merged = enc.merge(encodings)
+    t.compare(describeStructs(enc.decode(merged).structs), expectedStructs)
+    t.compare(describeUpdate(merged).content, expected.content)
+    // merging is associative
     const splitAt = prng.int31(gen, 0, encodings.length)
-    const merged = prng.bool(gen)
-      ? enc.merge(encodings)
-      : enc.merge([enc.merge(encodings.slice(splitAt)), enc.merge(encodings.slice(0, splitAt))])
-    t.compare(describeUpdate(merged), expected)
+    t.compare(describeStructs(enc.decode(enc.merge([enc.merge(encodings.slice(0, splitAt)), enc.merge(encodings.slice(splitAt))])).structs), expectedStructs)
     // merging is idempotent
     const again = prng.oneOf(gen, encodings)
-    t.compare(describeUpdate(enc.merge([merged, again])), expected)
-    t.compare(describeUpdate(enc.merge([again, merged])), expected)
+    t.compare(describeStructs(enc.decode(enc.merge([merged, again])).structs), expectedStructs)
+    // the full history is retained if it comes first
+    t.compare(describeUpdate(enc.merge(fullHistory.concat(encodings))), expected)
   }
 }
