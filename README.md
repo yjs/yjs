@@ -134,6 +134,9 @@ editing for your IDE or custom editor
 * [Theneo](https://www.theneo.io/) - AI-powered API docs with live team collaboration.
 * [ToolJet](https://tooljet.com/) - Build full-stack enterprise internal apps in
   minutes.
+* [Stuga](https://github.com/stuga-dev/stuga) - Self-hosted collaborative
+  documents and databases. AI agents' edits arrive as tracked changes that, by
+  default, wait for a person to accept or reject them.
 
 ## Table of Contents
 
