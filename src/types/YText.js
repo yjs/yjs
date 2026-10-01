@@ -228,6 +228,10 @@ const insertAttributes = (transaction, parent, currPos, attributes) => {
   // insert format-start items
   for (const key in attributes) {
     const val = attributes[key]
+    if (val === undefined) {
+      // treat undefined like a missing key (as formatText does). It can't be JSON-encoded.
+      continue
+    }
     const currentVal = currPos.currentAttributes.get(key) ?? null
     if (!equalAttrs(currentVal, val)) {
       // save negated attribute (set null if currentVal undefined)
