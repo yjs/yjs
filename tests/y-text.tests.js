@@ -1768,6 +1768,40 @@ export const testFalsyFormats = tc => {
 }
 
 /**
+ * Attributes that are set to `undefined` are handled as if they were not set.
+ * https://github.com/yjs/yjs/issues/466
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndefinedFormats = _tc => {
+  const ydoc = new Y.Doc()
+  const ytext = ydoc.getText()
+  ytext.insert(0, 'abcd', { bold: true })
+  ytext.format(0, 2, { bold: undefined })
+  t.compare(ytext.toDelta(), [{ insert: 'abcd', attributes: { bold: true } }])
+  ytext.format(1, 2, { italic: undefined })
+  t.compare(ytext.toDelta(), [{ insert: 'abcd', attributes: { bold: true } }])
+  ytext.insert(2, 'x', { italic: undefined })
+  t.compare(ytext.toDelta(), [{ insert: 'ab', attributes: { bold: true } }, { insert: 'x' }, { insert: 'cd', attributes: { bold: true } }])
+  ytext.insert(0, 'y', { italic: undefined })
+  ytext.insertEmbed(1, { image: 'a.png' }, { italic: undefined })
+  ytext.applyDelta([{ retain: 2 }, { retain: 2, attributes: { bold: undefined } }, { insert: 'z', attributes: { italic: undefined } }])
+  t.compare(ytext.toDelta(), [{ insert: 'y' }, { insert: { image: 'a.png' } }, { insert: 'ab', attributes: { bold: true } }, { insert: 'zx' }, { insert: 'cd', attributes: { bold: true } }])
+  t.assert(Y.getTypeChildren(ytext).every(item => !(item.content instanceof Y.ContentFormat) || item.content.value !== undefined))
+}
+
+/**
+ * @param {t.TestCase} tc
+ */
+export const testUndefinedFormatsSync = tc => {
+  const { users, text0 } = init(tc, { users: 2 })
+  text0.insert(0, 'abcd', { bold: true })
+  text0.format(0, 2, { bold: undefined, italic: undefined })
+  text0.insert(1, 'x', { italic: undefined })
+  compare(users)
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testMultilineFormat = _tc => {
