@@ -20,6 +20,55 @@ export const testAfterTransactionRecursion = _tc => {
 }
 
 /**
+ * A listener that throws must not break events for later transactions (#799).
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testThrowingListenerDoesNotBreakDoc = _tc => {
+  const events = ['beforeAllTransactions', 'beforeTransaction', 'afterTransaction', 'afterTransactionCleanup', 'update', 'updateV2', 'afterAllTransactions']
+  events.forEach(eventName => {
+    const ydoc = new Y.Doc()
+    const yarray = ydoc.get('array')
+    let observerCalls = 0
+    yarray.observe(() => { observerCalls++ })
+    const throwingListener = () => {
+      throw new Error('listener error')
+    }
+    ydoc.on(/** @type {any} */ (eventName), throwingListener)
+    t.fails(() => {
+      yarray.push([0])
+    })
+    ydoc.off(/** @type {any} */ (eventName), throwingListener)
+    t.assert(ydoc._transaction === null, `${eventName}: the transaction is closed`)
+    t.compare(ydoc._transactionCleanups.length, 0, `${eventName}: no transaction is left to clean up`)
+    const callsBefore = observerCalls
+    let updates = 0
+    ydoc.on('update', () => { updates++ })
+    yarray.push([1])
+    yarray.push([2])
+    t.compare(observerCalls - callsBefore, 2, `${eventName}: observers are called again`)
+    t.compare(updates, 2, `${eventName}: update listeners are called again`)
+  })
+  // subdocs
+  const ydoc = new Y.Doc()
+  const ymap = ydoc.get('subdocs')
+  const throwingListener = () => {
+    throw new Error('listener error')
+  }
+  ydoc.on('subdocs', throwingListener)
+  t.fails(() => {
+    ymap.setAttr('a', new Y.Doc({ guid: 'a' }))
+  })
+  ydoc.off('subdocs', throwingListener)
+  t.compare(Array.from(ydoc.getSubdocGuids()), ['a'])
+  let subdocEvents = 0
+  ydoc.on('subdocs', () => { subdocEvents++ })
+  ymap.setAttr('b', new Y.Doc({ guid: 'b' }))
+  t.compare(subdocEvents, 1)
+  t.compare(Array.from(ydoc.getSubdocGuids()), ['a', 'b'])
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testFindTypeInOtherDoc = _tc => {
