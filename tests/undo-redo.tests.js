@@ -962,3 +962,49 @@ export const testRedoSplitBlocksSurvivesReload = _tc => {
   t.compare(str(doc), 'ee e')
   t.compare(str(reloaded), 'ee e')
 }
+
+/**
+ * A text whose parent was deleted and restored twice has chains of redone
+ * copies in the new parent: original -> copy1 (deleted again) -> copy2 (live).
+ * Items that are redone afterwards must be anchored at the live copy (copy2),
+ * not at the deleted copy1, otherwise they land between the wrong characters.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoAnchorsAtLiveCopyInRecreatedParent = _tc => {
+  const doc = new Y.Doc()
+  const root = doc.getMap('blocks')
+  const list = doc.getArray('list')
+  const um = new Y.UndoManager([root, list], { captureTimeout: 0 })
+  const mk = (/** @type {string} */ s) => {
+    const b = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    b.set('content', text)
+    return b
+  }
+  const text = () => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get('k0')).get('content'))
+  root.set('k0', mk('ee '))
+  doc.transact(() => { text().delete(1, 1) }) // "e "
+  // move the block (delete + recreate): undo restores a new text in a new parent
+  doc.transact(() => {
+    root.delete('k0')
+    list.insert(0, [mk('e ')])
+  })
+  um.undo()
+  t.compare(text().toString(), 'e ')
+  // delete the restored text, then undo: the text is recreated as a copy placed before the deleted original
+  doc.transact(() => {
+    const tail = text().toString()
+    text().delete(0, text().length)
+    root.set('k1', mk(tail))
+  })
+  um.undo()
+  t.compare(text().toString(), 'e ')
+  // undoing the first deletion must restore the "e" between the live "e" and " ", not after them
+  um.undo()
+  t.compare(text().toString(), 'ee ')
+  const remote = new Y.Doc()
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc))
+  t.compare(/** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (remote.getMap('blocks').get('k0')).get('content')).toString(), 'ee ')
+}

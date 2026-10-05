@@ -253,6 +253,25 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       }
       right = right.right
     }
+    // If the parent was recreated, left/right were mapped from the old parent through
+    // their redone chains, which stop at the first copy inside the new parent. That copy
+    // may itself be deleted and restored again (copies are inserted *before* their
+    // originals, so the generations are interleaved in the list). Only the end of the
+    // chain is the element's visible stand-in, so continue to it.
+    // Without a recreated parent left/right are item's own neighbors: that gap is already
+    // exact and must not be moved (a live copy elsewhere can be separated from it by other items).
+    if (parentType !== item.parent) {
+      while (left !== null && left.deleted && left.redone !== null) {
+        const next = splitEnd(transaction, redoitems, createID(left.redone.client, left.redone.clock + left.length - 1))
+        if (/** @type {AbstractType<any>} */ (next.parent)._item !== parentItem) break
+        left = next
+      }
+      while (right !== null && right.deleted && right.redone !== null) {
+        const next = splitStart(transaction, redoitems, right.redone)
+        if (/** @type {AbstractType<any>} */ (next.parent)._item !== parentItem) break
+        right = next
+      }
+    }
   } else {
     right = null
     if (item.right && !ignoreRemoteMapChanges) {
