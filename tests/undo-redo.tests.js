@@ -861,3 +861,31 @@ export const testUndoInsertionAfterRedoneCopyMerged = _tc => {
   undoManager.undo()
   t.compare(text.toString(), '')
 }
+
+/**
+ * Splitting an item that is about to be redone must not lose the split-off part.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoSplitsItemScheduledForRedo = _tc => {
+  const doc = new Y.Doc()
+  const root = doc.getMap('blocks')
+  const undoManager = new Y.UndoManager(root, { captureTimeout: 0 })
+  const newBlock = (/** @type {string} */ s) => {
+    const block = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    block.set('content', text)
+    return block
+  }
+  const content = () => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get('k0')).get('content'))
+  doc.transact(() => root.set('k0', newBlock('ee ')))
+  doc.transact(() => content().delete(1, 1))
+  doc.transact(() => content().insert(1, 'e'))
+  doc.transact(() => content().delete(2, 1))
+  undoManager.undo()
+  doc.transact(() => content().format(0, 3, { bold: true }))
+  doc.transact(() => root.set('k0', newBlock('e')))
+  undoManager.undo()
+  t.compare(content().toDelta(), [{ insert: 'ee ', attributes: { bold: true } }])
+}

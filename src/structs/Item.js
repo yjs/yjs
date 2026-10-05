@@ -127,6 +127,24 @@ export const splitItem = (transaction, leftItem, diff) => {
 const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id))
 
 /**
+ * Like getItemCleanStart, but if it splits an item that is scheduled to be
+ * redone, the split-off part is scheduled as well.
+ *
+ * @param {Transaction} transaction
+ * @param {Set<Item>} redoitems
+ * @param {ID} id
+ * @return {Item}
+ */
+const splitStart = (transaction, redoitems, id) => {
+  const before = /** @type {Item} */ (getItem(transaction.doc.store, id))
+  const item = getItemCleanStart(transaction, id)
+  if (item !== before && redoitems.has(before)) {
+    redoitems.add(item)
+  }
+  return item
+}
+
+/**
  * Redoes the effect of this operation.
  *
  * @param {Transaction} transaction The Yjs instance.
@@ -146,7 +164,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   const ownClientID = doc.clientID
   const redone = item.redone
   if (redone !== null) {
-    return getItemCleanStart(transaction, redone)
+    return splitStart(transaction, redoitems, redone)
   }
   let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item
   /**
@@ -164,7 +182,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       return null
     }
     while (parentItem.redone !== null) {
-      parentItem = getItemCleanStart(transaction, parentItem.redone)
+      parentItem = splitStart(transaction, redoitems, parentItem.redone)
     }
   }
   const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
@@ -181,7 +199,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       let leftTrace = left
       // trace redone until parent matches
       while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
-        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
+        leftTrace = leftTrace.redone === null ? null : splitStart(transaction, redoitems, leftTrace.redone)
       }
       if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
@@ -196,7 +214,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       let rightTrace = right
       // trace redone until parent matches
       while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
-        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
+        rightTrace = rightTrace.redone === null ? null : splitStart(transaction, redoitems, rightTrace.redone)
       }
       if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
@@ -213,7 +231,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
         left = left.right
         // follow redone
-        while (left.redone) left = getItemCleanStart(transaction, left.redone)
+        while (left.redone) left = splitStart(transaction, redoitems, left.redone)
       }
       if (left && left.right !== null) {
         // It is not possible to redo this item because it conflicts with a
