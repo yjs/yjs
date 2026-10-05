@@ -924,3 +924,41 @@ export const testRedoOriginIsCopyOfLastCharacterOfLeft = _tc => {
   const remoteContent = /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (remoteDoc.getMap('blocks').get('k0')).get('content'))
   t.compare(remoteContent.toString(), 'ee ')
 }
+
+/**
+ * Redoing must not trace left/right into the list that is being walked, otherwise
+ * origin and rightOrigin contradict each other and a reloaded document differs.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoSplitBlocksSurvivesReload = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 78
+  const root = doc.getMap('blocks')
+  const undoManager = new Y.UndoManager(root, { captureTimeout: 0 })
+  const newBlock = (/** @type {string} */ key, /** @type {string} */ s) => {
+    const block = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    block.set('content', text)
+    root.set(key, block)
+  }
+  const content = (/** @type {string} */ key) => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get(key)).get('content'))
+  const split = (/** @type {string} */ key, /** @type {number} */ at, /** @type {string} */ newKey) => doc.transact(() => {
+    const text = content(key)
+    const tail = text.toString().slice(at)
+    text.delete(at, text.length - at)
+    newBlock(newKey, tail)
+  })
+  doc.transact(() => newBlock('k0', 'ee '))
+  doc.transact(() => content('k0').insert(3, 'e'))
+  split('k0', 1, 'k1')
+  split('k1', 2, 'k2')
+  for (let i = 0; i < 4; i++) undoManager.undo()
+  for (let i = 0; i < 2; i++) undoManager.redo()
+  const reloaded = new Y.Doc()
+  Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(doc))
+  const str = (/** @type {Y.Doc} */ d) => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (d.getMap('blocks').get('k0')).get('content')).toString()
+  t.compare(str(doc), 'ee e')
+  t.compare(str(reloaded), 'ee e')
+}

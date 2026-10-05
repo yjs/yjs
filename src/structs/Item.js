@@ -226,6 +226,8 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
         } else {
           id = createID(leftTrace.redone.client, leftTrace.redone.clock + id.clock - leftTrace.id.clock)
           leftTrace = splitEnd(transaction, redoitems, id)
+          // a copy in the list that is being walked is reached by the walk itself
+          if (leftTrace.parent === item.parent) leftTrace = null
         }
       }
       if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
@@ -242,6 +244,8 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       // trace redone until parent matches
       while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
         rightTrace = rightTrace.redone === null ? null : splitStart(transaction, redoitems, rightTrace.redone)
+        // a copy in the list that is being walked is reached by the walk itself
+        if (rightTrace !== null && rightTrace.parent === item.parent) rightTrace = null
       }
       if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
