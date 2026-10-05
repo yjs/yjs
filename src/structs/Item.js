@@ -127,6 +127,44 @@ export const splitItem = (transaction, leftItem, diff) => {
 const isDeletedByUndoStack = (stack, id) => array.some(stack, /** @param {StackItem} s */ s => isDeleted(s.deletions, id))
 
 /**
+ * Like getItemCleanStart, but if it splits an item that is scheduled to be
+ * redone, the split-off part is scheduled as well.
+ *
+ * @param {Transaction} transaction
+ * @param {Set<Item>} redoitems
+ * @param {ID} id
+ * @return {Item}
+ */
+const splitStart = (transaction, redoitems, id) => {
+  const before = /** @type {Item} */ (getItem(transaction.doc.store, id))
+  const item = getItemCleanStart(transaction, id)
+  if (item !== before && redoitems.has(before)) {
+    redoitems.add(item)
+  }
+  return item
+}
+
+/**
+ * Like getItemCleanEnd, but if it splits an item that is scheduled to be
+ * redone, the split-off part is scheduled as well.
+ *
+ * @param {Transaction} transaction
+ * @param {Set<Item>} redoitems
+ * @param {ID} id
+ * @return {Item}
+ */
+const splitEnd = (transaction, redoitems, id) => {
+  const store = transaction.doc.store
+  const before = /** @type {Item} */ (getItem(store, id))
+  const length = before.length
+  const item = getItemCleanEnd(transaction, store, id)
+  if (before.length !== length && redoitems.has(before)) {
+    redoitems.add(/** @type {Item} */ (before.right))
+  }
+  return item
+}
+
+/**
  * Redoes the effect of this operation.
  *
  * @param {Transaction} transaction The Yjs instance.
@@ -146,7 +184,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
   const ownClientID = doc.clientID
   const redone = item.redone
   if (redone !== null) {
-    return getItemCleanStart(transaction, redone)
+    return splitStart(transaction, redoitems, redone)
   }
   let parentItem = /** @type {AbstractType<any>} */ (item.parent)._item
   /**
@@ -164,7 +202,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       return null
     }
     while (parentItem.redone !== null) {
-      parentItem = getItemCleanStart(transaction, parentItem.redone)
+      parentItem = splitStart(transaction, redoitems, parentItem.redone)
     }
   }
   const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
@@ -179,9 +217,18 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        * @type {Item|null}
        */
       let leftTrace = left
+      // trace the last character of left, because origin must point at it
+      let id = left.lastId
       // trace redone until parent matches
       while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
-        leftTrace = leftTrace.redone === null ? null : getItemCleanStart(transaction, leftTrace.redone)
+        if (leftTrace.redone === null) {
+          leftTrace = null
+        } else {
+          id = createID(leftTrace.redone.client, leftTrace.redone.clock + id.clock - leftTrace.id.clock)
+          leftTrace = splitEnd(transaction, redoitems, id)
+          // a copy in the list that is being walked is reached by the walk itself
+          if (leftTrace.parent === item.parent) leftTrace = null
+        }
       }
       if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
@@ -196,13 +243,34 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       let rightTrace = right
       // trace redone until parent matches
       while (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item !== parentItem) {
-        rightTrace = rightTrace.redone === null ? null : getItemCleanStart(transaction, rightTrace.redone)
+        rightTrace = rightTrace.redone === null ? null : splitStart(transaction, redoitems, rightTrace.redone)
+        // a copy in the list that is being walked is reached by the walk itself
+        if (rightTrace !== null && rightTrace.parent === item.parent) rightTrace = null
       }
       if (rightTrace !== null && /** @type {AbstractType<any>} */ (rightTrace.parent)._item === parentItem) {
         right = rightTrace
         break
       }
       right = right.right
+    }
+    // If the parent was recreated, left/right were mapped from the old parent through
+    // their redone chains, which stop at the first copy inside the new parent. That copy
+    // may itself be deleted and restored again (copies are inserted *before* their
+    // originals, so the generations are interleaved in the list). Only the end of the
+    // chain is the element's visible stand-in, so continue to it.
+    // Without a recreated parent left/right are item's own neighbors: that gap is already
+    // exact and must not be moved (a live copy elsewhere can be separated from it by other items).
+    if (parentType !== item.parent) {
+      while (left !== null && left.deleted && left.redone !== null) {
+        const next = splitEnd(transaction, redoitems, createID(left.redone.client, left.redone.clock + left.length - 1))
+        if (/** @type {AbstractType<any>} */ (next.parent)._item !== parentItem) break
+        left = next
+      }
+      while (right !== null && right.deleted && right.redone !== null) {
+        const next = splitStart(transaction, redoitems, right.redone)
+        if (/** @type {AbstractType<any>} */ (next.parent)._item !== parentItem) break
+        right = next
+      }
     }
   } else {
     right = null
@@ -213,7 +281,7 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
       while (left !== null && left.right !== null && (left.right.redone || isDeleted(itemsToDelete, left.right.id) || isDeletedByUndoStack(um.undoStack, left.right.id) || isDeletedByUndoStack(um.redoStack, left.right.id))) {
         left = left.right
         // follow redone
-        while (left.redone) left = getItemCleanStart(transaction, left.redone)
+        while (left.redone) left = splitStart(transaction, redoitems, left.redone)
       }
       if (left && left.right !== null) {
         // It is not possible to redo this item because it conflicts with a

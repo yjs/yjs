@@ -843,3 +843,168 @@ export const testUndoSetAttributeAndDeleteSyncsAttributes = _tc => {
   t.compare(remoteRoot.toDelta()[0].insert.getAttributes(), expectedAttrs)
   t.compare(remoteRoot.toDelta()[0].insert.toString(), expectedText)
 }
+
+/**
+ * Undoing an insertion must delete exactly the (redone copy of the) inserted content.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoInsertionAfterRedoneCopyMerged = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager(text, { captureTimeout: 0 })
+  text.insert(0, 'ef')
+  text.delete(0, 2)
+  undoManager.undo()
+  text.format(1, 1, { bold: true })
+  undoManager.undo()
+  undoManager.undo()
+  t.compare(text.toString(), '')
+}
+
+/**
+ * Splitting an item that is about to be redone must not lose the split-off part.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoSplitsItemScheduledForRedo = _tc => {
+  const doc = new Y.Doc()
+  const root = doc.getMap('blocks')
+  const undoManager = new Y.UndoManager(root, { captureTimeout: 0 })
+  const newBlock = (/** @type {string} */ s) => {
+    const block = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    block.set('content', text)
+    return block
+  }
+  const content = () => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get('k0')).get('content'))
+  doc.transact(() => root.set('k0', newBlock('ee ')))
+  doc.transact(() => content().delete(1, 1))
+  doc.transact(() => content().insert(1, 'e'))
+  doc.transact(() => content().delete(2, 1))
+  undoManager.undo()
+  doc.transact(() => content().format(0, 3, { bold: true }))
+  doc.transact(() => root.set('k0', newBlock('e')))
+  undoManager.undo()
+  t.compare(content().toDelta(), [{ insert: 'ee ', attributes: { bold: true } }])
+}
+
+/**
+ * The origin of a redone item must be the copy of the last character of its left neighbor.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoOriginIsCopyOfLastCharacterOfLeft = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const root = doc.getMap('blocks')
+  const list = doc.getArray('list')
+  const undoManager = new Y.UndoManager([root, list], { captureTimeout: 0 })
+  const newBlock = (/** @type {string} */ s) => {
+    const block = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    block.set('content', text)
+    return block
+  }
+  const content = () => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get('k0')).get('content'))
+  doc.transact(() => root.set('k0', newBlock('ee ')))
+  doc.transact(() => content().delete(2, 1))
+  doc.transact(() => {
+    root.delete('k0')
+    list.insert(0, [newBlock('ee')])
+  })
+  undoManager.undo()
+  doc.transact(() => content().format(1, 1, { bold: true }))
+  undoManager.undo()
+  undoManager.undo()
+  t.compare(content().toString(), 'ee ')
+  const remoteDoc = new Y.Doc()
+  Y.applyUpdate(remoteDoc, Y.encodeStateAsUpdate(doc))
+  const remoteContent = /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (remoteDoc.getMap('blocks').get('k0')).get('content'))
+  t.compare(remoteContent.toString(), 'ee ')
+}
+
+/**
+ * Redoing must not trace left/right into the list that is being walked, otherwise
+ * origin and rightOrigin contradict each other and a reloaded document differs.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoSplitBlocksSurvivesReload = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 78
+  const root = doc.getMap('blocks')
+  const undoManager = new Y.UndoManager(root, { captureTimeout: 0 })
+  const newBlock = (/** @type {string} */ key, /** @type {string} */ s) => {
+    const block = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    block.set('content', text)
+    root.set(key, block)
+  }
+  const content = (/** @type {string} */ key) => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get(key)).get('content'))
+  const split = (/** @type {string} */ key, /** @type {number} */ at, /** @type {string} */ newKey) => doc.transact(() => {
+    const text = content(key)
+    const tail = text.toString().slice(at)
+    text.delete(at, text.length - at)
+    newBlock(newKey, tail)
+  })
+  doc.transact(() => newBlock('k0', 'ee '))
+  doc.transact(() => content('k0').insert(3, 'e'))
+  split('k0', 1, 'k1')
+  split('k1', 2, 'k2')
+  for (let i = 0; i < 4; i++) undoManager.undo()
+  for (let i = 0; i < 2; i++) undoManager.redo()
+  const reloaded = new Y.Doc()
+  Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(doc))
+  const str = (/** @type {Y.Doc} */ d) => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (d.getMap('blocks').get('k0')).get('content')).toString()
+  t.compare(str(doc), 'ee e')
+  t.compare(str(reloaded), 'ee e')
+}
+
+/**
+ * A text whose parent was deleted and restored twice has chains of redone
+ * copies in the new parent: original -> copy1 (deleted again) -> copy2 (live).
+ * Items that are redone afterwards must be anchored at the live copy (copy2),
+ * not at the deleted copy1, otherwise they land between the wrong characters.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testRedoAnchorsAtLiveCopyInRecreatedParent = _tc => {
+  const doc = new Y.Doc()
+  const root = doc.getMap('blocks')
+  const list = doc.getArray('list')
+  const um = new Y.UndoManager([root, list], { captureTimeout: 0 })
+  const mk = (/** @type {string} */ s) => {
+    const b = new Y.Map()
+    const text = new Y.Text()
+    text.insert(0, s)
+    b.set('content', text)
+    return b
+  }
+  const text = () => /** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (root.get('k0')).get('content'))
+  root.set('k0', mk('ee '))
+  doc.transact(() => { text().delete(1, 1) }) // "e "
+  // move the block (delete + recreate): undo restores a new text in a new parent
+  doc.transact(() => {
+    root.delete('k0')
+    list.insert(0, [mk('e ')])
+  })
+  um.undo()
+  t.compare(text().toString(), 'e ')
+  // delete the restored text, then undo: the text is recreated as a copy placed before the deleted original
+  doc.transact(() => {
+    const tail = text().toString()
+    text().delete(0, text().length)
+    root.set('k1', mk(tail))
+  })
+  um.undo()
+  t.compare(text().toString(), 'e ')
+  // undoing the first deletion must restore the "e" between the live "e" and " ", not after them
+  um.undo()
+  t.compare(text().toString(), 'ee ')
+  const remote = new Y.Doc()
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc))
+  t.compare(/** @type {Y.Text} */ (/** @type {Y.Map<any>} */ (remote.getMap('blocks').get('k0')).get('content')).toString(), 'ee ')
+}
