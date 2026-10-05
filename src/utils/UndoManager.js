@@ -6,7 +6,7 @@ import {
   createID,
   redoItem,
   isParentOf,
-  followRedone,
+  getItem,
   getItemCleanStart,
   isDeleted,
   addToDeleteSet,
@@ -15,6 +15,7 @@ import {
 
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
+import * as math from 'lib0/math'
 import * as logging from 'lib0/logging'
 import { ObservableV2 } from 'lib0/observable'
 
@@ -74,15 +75,32 @@ const popStackItem = (undoManager, stack, eventType) => {
       let performedChange = false
       iterateDeletedStructs(transaction, stackItem.insertions, struct => {
         if (struct instanceof Item) {
-          if (struct.redone !== null) {
-            let { item, diff } = followRedone(store, struct.id)
-            if (diff > 0) {
-              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
+          // Follow each segment of struct separately: its parts may have been
+          // redone (and split or merged) independently of each other.
+          const client = struct.id.client
+          const end = struct.id.clock + struct.length
+          let clock = struct.id.clock
+          while (clock < end) {
+            let id = createID(client, clock)
+            let len = end - clock
+            let target = getItem(store, id)
+            while (true) {
+              const diff = id.clock - target.id.clock
+              len = math.min(len, target.length - diff)
+              if (!(target instanceof Item) || target.redone === null) break
+              id = createID(target.redone.client, target.redone.clock + diff)
+              target = getItem(store, id)
             }
-            struct = item
-          }
-          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ (struct)))) {
-            itemsToDelete.push(struct)
+            clock += len
+            if (target instanceof Item) {
+              target = getItemCleanStart(transaction, id)
+              if (target.length > len) {
+                getItemCleanStart(transaction, createID(id.client, id.clock + len))
+              }
+              if (!target.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {AbstractType<any>} */ (type), /** @type {Item} */ (target)))) {
+                itemsToDelete.push(target)
+              }
+            }
           }
         }
       })

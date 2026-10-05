@@ -843,3 +843,21 @@ export const testUndoSetAttributeAndDeleteSyncsAttributes = _tc => {
   t.compare(remoteRoot.toDelta()[0].insert.getAttributes(), expectedAttrs)
   t.compare(remoteRoot.toDelta()[0].insert.toString(), expectedText)
 }
+
+/**
+ * Undoing an insertion must delete exactly the (redone copy of the) inserted content.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoInsertionAfterRedoneCopyMerged = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager(text, { captureTimeout: 0 })
+  text.insert(0, 'ef')
+  text.delete(0, 2)
+  undoManager.undo()
+  text.format(1, 1, { bold: true })
+  undoManager.undo()
+  undoManager.undo()
+  t.compare(text.toString(), '')
+}
