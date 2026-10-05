@@ -145,6 +145,26 @@ const splitStart = (transaction, redoitems, id) => {
 }
 
 /**
+ * Like getItemCleanEnd, but if it splits an item that is scheduled to be
+ * redone, the split-off part is scheduled as well.
+ *
+ * @param {Transaction} transaction
+ * @param {Set<Item>} redoitems
+ * @param {ID} id
+ * @return {Item}
+ */
+const splitEnd = (transaction, redoitems, id) => {
+  const store = transaction.doc.store
+  const before = /** @type {Item} */ (getItem(store, id))
+  const length = before.length
+  const item = getItemCleanEnd(transaction, store, id)
+  if (before.length !== length && redoitems.has(before)) {
+    redoitems.add(/** @type {Item} */ (before.right))
+  }
+  return item
+}
+
+/**
  * Redoes the effect of this operation.
  *
  * @param {Transaction} transaction The Yjs instance.
@@ -197,9 +217,16 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
        * @type {Item|null}
        */
       let leftTrace = left
+      // trace the last character of left, because origin must point at it
+      let id = left.lastId
       // trace redone until parent matches
       while (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item !== parentItem) {
-        leftTrace = leftTrace.redone === null ? null : splitStart(transaction, redoitems, leftTrace.redone)
+        if (leftTrace.redone === null) {
+          leftTrace = null
+        } else {
+          id = createID(leftTrace.redone.client, leftTrace.redone.clock + id.clock - leftTrace.id.clock)
+          leftTrace = splitEnd(transaction, redoitems, id)
+        }
       }
       if (leftTrace !== null && /** @type {AbstractType<any>} */ (leftTrace.parent)._item === parentItem) {
         left = leftTrace
