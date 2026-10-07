@@ -137,6 +137,9 @@ editing for your IDE or custom editor
 * [Stuga](https://github.com/stuga-dev/stuga) - Self-hosted collaborative
   documents and databases. AI agents' edits arrive as tracked changes that, by
   default, wait for a person to accept or reject them.
+* [Obsidian Collab](https://github.com/filipesilva/obsidian-collab) - Real-time,
+  end-to-end encrypted, peer-to-peer, collaborative editing across Obsidian vaults
+  for files and folders.
 
 ## Table of Contents
 
