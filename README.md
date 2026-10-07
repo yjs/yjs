@@ -141,8 +141,7 @@ editing for your IDE or custom editor
   end-to-end encrypted, peer-to-peer, collaborative editing across Obsidian vaults
   for files and folders.
 * [Oxynote](https://github.com/oxynote/oxynote) - Self-hosted documentation
-  with live Prometheus charts inside pages and pull-request-style reviews. Each
-  branch is its own Y.Doc, and merges replace content on the live server doc.
+  with live metric charts inside pages and pull-request-style reviews.
 
 ## Table of Contents
 
