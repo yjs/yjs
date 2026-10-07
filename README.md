@@ -148,6 +148,9 @@ editing for your IDE or custom editor
 * [Breatic](https://github.com/orime-org/breatic) - A collaborative AI workspace
   with shared documents and canvases for creative teams, synchronized with Yjs
   and Hocuspocus.
+* [Oxynote](https://github.com/oxynote/oxynote) - Self-hosted documentation
+  with live Prometheus charts inside pages and pull-request-style reviews. Each
+  branch is its own Y.Doc, and merges replace content on the live server doc.
 
 ## Table of Contents
 
