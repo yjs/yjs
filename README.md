@@ -140,6 +140,8 @@ editing for your IDE or custom editor
 * [Obsidian Collab](https://github.com/filipesilva/obsidian-collab) - Real-time,
   end-to-end encrypted, peer-to-peer, collaborative editing across Obsidian vaults
   for files and folders.
+* [Oxynote](https://github.com/oxynote/oxynote) - Self-hosted documentation
+  with live metric charts inside pages and pull-request-style reviews.
 
 ## Table of Contents
 
