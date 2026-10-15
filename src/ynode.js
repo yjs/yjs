@@ -1033,7 +1033,12 @@ export class YNode extends ObservableV2 {
   toDelta (opts = {}) {
     const { renderer = this._renderer, itemsToRender = null, retainInserts = false, retainDeletes = false, insertedItems = null, deep = false } = opts
     const { modified = (deep && itemsToRender) ? computeModifiedFromItems(/** @type {Doc} */ (this.doc).store, itemsToRender) : null } = opts
-    const renderAttrs = modified?.get(this) || null
+    // change-scoped render (`itemsToRender` given): a type that is neither in `modified` nor itself
+    // inserted by the change holds nothing of the change — render no attrs instead of falling back
+    // to "render all" (which would re-emit every attr as a `setAttr`, with nested values rendered
+    // change-scoped, i.e. partial). A type whose own item is in the change set is a fresh insert
+    // and must render in full; `transaction.changed` never lists types created in that transaction.
+    const renderAttrs = modified?.get(this) || ((modified !== null && itemsToRender !== null && !(this._item !== null && itemsToRender.hasId(this._item.lastId))) ? emptyAttrSet : null)
     const renderChildren = modified == null || !modified.has(this) || /** @type {Set<string|null>} */ (modified.get(this)).has(null)
     /**
      * @type {delta.DeltaBuilderAny}
@@ -1181,7 +1186,9 @@ export class YNode extends ObservableV2 {
               } else if (deep && c.content.constructor === ContentType) {
                 d.useFormats(currentFormats)
                 usingCurrentFormats = true
-                d.insert([/** @type {any} */(c.content).type.toDelta(optsAll)], undefined, attribution)
+                // a positive insert carries the node's full attributed state (see the `setAttr`
+                // case in `nodeMapGetDelta`) — never the change-scoped opts
+                d.insert([/** @type {any} */(c.content).type.toDelta({ renderer, deep: true })], undefined, attribution)
               } else {
                 d.useFormats(currentFormats)
                 usingCurrentFormats = true
@@ -1442,7 +1449,7 @@ export class YNode extends ObservableV2 {
               d.useFormats(currentFormats)
               usingCurrentFormats = true
               if (deep && content.constructor === ContentType) {
-                d.insert([/** @type {any} */(content).type.toDelta(optsAll)])
+                d.insert([/** @type {any} */(content).type.toDelta({ renderer, deep: true })]) // full state, see above
               } else if (content.constructor === ContentString) {
                 d.insert(/** @type {ContentString} */ (content).str)
               } else {
@@ -1487,7 +1494,7 @@ export class YNode extends ObservableV2 {
                 d.useFormats(currentFormats)
                 usingCurrentFormats = true
                 if (deep && content.constructor === ContentType) {
-                  d.insert([/** @type {any} */(content).type.toDelta(optsAll)])
+                  d.insert([/** @type {any} */(content).type.toDelta({ renderer, deep: true })]) // full state, see above
                 } else if (content.constructor === ContentString) {
                   d.insert(/** @type {ContentString} */ (c).str)
                 } else {
@@ -2100,6 +2107,13 @@ export const $node = dconf => {
 }
 
 /**
+ * Shared "render no attrs" marker for change-scoped `toDelta` calls on untouched types.
+ *
+ * @type {Set<string|null>}
+ */
+const emptyAttrSet = new Set()
+
+/**
  * @param {StructStore} store
  * @param {IdSet} items
  */
@@ -2602,10 +2616,16 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
         d.deleteAttr(key, attribution)
       }
     } else if (deep && c instanceof YNode && modified?.has(c)) {
-      d.modifyAttr(key, c.toDelta(opts))
+      // the attr item itself may be part of the change too (e.g. its insert-suggestion was accepted
+      // along with its content): carry its attribution as the `modifyAttr` tri-state — merge when
+      // present, clear (`null`) when gone, skip (`undefined`) when the item is not in the change
+      d.modifyAttr(key, c.toDelta(opts), itemsToRender != null && itemsToRender.hasId(item.lastId) ? (attribution ?? null) : undefined)
     } else {
       if (deep && c instanceof YNode) {
-        c = /** @type {any} */(c).toDelta(optsAll)
+        // full-state value render, as in the deleted case above: `setAttr` replaces the value on the
+        // consuming side, and the change-scoped opts only happen to yield the full state when every
+        // item inside the node is in `itemsToRender` (a partial accept / a hand-built id set is not)
+        c = /** @type {any} */(c).toDelta({ renderer, deep: true })
       }
       d.setAttr(key, c, attribution)
     }

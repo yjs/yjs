@@ -220,6 +220,113 @@ export const testAttributionChange = () => {
 }
 
 /**
+ * A change-scoped render (`itemsToRender` given) of a type that the change does not touch must be
+ * empty. The type is absent from `modified`, which used to fall back to "render all attrs" and
+ * re-emit every attr as a `setAttr` (with nested values rendered change-scoped, i.e. partial).
+ */
+export const testUntouchedRootChangeRender = () => {
+  t.group('direct toDelta', () => {
+    const ydoc = new Y.Doc()
+    const text = ydoc.get('text')
+    const map = ydoc.get('map')
+    map.setAttr('a', 1)
+    const nested = new Y.Node()
+    map.setAttr('n', nested)
+    nested.setAttr('deep', 2)
+    nested.insert(0, 'nested')
+    const changes = ydoc.transact(tr => {
+      text.insert(0, 'hi')
+      return tr.insertSet
+    })
+    t.compare(text.toDelta({ deep: true, itemsToRender: changes }), delta.create().insert('hi'))
+    t.assert(map.toDelta({ deep: true, itemsToRender: changes }).isEmpty())
+  })
+  t.group('renderer change through a renderer shared across roots', () => {
+    // `typeApplyRendererChange` renders the renderer's changed ids on *every* type using the
+    // renderer. A change in `text` must not touch `map`'s maintained cache or its 'delta' channel.
+    const ydoc = new Y.Doc()
+    const text = ydoc.get('text')
+    const map = ydoc.get('map')
+    map.setAttr('a', 1)
+    const nested = new Y.Node()
+    map.setAttr('n', nested)
+    nested.setAttr('deep', 2)
+    nested.insert(0, 'nested')
+    const ydocClone = Y.cloneDoc(ydoc)
+    const renderer = Y.createDiffRenderer(ydocClone, ydoc)
+    map.useRenderer(renderer)
+    text.useRenderer(renderer)
+    const expected = map.delta.toJSON() // starts maintaining the cache
+    let emitted = 0
+    map.on('delta', () => { emitted++ })
+    text.insert(0, '!')
+    Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc)) // renderer 'change' with the text ids
+    t.assert(emitted === 0)
+    t.compare(map.delta.toJSON(), expected)
+    t.compare(map.delta.toJSON(), map.toDelta({ deep: true }).toJSON())
+  })
+}
+
+/**
+ * A positive `setAttr` / `insert` of a nested node replaces (resp. introduces) the whole value on the
+ * consuming side, so it must carry the node's full attributed state — even when the id set covers
+ * only the attr / child item and none of the node's own items. Rendering the value change-scoped
+ * used to drop the children (retains, trimmed) in that case.
+ */
+export const testNestedValueRendersFullState = () => {
+  t.group('setAttr, id set holds only the attr item', () => {
+    const ydoc = new Y.Doc()
+    const map = ydoc.get('map')
+    const n = new Y.Node()
+    const attrOnly = ydoc.transact(tr => { map.setAttr('n', n); return tr.insertSet })
+    n.setAttr('deep', 2)
+    n.insert(0, 'nested')
+    t.compare(map.toDelta({ deep: true, itemsToRender: attrOnly }).toJSON(), map.toDelta({ deep: true }).toJSON())
+  })
+  t.group('list insert, id set holds only the child item', () => {
+    const ydoc = new Y.Doc()
+    const list = ydoc.get('list')
+    const n = new Y.Node()
+    const childOnly = ydoc.transact(tr => { list.insert(0, [n]); return tr.insertSet })
+    n.setAttr('deep', 2)
+    n.insert(0, 'nested')
+    t.compare(list.toDelta({ deep: true, itemsToRender: childOnly }).toJSON(), list.toDelta({ deep: true }).toJSON())
+  })
+  t.group('renderer change covering only the attr item (partial accept)', () => {
+    const ydoc = new Y.Doc()
+    const map = ydoc.get('map')
+    map.setAttr('a', 1)
+    const ydocClone = Y.cloneDoc(ydoc)
+    const renderer = Y.createDiffRenderer(ydocClone, ydoc)
+    map.useRenderer(renderer)
+    t.assert(map.delta != null) // start maintaining the cache
+    const n = new Y.Node()
+    const attrOnly = ydoc.transact(tr => { map.setAttr('n', n); return tr.insertSet })
+    ydoc.transact(() => { n.setAttr('deep', 2); n.insert(0, 'nested') })
+    renderer.emit('change', [attrOnly, null, true]) // the nested content stays suggested
+    t.compare(map.delta.toJSON(), map.toDelta({ deep: true }).toJSON())
+  })
+  t.group('modifyAttr carries the attr item\'s own attribution change', () => {
+    const ydoc = new Y.Doc()
+    const map = ydoc.get('map')
+    const ydocClone = Y.cloneDoc(ydoc)
+    const renderer = Y.createDiffRenderer(ydocClone, ydoc)
+    map.useRenderer(renderer)
+    t.assert(map.delta != null) // start maintaining the cache
+    ydoc.transact(() => { const n = new Y.Node(); map.setAttr('n', n); n.setAttr('deep', 2); n.insert(0, 'nested') })
+    /**
+     * @type {Array<any>}
+     */
+    const emitted = []
+    map.on('delta', d => emitted.push(d.toJSON()))
+    Y.applyUpdate(ydocClone, Y.encodeStateAsUpdate(ydoc)) // the whole suggestion is accepted
+    // the attr `n` lost its insert attribution along with its content → the modifyAttr clears it
+    t.compare(emitted, [delta.create().modifyAttr('n', delta.create().setAttr('deep', 2).retain(6, undefined, null), null).toJSON()])
+    t.compare(map.delta.toJSON(), map.toDelta({ deep: true }).toJSON())
+  })
+}
+
+/**
  * A YNode implements the lib0 `RDT` interface, so two types can be kept in sync with `bind`.
  */
 export const testRdtBinding = () => {
