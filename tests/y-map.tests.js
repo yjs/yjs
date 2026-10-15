@@ -587,6 +587,55 @@ export const testAttributedContent = _tc => {
 }
 
 /**
+ * A key overwritten and then deleted by one change must render `deleteAttr`. The key's latest item
+ * is churn (set and deleted by the change, hence excluded from `itemsToRender`), so the render has
+ * to find the deleted earlier value: by the latest item's id range once the tombstones merged, or
+ * by stepping over the churn item via `insertedItems`.
+ */
+export const testOverwriteThenDeleteRendersDeleteAttr = () => {
+  t.group('one transaction (event delta + maintained cache)', () => {
+    const ydoc = new Y.Doc()
+    const map = ydoc.get('map')
+    map.setAttr('k', 'v0')
+    map.setAttr('other', 1)
+    t.assert(map.delta != null) // start maintaining the cache
+    /**
+     * @type {Array<any>}
+     */
+    const seen = []
+    map.observe(e => seen.push(e.getDelta().toJSON()))
+    ydoc.transact(() => { map.setAttr('k', 'v1'); map.deleteAttr('k') })
+    t.compare(seen, [delta.create().deleteAttr('k').toJSON()])
+    t.compare(map.delta.toJSON(), map.toDelta({ deep: true }).toJSON())
+  })
+  t.group('separate transactions, merged tombstones, window render', () => {
+    const ydoc = new Y.Doc()
+    const map = ydoc.get('map')
+    map.setAttr('k', 'v0')
+    const [i2, d2] = ydoc.transact(tr => { map.setAttr('k', 'v1'); return [tr.insertSet, tr.deleteSet] })
+    const [i3, d3] = ydoc.transact(tr => { map.deleteAttr('k'); return [tr.insertSet, tr.deleteSet] })
+    const inserted = Y.mergeIdSets([i2, i3])
+    const window = Y.diffIdSet(Y.mergeIdSets([d2, d3]), inserted) // (D - I): churn left out, as YEvent does
+    t.compare(map.toDelta({ itemsToRender: window }).toJSON(), delta.create().deleteAttr('k').toJSON())
+    t.compare(map.toDelta({ itemsToRender: window, insertedItems: inserted }).toJSON(), delta.create().deleteAttr('k').toJSON())
+  })
+  t.group('two clients, tombstones cannot merge: needs insertedItems', () => {
+    const a = new Y.Doc()
+    const b = new Y.Doc()
+    const sync = () => { Y.applyUpdate(b, Y.encodeStateAsUpdate(a)); Y.applyUpdate(a, Y.encodeStateAsUpdate(b)) }
+    a.get('map').setAttr('k', 'v0')
+    sync()
+    const [i2, d2] = b.transact(tr => { b.get('map').setAttr('k', 'v1'); return [tr.insertSet, tr.deleteSet] })
+    sync()
+    const [i3, d3] = a.transact(tr => { a.get('map').deleteAttr('k'); return [tr.insertSet, tr.deleteSet] })
+    sync()
+    const inserted = Y.mergeIdSets([i2, i3])
+    const window = Y.diffIdSet(Y.mergeIdSets([d2, d3]), inserted)
+    t.compare(a.get('map').toDelta({ itemsToRender: window, insertedItems: inserted }).toJSON(), delta.create().deleteAttr('k').toJSON())
+  })
+}
+
+/**
  * @type {Array<function(Doc,prng.PRNG):void>}
  */
 const mapTransactions = [

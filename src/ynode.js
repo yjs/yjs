@@ -1020,10 +1020,10 @@ export class YNode extends ObservableV2 {
    *
    * @param {Object} [opts]
    * @param {AbstractRenderer?} [opts.renderer] - renders the content (with attributions); defaults to this type's active renderer (see {@link YNode#useRenderer}), i.e. `null` (render as-is) unless changed
-   * @param {IdSet?} [opts.itemsToRender]
+   * @param {IdSet?} [opts.itemsToRender] - render only the change made up of these ids instead of the full state. Leave churn out (ids both inserted and deleted by the change — list rendering would emit deletes for content the consuming state never held) and pass the change's inserts as `insertedItems`
    * @param {boolean} [opts.retainInserts] - if true, retain rendered inserts with attributions
    * @param {boolean} [opts.retainDeletes] - if true, retain rendered+attributed deletes only
-   * @param {IdSet?} [opts.insertedItems] - ids inserted by the change being rendered; content that is both in `insertedItems` and deleted renders as a *fresh* insert even under `retainDeletes` (it was never part of the consuming state)
+   * @param {IdSet?} [opts.insertedItems] - ids inserted by the change being rendered; content that is both in `insertedItems` and deleted renders as a *fresh* insert even under `retainDeletes` (it was never part of the consuming state). It also identifies churn for map keys: a key overwritten and then deleted by the change has a churn item as its latest value, and `insertedItems` lets the render step over it to the deleted earlier value and emit the `deleteAttr` (a step bounded by the change, never a walk of the key's history). Without `insertedItems` that `deleteAttr` is missed unless the tombstones already merged into one item
    * @param {Map<YNode,Set<string|null>>|null} [opts.modified] - set of types that should be rendered as modified children
    * @param {Deep} [opts.deep] - render child types as delta
    * @return {Deep extends true ? delta.Delta<DConf> : delta.Delta<DeltaConfDeltaToYNode<DConf>>} The Delta representation of this type.
@@ -2546,6 +2546,27 @@ export const nodeMapGetAll = (parent) => {
 }
 
 /**
+ * Whether a change deleted a value of a map key whose latest item is a plain tombstone. The latest
+ * item's last id is not enough: merged tombstones span several values of which only the older ids
+ * may be in the set (→ range lookup), and the latest item may be churn — set *and* deleted by the
+ * change, so excluded from `itemsToRender` — while the change deleted the value it overwrote.
+ * `insertedItems` identifies churn, so step over it to the replaced value; the walk only ever
+ * covers items the change itself inserted, never the key's history.
+ *
+ * @param {Item} item the key's latest (deleted) item
+ * @param {IdSet} itemsToRender
+ * @param {IdSet?} insertedItems
+ * @return {boolean}
+ */
+const mapKeyDeletedBy = (item, itemsToRender, insertedItems) => {
+  for (let i = /** @type {Item?} */ (item); i !== null; i = i.left) {
+    if (itemsToRender.intersects(i.id.client, i.id.clock, i.length)) return true
+    if (insertedItems === null || !insertedItems.hasId(i.id)) break
+  }
+  return false
+}
+
+/**
  * @todo move this to getContent/getDelta
  *
  * Render the difference to another ydoc (which can be empty) and highlight the differences with
@@ -2613,7 +2634,7 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
           }
           d.setAttr(key, c, attribution)
         }
-      } else if (itemsToRender != null && itemsToRender.hasId(item.lastId)) {
+      } else if (itemsToRender != null && mapKeyDeletedBy(item, itemsToRender, opts?.insertedItems ?? null)) {
         // Hard-deleted attribute within a change render: emit the `deleteAttr` op so consumers (the
         // `YEvent` delta, RDT bindings, the maintained `delta` cache) can apply the removal. In
         // full-state mode (`itemsToRender == null`) the attribute is simply omitted (above renders
