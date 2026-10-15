@@ -1,6 +1,6 @@
 {
   "name": "@y/y",
-  "version": "14.0.0-rc.28",
+  "version": "14.0.0-rc.29",
   "description": "Shared Editing Library",
   "type": "module",
   "sideEffects": false,
