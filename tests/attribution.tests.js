@@ -75,6 +75,43 @@ export const testInsertionsMindingAttributedContent = _tc => {
 }
 
 /**
+ * `diffDocsToDelta` leaves churn — content inserted *and* deleted between the two docs — out of
+ * the change on both sides: v1 never held it, so a `delete` of it would be wrong. A map key
+ * overwritten and then deleted renders the deleted earlier value even when its tombstones could
+ * not merge (two clients), under a renderer or not.
+ */
+export const testYdocDiffChurn = () => {
+  t.group('list churn, no renderer', () => {
+    const v2 = new Y.Doc()
+    const text = v2.get('text')
+    text.insert(0, 'ab')
+    const v1 = Y.cloneDoc(v2)
+    text.insert(1, 'X')
+    text.delete(1, 1)
+    text.insert(2, 'c')
+    const expected = delta.create().modifyAttr('text', delta.create().retain(2).insert('c'))
+    t.compare(Y.diffDocsToDelta(v1, v2, { renderer: null }).toJSON(), expected.toJSON())
+  })
+  t.group('map key overwritten and deleted, two clients', () => {
+    const a = new Y.Doc()
+    const b = new Y.Doc()
+    const sync = () => { Y.applyUpdate(b, Y.encodeStateAsUpdate(a)); Y.applyUpdate(a, Y.encodeStateAsUpdate(b)) }
+    a.get('map').setAttr('k', 'v0')
+    sync()
+    const v1 = Y.cloneDoc(a)
+    b.get('map').setAttr('k', 'v1')
+    sync()
+    a.get('map').deleteAttr('k')
+    sync()
+    // the diff renderer shows the deleted earlier value; without a renderer the key is removed
+    const attributed = delta.create().modifyAttr('map', delta.create().setAttr('k', 'v0', { delete: [] }))
+    t.compare(Y.diffDocsToDelta(v1, a).toJSON(), attributed.toJSON())
+    const plain = delta.create().modifyAttr('map', delta.create().deleteAttr('k'))
+    t.compare(Y.diffDocsToDelta(v1, a, { renderer: null }).toJSON(), plain.toJSON())
+  })
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testInsertionsIntoAttributedContent = _tc => {

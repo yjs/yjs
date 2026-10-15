@@ -2546,24 +2546,23 @@ export const nodeMapGetAll = (parent) => {
 }
 
 /**
- * Whether a change deleted a value of a map key whose latest item is a plain tombstone. The latest
- * item's last id is not enough: merged tombstones span several values of which only the older ids
- * may be in the set (→ range lookup), and the latest item may be churn — set *and* deleted by the
- * change, so excluded from `itemsToRender` — while the change deleted the value it overwrote.
- * `insertedItems` identifies churn, so step over it to the replaced value; the walk only ever
- * covers items the change itself inserted, never the key's history.
+ * The item that stands for a map key in a change render. Normally the key's latest item — but a
+ * deleted latest item may be churn: set *and* deleted by the change, so excluded from
+ * `itemsToRender`, while the change deleted the value it overwrote and the consuming state still
+ * holds that one. `insertedItems` identifies churn; step over it to the replaced value. The walk
+ * only ever covers items the change itself inserted, never the key's history. A merged tombstone
+ * spans several values, so membership is a range lookup. `null` if only churn is left.
  *
  * @param {Item} item the key's latest (deleted) item
  * @param {IdSet} itemsToRender
  * @param {IdSet?} insertedItems
- * @return {boolean}
+ * @return {Item?}
  */
-const mapKeyDeletedBy = (item, itemsToRender, insertedItems) => {
-  for (let i = /** @type {Item?} */ (item); i !== null; i = i.left) {
-    if (itemsToRender.intersects(i.id.client, i.id.clock, i.length)) return true
-    if (insertedItems === null || !insertedItems.hasId(i.id)) break
-  }
-  return false
+const mapKeyChangeItem = (item, itemsToRender, insertedItems) => {
+  if (insertedItems === null) return item // churn can't be told apart from history
+  let i = /** @type {Item?} */ (item)
+  while (i !== null && !itemsToRender.intersects(i.id.client, i.id.clock, i.length) && insertedItems.hasId(i.id)) i = i.left
+  return i
 }
 
 /**
@@ -2591,11 +2590,17 @@ const mapKeyDeletedBy = (item, itemsToRender, insertedItems) => {
  */
 export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modified, itemsToRender, opts, optsAll) => {
   // @todo support modified ops!
+  const insertedItems = /** @type {IdSet?} */ (opts?.insertedItems ?? null)
   /**
    * @param {Item} item
    * @param {string} key
    */
   const renderAttrs = (item, key) => {
+    if (item.deleted && itemsToRender != null) {
+      const i = mapKeyChangeItem(item, itemsToRender, insertedItems)
+      if (i === null) return
+      item = i
+    }
     /**
      * @type {{ deleted: boolean, attrs: Array<ContentAttribute<any>>?, content: AbstractContent }}
      */
@@ -2625,7 +2630,7 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
         // also re-emit when the change happened *inside* the still-rendered value (`modified`
         // contains the value type but the attr's own map item is not part of the change) — the
         // deleted value has no modifyAttr path, and a full-state `setAttr` replace is idempotent
-        if (itemsToRender == null || itemsToRender.hasId(item.lastId) || (c instanceof YNode && modified != null && modified.has(c))) {
+        if (itemsToRender == null || itemsToRender.intersects(item.id.client, item.id.clock, item.length) || (c instanceof YNode && modified != null && modified.has(c))) {
           if (deep && c instanceof YNode) {
             // full-state value render: a positive `setAttr` *replaces* the attr value on the
             // consuming side, so the nested type must render as its full attributed state
@@ -2634,7 +2639,7 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
           }
           d.setAttr(key, c, attribution)
         }
-      } else if (itemsToRender != null && mapKeyDeletedBy(item, itemsToRender, opts?.insertedItems ?? null)) {
+      } else if (itemsToRender != null && itemsToRender.intersects(item.id.client, item.id.clock, item.length)) {
         // Hard-deleted attribute within a change render: emit the `deleteAttr` op so consumers (the
         // `YEvent` delta, RDT bindings, the maintained `delta` cache) can apply the removal. In
         // full-state mode (`itemsToRender == null`) the attribute is simply omitted (above renders

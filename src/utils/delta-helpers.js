@@ -6,14 +6,15 @@ import { computeModifiedFromItems } from '../ynode.js'
 /**
  * @param {Doc} v1
  * @param {Doc} v2
+ * @param {{ renderer?: AbstractRenderer? }} [opts] - `renderer` defaults to a diff renderer of the two docs; `null` renders the plain change
  * @return {delta.DeltaBuilderAny}
  */
 export const diffDocsToDelta = (v1, v2, { renderer = createDiffRenderer(v1, v2) } = {}) => {
   const insertDiff = diffIdSet(createInsertSetFromStructStore(v2.store, false), createInsertSetFromStructStore(v1.store, false))
   const deleteDiff = diffIdSet(createDeleteSetFromStructStore(v2.store), createDeleteSetFromStructStore(v1.store))
-  // don't render items that have been inserted and then deleted
-  const insertsOnly = diffIdSet(insertDiff, deleteDiff)
-  const itemsToRender = mergeIdSets([insertsOnly, deleteDiff])
+  // churn — inserted *and* deleted between the docs — is left out on both sides: v1 never held it,
+  // so neither an insert nor a delete of it belongs in the change (as `YEvent.getDelta` does)
+  const itemsToRender = mergeIdSets([diffIdSet(insertDiff, deleteDiff), diffIdSet(deleteDiff, insertDiff)])
   /**
    * @type {Map<YNode, Set<string|null>>}
    */
@@ -23,7 +24,7 @@ export const diffDocsToDelta = (v1, v2, { renderer = createDiffRenderer(v1, v2) 
     const typeConf = changedTypes.get(type)
     if (typeConf) {
       const shareDelta = type.toDelta({
-        renderer, itemsToRender, retainDeletes: true, modified: changedTypes, deep: true
+        renderer, itemsToRender, insertedItems: insertDiff, retainDeletes: true, modified: changedTypes, deep: true
       })
       d.modifyAttr(typename, shareDelta)
     }
