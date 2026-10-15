@@ -2114,8 +2114,13 @@ export const $node = dconf => {
 const emptyAttrSet = new Set()
 
 /**
+ * The types touched by a set of item ids, keyed by type, each with the attr keys changed on it
+ * (`null` for its content children) — ancestor-closed up to the root, so it is the `modified` opt a
+ * change-scoped {@link YNode#toDelta} wants for `items`.
+ *
  * @param {StructStore} store
  * @param {IdSet} items
+ * @return {Map<YNode,Set<string|null>>}
  */
 export const computeModifiedFromItems = (store, items) => {
   /**
