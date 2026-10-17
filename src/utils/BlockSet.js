@@ -33,7 +33,6 @@ export const readBlockSet = (decoder) => {
     const refs = new Array(numberOfBlocks)
     const client = decoder.readClient()
     let clock = decoding.readVarUint(decoder.restDecoder)
-    clientRefs.clients.set(client, new BlockRange(refs))
     for (let i = 0; i < numberOfBlocks; i++) {
       const info = decoder.readInfo()
       switch (binary.BITS5 & info) {
@@ -75,6 +74,12 @@ export const readBlockSet = (decoder) => {
           clock += block.length
         }
       }
+    }
+    // A zero-length block covers no clock, so nothing can refer to it: drop it. A client left with no block, or with
+    // only Skips, carries nothing: don't register it (merging it would produce a client without blocks).
+    const kept = refs.filter(block => block.length > 0)
+    if (kept.some(block => block.constructor !== Skip)) {
+      clientRefs.clients.set(client, new BlockRange(kept))
     }
   }
   return clientRefs

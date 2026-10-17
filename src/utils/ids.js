@@ -896,9 +896,12 @@ export const readIdSet = decoder => {
        */
       const dsRanges = []
       for (let i = 0; i < numberOfDeletes; i++) {
-        dsRanges.push(new IdRange(decoder.readDsClock(), decoder.readDsLen()))
+        const clock = decoder.readDsClock()
+        const len = decoder.readDsLen()
+        // a zero-length range covers no id: drop it, as IdSet.add does
+        if (len > 0) dsRanges.push(new IdRange(clock, len))
       }
-      ds.clients.set(client, new IdRanges(dsRanges))
+      if (dsRanges.length > 0) ds.clients.set(client, new IdRanges(dsRanges))
     }
   }
   return ds
