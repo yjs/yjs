@@ -725,12 +725,13 @@ export const testMergeDegenerateUpdates = _tc => {
     mk(e => { uints(e, 1, 0, 9, 0, 0) }), // a client with no struct
     mk(e => { uints(e, 1, 1, 9, 5); encoding.writeUint8(e, 10); uints(e, 3, 0) }), // a client with only Skip(3)
     mk(e => { uints(e, 0, 1, 50, 1, 1, 0) }), // a zero-length delete range
-    mk(e => { uints(e, 0, 1, 1, 2, 0, 0, 1, 2) }) // a zero-length delete range before one that deletes 'el'
+    mk(e => { uints(e, 0, 1, 1, 2, 0, 0, 1, 2) }), // a zero-length delete range before one that deletes 'el'
+    mk(e => { uints(e, 0, 1, 1, 1, 6, 0) }) // a zero-length delete range between the two halves of '😀'
   ]
   mergeFunctions.forEach(enc => {
     const baseDoc = new Y.Doc()
     baseDoc.clientID = 1
-    baseDoc.get().applyDelta(delta.create().insert('hello').done())
+    baseDoc.get().applyDelta(delta.create().insert('hello😀').done())
     const base = enc.encode(baseDoc)
     degenerateUpdates.forEach(degenerateUpdate => {
       const update = enc.v2 ? Y.convertUpdateFormatV1ToV2(degenerateUpdate) : degenerateUpdate

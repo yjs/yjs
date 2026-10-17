@@ -948,6 +948,8 @@ export const readAndApplyDeleteSet = (decoder, transaction, store) => {
     for (let i = 0; i < numberOfDeletes; i++) {
       const clock = decoder.readDsClock()
       const clockEnd = clock + decoder.readDsLen()
+      // a zero-length range deletes nothing, and must not split the item at its clock
+      if (clockEnd === clock) continue
       if (clock < state) {
         if (state < clockEnd) {
           unappliedDS.add(client, state, clockEnd - state)

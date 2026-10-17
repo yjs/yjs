@@ -75,8 +75,9 @@ export const readBlockSet = (decoder) => {
         }
       }
     }
-    // A zero-length block covers no clock, so nothing can refer to it: drop it. A client left with no block, or with
-    // only Skips, carries nothing: don't register it (merging it would produce a client without blocks).
+    // A zero-length block covers no clock, so no id can refer to it, and Yjs never writes one: drop it. A client left
+    // with no block, or with only Skips, carries nothing: don't register it (merging it would produce a client without
+    // blocks).
     const kept = refs.filter(block => block.length > 0)
     if (kept.some(block => block.constructor !== Skip)) {
       clientRefs.clients.set(client, new BlockRange(kept))
