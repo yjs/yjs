@@ -843,3 +843,39 @@ export const testUndoSetAttributeAndDeleteSyncsAttributes = _tc => {
   t.compare(remoteRoot.toDelta()[0].insert.getAttributes(), expectedAttrs)
   t.compare(remoteRoot.toDelta()[0].insert.toString(), expectedText)
 }
+
+/**
+ * Undo must not throw when the redone copy of a restored parent was deleted
+ * remotely and garbage-collected.
+ *
+ * @see https://github.com/yjs/yjs/issues/809
+ * @param {t.TestCase} _tc
+ */
+export const testUndoIntoGarbageCollectedRedoneParent = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  const nodes = doc.getMap('nodes')
+  doc.transact(() => {
+    for (const id of ['n1', 'n2']) {
+      const node = new Y.Map()
+      node.set('name', 'a')
+      nodes.set(id, node)
+    }
+  })
+  const undoManager = new Y.UndoManager([nodes], { trackedOrigins: new Set(['local']), captureTimeout: 0 })
+  doc.transact(() => nodes.get('n1').set('name', 'b'), 'local')
+  doc.transact(() => nodes.delete('n1'), 'local')
+  undoManager.undo() // restores n1 as a redone copy
+  doc.transact(() => nodes.get('n1').set('name', 'c'), 'local')
+  undoManager.undo()
+  doc.transact(() => nodes.get('n2').set('name', 'x'), 'local') // clears the redo stack
+  // a remote peer deletes the restored copy, which is then garbage-collected
+  const remoteDoc = new Y.Doc()
+  remoteDoc.clientID = 2
+  Y.applyUpdate(remoteDoc, Y.encodeStateAsUpdate(doc))
+  remoteDoc.getMap('nodes').delete('n1')
+  Y.applyUpdate(doc, Y.encodeStateAsUpdate(remoteDoc, Y.encodeStateVector(doc)), 'remote')
+  t.assert(undoManager.undo() !== null)
+  t.assert(undoManager.undo() === null)
+  t.compare(nodes.toJSON(), { n2: { name: 'a' } })
+}
