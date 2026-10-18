@@ -1,6 +1,6 @@
 import * as t from 'lib0/testing'
 import * as Y from '../src/index.js'
-import { init, compare } from './testHelper.js' // eslint-disable-line
+import { init, compare, compareStructStores } from './testHelper.js' // eslint-disable-line
 import { readBlockSet } from '../src/utils/BlockSet.js'
 import { readIdSet, writeIdSet } from '../src/utils/ids.js'
 import { UpdateDecoderV2 } from '../src/utils/UpdateDecoder.js'
@@ -670,4 +670,82 @@ export const testRepeatMergeUpdatesWithGcdEncodings = tc => {
     // the full history is retained if it comes first
     t.compare(describeUpdate(enc.merge(fullHistory.concat(encodings))), expected)
   }
+}
+
+/**
+ * Degenerate updates - zero-length structs, a client with no struct or with only a Skip, zero-length
+ * delete ranges - carry no content. They decode, apply, and merge, and the merged update applies to the
+ * same document.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testMergeDegenerateUpdates = _tc => {
+  /**
+   * Hand-encode a V1 update.
+   *
+   * @param {function(encoding.Encoder):void} f
+   */
+  const mk = f => {
+    const encoder = encoding.createEncoder()
+    f(encoder)
+    return encoding.toUint8Array(encoder)
+  }
+  /**
+   * @param {encoding.Encoder} encoder
+   * @param {Array<number>} ns
+   */
+  const uints = (encoder, ...ns) => ns.forEach(n => encoding.writeVarUint(encoder, n))
+  /**
+   * Parent info: the root type.
+   *
+   * @param {encoding.Encoder} encoder
+   */
+  const root = encoder => {
+    uints(encoder, 1)
+    encoding.writeVarString(encoder, '')
+  }
+  // In each update: the number of clients; per client, the number of structs, the client, the clock of
+  // the first struct, and the structs (info byte, then fields). Then the delete set: the number of
+  // clients; per client, the client, the number of ranges, and the ranges (clock, len).
+  const degenerateUpdates = [
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 4); root(e); encoding.writeVarString(e, ''); uints(e, 0) }), // ContentString('')
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 1); root(e); uints(e, 0, 0) }), // ContentDeleted(0)
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 2); root(e); uints(e, 0, 0) }), // ContentJSON([])
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 8); root(e); uints(e, 0, 0) }), // ContentAny([])
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 0); uints(e, 0, 0) }), // GC(0)
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 10); uints(e, 0, 0) }), // Skip(0)
+    // ContentString('') between ContentString('ab') and ContentString('c')
+    mk(e => {
+      uints(e, 1, 3, 9, 0)
+      ;['ab', '', 'c'].forEach(s => { encoding.writeUint8(e, 4); root(e); encoding.writeVarString(e, s) })
+      uints(e, 0)
+    }),
+    // ContentString('') whose origin (client 99, clock 3) is missing, so it would be pending
+    mk(e => { uints(e, 1, 1, 9, 0); encoding.writeUint8(e, 4 | 128); uints(e, 99, 3); encoding.writeVarString(e, ''); uints(e, 0) }),
+    mk(e => { uints(e, 1, 0, 9, 0, 0) }), // a client with no struct
+    mk(e => { uints(e, 1, 1, 9, 5); encoding.writeUint8(e, 10); uints(e, 3, 0) }), // a client with only Skip(3)
+    mk(e => { uints(e, 0, 1, 50, 1, 1, 0) }), // a zero-length delete range
+    mk(e => { uints(e, 0, 1, 1, 2, 0, 0, 1, 2) }), // a zero-length delete range before one that deletes 'el'
+    mk(e => { uints(e, 0, 1, 1, 1, 6, 0) }) // a zero-length delete range between the two halves of '😀'
+  ]
+  mergeFunctions.forEach(enc => {
+    const baseDoc = new Y.Doc()
+    baseDoc.clientID = 1
+    baseDoc.get().applyDelta(delta.create().insert('hello😀').done())
+    const base = enc.encode(baseDoc)
+    degenerateUpdates.forEach(degenerateUpdate => {
+      const update = enc.v2 ? Y.convertUpdateFormatV1ToV2(degenerateUpdate) : degenerateUpdate
+      enc.decode(update)
+      const ydoc = new Y.Doc()
+      enc.apply(ydoc, base)
+      enc.apply(ydoc, update)
+      t.assert(ydoc.store.pendingStructs === null)
+      t.assert(ydoc.store.clients.get(9)?.every(struct => struct.length > 0) ?? true)
+      const merged = new Y.Doc()
+      enc.apply(merged, enc.merge([base, update, update]))
+      compareStructStores(merged.store, ydoc.store)
+      t.compare(merged.get().toDelta().toJSON(), ydoc.get().toDelta().toJSON())
+      enc.merge([base, enc.encode(ydoc)])
+    })
+  })
 }
