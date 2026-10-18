@@ -165,6 +165,13 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     }
     while (parentItem.redone !== null) {
       parentItem = getItemCleanStart(transaction, parentItem.redone)
+      if (!(parentItem instanceof Item)) {
+        return null
+      }
+    }
+    // the redone parent may have been deleted remotely and garbage-collected (#809)
+    if (!(parentItem.content instanceof ContentType)) {
+      return null
     }
   }
   const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
