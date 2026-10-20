@@ -1,3 +1,5 @@
+[![RepoMapr](https://img.shields.io/badge/RepoMapr-View_Interactive_Diagram-blue?style=flat&logo=github)](https://repomapr.com/yjs/yjs)
+
 
 # ![Yjs](https://yjs.dev/images/logo/yjs-120x120.png)
 
