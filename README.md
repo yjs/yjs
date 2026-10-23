@@ -142,6 +142,9 @@ editing for your IDE or custom editor
   for files and folders.
 * [Onplana](https://onplana.com/) - Project and portfolio management. Wiki pages are
   co-edited in real time with BlockNote over Yjs, synced through Hocuspocus.  
+* [Doory](https://doory.art/) - Open-source design editor (a Canva alternative).
+  Designs are co-edited in real time with Yjs, synced by a pycrdt server.
+  *[(source)](https://github.com/shaongitbd/doory)*
 
 ## Table of Contents
 
