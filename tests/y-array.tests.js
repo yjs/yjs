@@ -353,6 +353,54 @@ export const testChangeEvent = tc => {
 }
 
 /**
+ * Values pushed in one call share one item. A retain or delete over that item
+ * must count every value in it, not one per item.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testChangeEventPositionsInMultiValueItem = tc => {
+  const { array0, users } = init(tc, { users: 2 })
+  array0.insert(0, [{ k: 'a' }, { k: 'b' }, { k: 'c' }])
+  /**
+   * @type {Array<any>}
+   */
+  const changes = []
+  array0.observe(e => {
+    changes.push(e.delta.toJSON().children)
+  })
+  array0.insert(3, [{ k: 'd' }])
+  array0.delete(3, 1)
+  array0.delete(1, 1)
+  t.compare(changes, [
+    [{ type: 'retain', retain: 3 }, { type: 'insert', insert: [{ k: 'd' }] }],
+    [{ type: 'retain', retain: 3 }, { delete: 1 }],
+    [{ type: 'retain', retain: 1 }, { delete: 1 }]
+  ])
+  compare(users)
+}
+
+/**
+ * The same positions in a deep delta of a nested list.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testDeepChangeEventPositionsInMultiValueItem = _tc => {
+  const doc = new Y.Doc()
+  const root = doc.get('root')
+  const child = root.setAttr('c', new Y.Node())
+  child.insert(0, ['a', 'b', 'c'])
+  /**
+   * @type {any}
+   */
+  let d = null
+  root.observeDeep(e => {
+    d = e.deltaDeep.toJSON()
+  })
+  child.delete(2, 1)
+  t.compare(d, { type: 'delta', attrs: { c: { type: 'modify', value: { type: 'delta', children: [{ type: 'retain', retain: 2 }, { delete: 1 }] } } } })
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testInsertAndDeleteEventsForTypes2 = tc => {
