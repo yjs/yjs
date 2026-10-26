@@ -345,6 +345,218 @@ export const testMergePendingUpdates = _tc => {
 }
 
 /**
+ * A pending struct that waits for an id in a gap of the struct store is applied once the gap is
+ * filled.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testPendingStructWaitingForSkippedId = _tc => {
+  const docB = new Y.Doc()
+  docB.clientID = 1
+  const docC = new Y.Doc()
+  docC.clientID = 2
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updatesB = []
+  docB.on('update', (update, origin) => {
+    if (origin !== docC) updatesB.push(update)
+  })
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updatesC = []
+  docC.on('update', (update, origin) => {
+    if (origin !== docB) updatesC.push(update)
+  })
+  docB.get('text').insert(0, 'a') // 1:0
+  docB.get('text').insert(1, 'b') // 1:1, right of "a"
+  docB.get('text').insert(0, 'c') // 1:2, left of "a"
+  Y.applyUpdate(docC, Y.mergeUpdates(updatesB.slice(0, 2)), docB)
+  docC.get('text').insert(1, 'X') // 2:0, between "a" and "b"
+  Y.applyUpdate(docB, updatesC[0], docC)
+  docB.get('text').insert(3, 'Y') // 1:3, right of "X"
+  t.compareStrings(docB.get('text').toString(), 'caXYb')
+  const ydoc = new Y.Doc()
+  Y.applyUpdate(ydoc, updatesB[0])
+  Y.applyUpdate(ydoc, updatesB[2]) // integrated past the gap at 1:1
+  Y.applyUpdate(ydoc, Y.mergeUpdates([updatesC[0], updatesB[3]])) // both wait for 1:1
+  Y.applyUpdate(ydoc, updatesB[1]) // fills the gap
+  t.compareStrings(ydoc.get('text').toString(), 'caXYb')
+  t.assert(ydoc.store.pendingStructs === null)
+}
+
+/**
+ * A struct that was integrated past a clock gap is also integrated when the same structs arrive in
+ * a single update, e.g. when the document is loaded from its own encoding.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testStructPastClockGapSurvivesReload = _tc => {
+  const docA = new Y.Doc()
+  docA.clientID = 1
+  const docB = new Y.Doc()
+  docB.clientID = 2
+  docA.get('text').insert(0, 'a') // 1:0
+  const updateA = Y.encodeStateAsUpdate(docA)
+  Y.applyUpdate(docB, updateA)
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updatesB = []
+  docB.on('update', update => { updatesB.push(update) })
+  docB.get('text').insert(1, 'b') // 2:0, depends on 1:0
+  docB.get('map').setAttr('k', 1) // 2:1, has no dependencies
+  docB.get('text').insert(2, 'c') // 2:2, depends on 2:0
+  const ydoc = new Y.Doc()
+  updatesB.forEach(update => { Y.applyUpdate(ydoc, update) }) // 2:1 is integrated past the gap at 2:0
+  const reloaded = new Y.Doc()
+  Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(ydoc))
+  const merged = new Y.Doc()
+  Y.applyUpdate(merged, Y.mergeUpdates(updatesB)) // 2:0 and 2:2 are pending, 2:1 is not
+  ;[ydoc, reloaded, merged].forEach(doc => {
+    t.assert(doc.get('map').getAttr('k') === 1)
+    t.compareStrings(doc.get('text').toString(), '')
+    Y.applyUpdate(doc, updateA)
+    t.compareStrings(doc.get('text').toString(), 'abc')
+    t.assert(doc.store.pendingStructs === null)
+  })
+}
+
+/**
+ * Pending structs are retried when an id they wait for arrives, even if a lower missing id of the
+ * same client is still missing.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testPendingStructRetriedWhenHigherGapIsFilled = _tc => {
+  const docA = new Y.Doc()
+  docA.clientID = 1
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updatesA = []
+  docA.on('update', update => { updatesA.push(update) })
+  for (let i = 0; i < 5; i++) {
+    docA.get('map').setAttr(`x${i}`, i) // 1:0 - 1:4
+  }
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updates = []
+  const docB = new Y.Doc()
+  docB.clientID = 2
+  Y.applyUpdate(docB, updatesA[1])
+  docB.on('update', update => { updates.push(update) })
+  docB.get('map').setAttr('x1', 'b') // 2:0, depends on 1:1
+  const docC = new Y.Doc()
+  docC.clientID = 3
+  Y.applyUpdate(docC, updatesA[3])
+  docC.on('update', update => { updates.push(update) })
+  docC.get('map').setAttr('x3', 'c') // 3:0, depends on 1:3
+  const ydoc = new Y.Doc()
+  ;[updatesA[0], updatesA[4], ...updates].forEach(update => { Y.applyUpdate(ydoc, update) }) // 2:0 and 3:0 are pending
+  Y.applyUpdate(ydoc, updatesA[3]) // 1:1 is still missing, but 3:0 can be applied now
+  t.assert(ydoc.get('map').getAttr('x3') === 'c')
+  Y.applyUpdate(ydoc, updatesA[1])
+  Y.applyUpdate(ydoc, updatesA[2])
+  t.assert(ydoc.get('map').getAttr('x1') === 'b')
+  t.assert(ydoc.store.pendingStructs === null)
+}
+
+/**
+ * Describe the structs and the pending structs of a document, independent of how they are split.
+ *
+ * @param {Y.Doc} ydoc
+ */
+const describeDocStructs = ydoc => {
+  const pending = ydoc.store.pendingStructs
+  return {
+    structs: describeStructs(array.from(ydoc.store.clients.values()).flat()),
+    pending: pending === null ? [] : describeStructs(Y.decodeUpdateV2(pending.update).structs)
+  }
+}
+
+/**
+ * Deliver updates out of order and in random batches merged with mergeUpdates. After every
+ * delivery, a document must equal a document loaded from its own encoding. In the end, all
+ * documents converge and nothing is pending.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testRepeatOutOfOrderUpdates = tc => {
+  const gen = tc.prng
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updates = []
+  const docs = array.unfold(3, i => {
+    const ydoc = new Y.Doc({ gc: prng.bool(gen) })
+    ydoc.clientID = i + 1
+    ydoc.on('update', (update, origin) => {
+      if (origin !== 'remote') updates.push(update)
+    })
+    return ydoc
+  })
+  /**
+   * @type {Array<Set<number>>}
+   */
+  const received = docs.map(() => new Set())
+  /**
+   * @param {number} d
+   * @param {Array<number>} indexes
+   */
+  const deliver = (d, indexes) => {
+    const batch = indexes.map(i => updates[i])
+    const mode = prng.int31(gen, 0, 2)
+    if (mode === 0) {
+      batch.forEach(update => { Y.applyUpdate(docs[d], update, 'remote') })
+    } else if (mode === 1) {
+      Y.applyUpdate(docs[d], Y.mergeUpdates(batch), 'remote')
+    } else {
+      Y.applyUpdateV2(docs[d], Y.mergeUpdatesV2(batch.map(update => Y.convertUpdateFormatV1ToV2(update))), 'remote')
+    }
+    indexes.forEach(i => received[d].add(i))
+  }
+  for (let i = 0; i < 60; i++) {
+    const d = prng.int31(gen, 0, docs.length - 1)
+    const ydoc = docs[d]
+    if (prng.bool(gen)) {
+      const ytext = ydoc.get('text')
+      const action = prng.int31(gen, 0, 3)
+      if (action === 0 && ytext.length > 0) {
+        const pos = prng.int31(gen, 0, ytext.length - 1)
+        ytext.delete(pos, prng.int31(gen, 1, math.min(3, ytext.length - pos)))
+      } else if (action === 1) {
+        ydoc.get('map').setAttr(prng.oneOf(gen, ['a', 'b']), i)
+      } else {
+        ytext.insert(prng.int31(gen, 0, ytext.length), prng.word(gen, 1, 3))
+      }
+    } else {
+      const missing = array.unfold(updates.length, j => j).filter(j => !received[d].has(j))
+      const batch = array.unfold(math.min(missing.length, prng.int31(gen, 1, 4)), () => missing.splice(prng.int31(gen, 0, missing.length - 1), 1)[0])
+      if (received[d].size > 0 && prng.bool(gen)) {
+        // also deliver an update again
+        batch.push(prng.oneOf(gen, array.from(received[d])))
+      }
+      deliver(d, batch)
+      const reloaded = new Y.Doc({ gc: ydoc.gc })
+      Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(ydoc))
+      t.compare(describeDocStructs(reloaded), describeDocStructs(ydoc))
+    }
+  }
+  docs.forEach((_, d) => {
+    deliver(d, array.unfold(updates.length, j => j).filter(j => !received[d].has(j)))
+  })
+  docs.forEach(ydoc => {
+    t.assert(ydoc.store.pendingStructs === null)
+    t.assert(ydoc.store.pendingDs === null)
+    t.compare(ydoc.get('text').toString(), docs[0].get('text').toString())
+    t.compare(ydoc.get('map').getAttrs(), docs[0].get('map').getAttrs())
+  })
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testObfuscateUpdates = _tc => {
