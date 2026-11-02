@@ -165,6 +165,14 @@ export const redoItem = (transaction, item, redoitems, itemsToDelete, ignoreRemo
     }
     while (parentItem.redone !== null) {
       parentItem = getItemCleanStart(transaction, parentItem.redone)
+      if (!(parentItem instanceof Item)) {
+        // the redone parent was garbage-collected
+        return null
+      }
+    }
+    if (!(parentItem.content instanceof ContentType)) {
+      // the redone parent was deleted and garbage-collected
+      return null
     }
   }
   const parentType = parentItem === null ? /** @type {AbstractType<any>} */ (item.parent) : /** @type {ContentType} */ (parentItem.content).type
@@ -577,6 +585,7 @@ export class Item extends AbstractStruct {
       this.id.client === right.id.client &&
       this.id.clock + this.length === right.id.clock &&
       this.deleted === right.deleted &&
+      this.keep === right.keep &&
       this.redone === null &&
       right.redone === null &&
       this.content.constructor === right.content.constructor &&
@@ -594,9 +603,6 @@ export class Item extends AbstractStruct {
             }
           }
         })
-      }
-      if (right.keep) {
-        this.keep = true
       }
       this.right = right.right
       if (this.right !== null) {
