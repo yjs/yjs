@@ -145,6 +145,9 @@ editing for your IDE or custom editor
 * [Doory](https://doory.art/) - Open-source design editor (a Canva alternative).
   Designs are co-edited in real time with Yjs, synced by a pycrdt server.
   *[(source)](https://github.com/shaongitbd/doory)*
+* [Breatic](https://github.com/orime-org/breatic) - A collaborative AI workspace
+  with shared documents and canvases for creative teams, synchronized with Yjs
+  and Hocuspocus.
 
 ## Table of Contents
 
