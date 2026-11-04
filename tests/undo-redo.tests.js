@@ -843,3 +843,60 @@ export const testUndoSetAttributeAndDeleteSyncsAttributes = _tc => {
   t.compare(remoteRoot.toDelta()[0].insert.getAttributes(), expectedAttrs)
   t.compare(remoteRoot.toDelta()[0].insert.toString(), expectedText)
 }
+
+/**
+ * Undoing an insertion whose redone copy was split later must delete every part of it.
+ *
+ * @see https://github.com/yjs/yjs/issues/736
+ * @param {t.TestCase} _tc
+ */
+export const testUndoInsertionAfterRedoneCopyWasSplit = _tc => {
+  const doc = new Y.Doc()
+  const array = doc.getArray('array')
+  const undoManager = new Y.UndoManager(array, { captureTimeout: 0 })
+  array.insert(0, [1, 2, 3])
+  array.insert(2, [6, 7])
+  doc.transact(() => {
+    array.delete(1, 1)
+    array.insert(1, [8])
+  })
+  array.delete(0, 1)
+  array.delete(1, 2)
+  t.compare(array.toJSON(), [8, 3])
+  undoManager.undo() // redoes [6, 7] as a new item
+  t.compare(array.toJSON(), [8, 6, 7, 3])
+  array.insert(2, [9]) // splits the redone item
+  t.compare(array.toJSON(), [8, 6, 9, 7, 3])
+  undoManager.undo()
+  t.compare(array.toJSON(), [8, 6, 7, 3])
+  undoManager.undo()
+  t.compare(array.toJSON(), [1, 8, 6, 7, 3])
+  undoManager.undo()
+  t.compare(array.toJSON(), [1, 2, 6, 7, 3])
+  undoManager.undo()
+  t.compare(array.toJSON(), [1, 2, 3])
+}
+
+/**
+ * Two insertions that Yjs merged into one item are redone as a single item. Undoing the second
+ * insertion must only delete its own part of the redone item.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoPartOfMergedInsertionAfterRedo = _tc => {
+  const doc = new Y.Doc()
+  const text = doc.getText('text')
+  const undoManager = new Y.UndoManager(text, { captureTimeout: 0 })
+  text.insert(0, 'hello ')
+  text.insert(6, 'world')
+  text.delete(0, 11)
+  undoManager.undo()
+  t.compare(text.toString(), 'hello world')
+  undoManager.undo()
+  t.compare(text.toString(), 'hello ')
+  undoManager.undo()
+  t.compare(text.toString(), '')
+  undoManager.redo()
+  undoManager.redo()
+  t.compare(text.toString(), 'hello world')
+}
