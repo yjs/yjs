@@ -1,3 +1,4 @@
+import * as math from 'lib0/math'
 import * as time from 'lib0/time'
 import * as array from 'lib0/array'
 import * as logging from 'lib0/logging'
@@ -9,7 +10,7 @@ import { Item, followRedone } from '../structs/Item.js'
 import { transact } from './Transaction.js'
 import { createID } from './ID.js'
 import { isParentOf } from './isParentOf.js'
-import { getItemCleanStart } from './transaction-helpers.js'
+import { getItemCleanStart, getItemCleanEnd } from './transaction-helpers.js'
 import { Doc } from './Doc.js'
 import { YNode } from '../ynode.js'
 
@@ -67,18 +68,38 @@ const popStackItem = (undoManager, stack, eventType) => {
        */
       const itemsToDelete = []
       let performedChange = false
+      /**
+       * @param {Item} item
+       */
+      const deleteIfInScope = item => {
+        if (!item.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {YNode} */ (type), item))) {
+          itemsToDelete.push(item)
+        }
+      }
       iterateStructsByIdSet(transaction, stackItem.inserts, struct => {
-        if (struct instanceof Item) {
-          if (struct.redone !== null) {
-            let { item, diff } = followRedone(store, struct.id)
-            if (diff > 0) {
-              item = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
-            }
-            struct = item
+        if (!(struct instanceof Item)) {
+          return
+        }
+        if (struct.redone === null) {
+          deleteIfInScope(struct)
+          return
+        }
+        // The redone copy of struct may have been split since (and its parts redone again on
+        // their own), so look up each part of struct's range separately. Trim every target to its
+        // part so we never delete content that this stack item didn't insert.
+        const end = struct.id.clock + struct.length
+        for (let clock = struct.id.clock; clock < end;) {
+          const { item, diff, len } = followRedone(store, createID(struct.id.client, clock))
+          const partLen = math.min(len, end - clock)
+          clock += partLen
+          if (!(item instanceof Item) || item.deleted) {
+            continue
           }
-          if (!struct.deleted && scope.some(type => type === transaction.doc || isParentOf(/** @type {YNode} */ (type), /** @type {Item} */ (struct)))) {
-            itemsToDelete.push(struct)
+          const part = getItemCleanStart(transaction, createID(item.id.client, item.id.clock + diff))
+          if (part.length > partLen) {
+            getItemCleanEnd(transaction, store, createID(part.id.client, part.id.clock + partLen - 1))
           }
+          deleteIfInScope(part)
         }
       })
       iterateStructsByIdSet(transaction, stackItem.deletes, struct => {
