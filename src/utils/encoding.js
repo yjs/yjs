@@ -75,7 +75,9 @@ export const writeClientsStructs = (encoder, store, _sm) => {
  * 2. next element from current struct reader (if empty, use next struct reader)
  *
  * If struct causally depends on another struct (ref.missing), we put next reader of
- * `ref.id.client` on top of stack.
+ * `ref.id.client` on top of stack. We only do this if that reader can provide the missing struct,
+ * i.e. if its next struct doesn't start after the missing clock. Otherwise, the struct is moved to
+ * the rest and we continue with the struct below it on the stack.
  *
  * At some point we find a struct that has no causal dependencies,
  * then we start emptying the stack.
@@ -89,18 +91,19 @@ export const writeClientsStructs = (encoder, store, _sm) => {
  * @param {Transaction} transaction
  * @param {StructStore} store
  * @param {BlockSet} clientsStructRefs
+ * @param {Set<number>|null} integratedClients Collects the clients of the integrated structs
  * @return { null | { update: Uint8Array<ArrayBuffer>, missing: Map<number,number> } }
  *
  * @private
  * @function
  */
-const integrateStructs = (transaction, store, clientsStructRefs) => {
+const integrateStructs = (transaction, store, clientsStructRefs, integratedClients) => {
   /**
    * @type {Array<Item | GC | Skip>}
    */
   const stack = []
   // sort them so that we take the higher id first, in case of conflicts the lower id will probably not conflict with the id from the higher user.
-  let clientsStructRefsIds = array.from(clientsStructRefs.clients.keys()).sort((a, b) => a - b)
+  const clientsStructRefsIds = array.from(clientsStructRefs.clients.keys()).sort((a, b) => a - b)
   if (clientsStructRefsIds.length === 0) {
     return null
   }
@@ -152,25 +155,29 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
   //   currentInsertSet.clients.set(clientid, new IdRanges(_createInsertSliceFromStructs(store.clients.get(clientId) ?? [], false)))
   // })
 
-  const addStackToRestSS = () => {
-    for (const item of stack) {
-      const client = item.id.client
-      const inapplicableItems = clientsStructRefs.clients.get(client)
-      if (inapplicableItems) {
-        // decrement because we weren't able to apply previous operation
-        inapplicableItems.i--
-        restStructs.clients.set(client, inapplicableItems.refs.slice(inapplicableItems.i))
-        clientsStructRefs.clients.delete(client)
-        inapplicableItems.i = 0
-        inapplicableItems.refs = []
-      } else {
-        // item was the last item on clientsStructRefs and the field was already cleared. Add item to restStructs and continue
-        restStructs.clients.set(client, [item])
+  /**
+   * Move a struct that can't be applied yet to restStructs. Structs of a client arrive here in
+   * ascending clock order. Gaps are filled with skips so that restStructs can be encoded.
+   *
+   * Only this struct is moved. Later structs of the same client may still be applicable: the struct
+   * store accepts structs past a gap. Moving all of them would make the result depend on how
+   * updates are batched.
+   *
+   * @param {Item|GC} struct
+   */
+  const addToRestSS = struct => {
+    const client = struct.id.client
+    const structs = restStructs.clients.get(client)
+    if (structs === undefined) {
+      restStructs.clients.set(client, [struct])
+    } else {
+      const last = structs[structs.length - 1]
+      const lastEnd = last.id.clock + last.length
+      if (lastEnd < struct.id.clock) {
+        structs.push(new Skip(createID(client, lastEnd), struct.id.clock - lastEnd))
       }
-      // remove client from clientsStructRefsIds to prevent users from applying the same update again
-      clientsStructRefsIds = clientsStructRefsIds.filter(c => c !== client)
+      structs.push(struct)
     }
-    stack.length = 0
   }
 
   // iterate over all struct readers until we are done
@@ -185,11 +192,13 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
         /**
          * @type {{ refs: Array<GC|Item|Skip>, i: number }}
          */
-        const structRefs = clientsStructRefs.clients.get(/** @type {number} */ (missing)) || { refs: [], i: 0 }
-        if (structRefs.refs.length === structRefs.i || missing === stackHead.id.client || stack.some(s => s.id.client === missing)) { // @todo this could be optimized!
+        const structRefs = clientsStructRefs.clients.get(missing.client) || { refs: [], i: 0 }
+        // The struct reader can only provide the missing struct if its next struct doesn't start
+        // after it.
+        if (structRefs.refs.length === structRefs.i || structRefs.refs[structRefs.i].id.clock > missing.clock || stack.some(s => s.id.client === missing.client)) { // @todo this could be optimized!
           // This update message causally depends on another update message that doesn't exist yet
-          updateMissingSv(/** @type {number} */ (missing), store.getClock(missing))
-          addStackToRestSS()
+          updateMissingSv(missing.client, missing.clock)
+          addToRestSS(/** @type {Item} */ (stack.pop()))
         } else {
           stackHead = structRefs.refs[structRefs.i++]
           continue
@@ -202,6 +211,7 @@ const integrateStructs = (transaction, store, clientsStructRefs) => {
           skip.integrate(transaction, 0)
         }
         stackHead.integrate(transaction, 0)
+        integratedClients?.add(stackHead.id.client)
         state.set(stackHead.id.client, math.max(stackHead.id.clock + stackHead.length, localClock))
       }
     }
@@ -270,12 +280,14 @@ export const readUpdateV2 = (decoder, ydoc, transactionOrigin, structDecoder = n
     // start = performance.now()
     // console.log('time to merge: ', performance.now() - start) // @todo remove
     // start = performance.now()
-    const restStructs = integrateStructs(transaction, store, ss)
     const pending = store.pendingStructs
+    // clients that this update integrated structs of; only needed to decide whether to retry pending structs
+    const integratedClients = pending ? new Set() : null
+    const restStructs = integrateStructs(transaction, store, ss, integratedClients)
     if (pending) {
       // check if we can apply something
       for (const [client, clock] of pending.missing) {
-        if (ss.clients.has(client) || clock < store.getClock(client)) {
+        if (/** @type {Set<number>} */ (integratedClients).has(client) || (clock < store.getClock(client) && !store.skips.has(client, clock))) {
           retry = true
           break
         }
@@ -610,12 +622,12 @@ export const encodeStateVectorV2 = (doc, encoder = new IdSetEncoderV2()) => {
 export const encodeStateVector = doc => encodeStateVectorV2(doc, new IdSetEncoderV1())
 
 /**
- * Return the creator clientID of the missing op or define missing items and return null.
+ * Return the id of a missing dependency or define missing items and return null.
  *
  * @param {Item} struct
  * @param {Transaction} transaction
  * @param {StructStore} store
- * @return {null | number}
+ * @return {null | ID}
  */
 const getMissing = (struct, transaction, store) => {
   if (struct.constructor !== Item) return null
@@ -624,13 +636,13 @@ const getMissing = (struct, transaction, store) => {
   const rightOrigin = struct.rightOrigin
   const parent = struct.parent
   if (origin && (origin.clock >= store.getClock(origin.client) || store.skips.hasId(origin))) {
-    return origin.client
+    return origin
   }
   if (rightOrigin && (rightOrigin.clock >= store.getClock(rightOrigin.client) || store.skips.hasId(rightOrigin))) {
-    return rightOrigin.client
+    return rightOrigin
   }
   if (parent && parent.constructor === ID && (parent.clock >= store.getClock(parent.client) || store.skips.hasId(parent))) {
-    return parent.client
+    return parent
   }
   // We have all missing ids, now find the items
   if (origin) {
