@@ -424,6 +424,71 @@ export const testStructPastClockGapSurvivesReload = _tc => {
 }
 
 /**
+ * A struct that was integrated past a pending struct of the same client is also integrated in a
+ * document loaded from the encoding, which merges the pending struct into the client's structs.
+ * This holds whether the later struct arrives after or before the pending one.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testStructPastPendingStructSurvivesReload = _tc => {
+  for (const gc of [false, true]) {
+    for (const laterArrivesFirst of [false, true]) {
+      /**
+       * @param {number} clientID
+       */
+      const createDoc = clientID => {
+        const ydoc = new Y.Doc({ gc })
+        ydoc.clientID = clientID
+        return ydoc
+      }
+      const docZ = createDoc(1)
+      docZ.get('text').insert(0, 'ABCDEFGH')
+      const seed = Y.encodeStateAsUpdate(docZ)
+      const docA = createDoc(2)
+      Y.applyUpdate(docA, seed)
+      /**
+       * @type {Array<Uint8Array<ArrayBuffer>>}
+       */
+      const updatesA = []
+      docA.on('update', update => { updatesA.push(update) })
+      /**
+       * @param {string} left
+       * @param {string} content
+       */
+      const insertAfter = (left, content) => {
+        const ytext = docA.get('text')
+        ytext.insert(ytext.toString().indexOf(left) + left.length, content)
+      }
+      insertAfter('A', 'aaaaaa') // 2:0 - 2:5, delivered last
+      insertAfter('C', 'bb') // 2:6 - 2:7
+      insertAfter('Aa', 'ccc') // 2:8 - 2:10, depends on 2:0
+      insertAfter('G', 'dd') // 2:11 - 2:12
+      const ydoc = createDoc(3)
+      Y.applyUpdate(ydoc, seed)
+      if (laterArrivesFirst) {
+        Y.applyUpdate(ydoc, updatesA[1])
+        Y.applyUpdate(ydoc, updatesA[3]) // integrated past the gap at 2:8
+        Y.applyUpdate(ydoc, updatesA[2]) // pending, 2:0 is missing
+      } else {
+        Y.applyUpdate(ydoc, Y.mergeUpdates([updatesA[1], updatesA[2]])) // 2:8 is pending
+        Y.applyUpdate(ydoc, updatesA[3]) // integrated past the pending struct at 2:8
+      }
+      const ytext = ydoc.get('text')
+      ytext.insert(ytext.toString().indexOf('dd') + 2, 'X') // 3:0, depends on 2:12
+      t.compareStrings(ytext.toString(), 'ABCbbDEFGddXH')
+      const reloaded = createDoc(4)
+      Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(ydoc))
+      t.compareStrings(reloaded.get('text').toString(), ytext.toString())
+      ;[ydoc, reloaded].forEach(doc => {
+        Y.applyUpdate(doc, updatesA[0])
+        t.compareStrings(doc.get('text').toString(), 'AacccaaaaaBCbbDEFGddXH')
+        t.assert(doc.store.pendingStructs === null)
+      })
+    }
+  }
+}
+
+/**
  * Pending structs are retried when an id they wait for arrives, even if a lower missing id of the
  * same client is still missing.
  *
