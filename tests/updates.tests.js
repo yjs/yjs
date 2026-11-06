@@ -671,3 +671,39 @@ export const testRepeatMergeUpdatesWithGcdEncodings = tc => {
     t.compare(describeUpdate(enc.merge(fullHistory.concat(encodings))), expected)
   }
 }
+
+/**
+ * An update that overlaps known structs on both sides of a gap in the struct store only fills the
+ * gap.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testApplyUpdateAroundGaps = _tc => {
+  const ydoc = new Y.Doc()
+  ydoc.clientID = 1
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const updates = []
+  ydoc.on('update', update => { updates.push(update) })
+  const ynode = new Y.Node()
+  ydoc.get('array').insert(0, [ynode]) // 1:0
+  ;['a', 'b', 'c', 'd', 'e'].forEach(key => {
+    ynode.setAttr(key, key) // 1:1 - 1:5, independent of each other
+  })
+  const receiver = new Y.Doc({ gc: false })
+  ;[0, 1, 3, 5].forEach(i => { Y.applyUpdate(receiver, updates[i]) }) // gaps at 1:2 and 1:4
+  ydoc.get('array').delete(0, 1) // gc merges 1:1 - 1:5 into a single block
+  /**
+   * @type {Array<Uint8Array<ArrayBuffer>>}
+   */
+  const emitted = []
+  receiver.on('update', update => { emitted.push(update) })
+  Y.applyUpdate(receiver, Y.encodeStateAsUpdate(ydoc))
+  emitted.forEach(update => { Y.decodeUpdate(update) })
+  t.compare(Y.encodeStateVector(receiver), Y.encodeStateVector(ydoc))
+  const reloaded = new Y.Doc()
+  Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(receiver))
+  t.compare(Y.encodeStateVector(reloaded), Y.encodeStateVector(ydoc))
+  t.assert(receiver.get('array').length === 0 && reloaded.get('array').length === 0)
+}

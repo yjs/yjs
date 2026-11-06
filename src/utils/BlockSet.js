@@ -146,20 +146,23 @@ export class BlockSet {
     for (const client of clientids) {
       const range = exclude.clients.get(client)
       const structs = this.clients.get(client)?.refs
-      if (range == null || structs == null) return
-      const firstStruct = structs[0]
+      if (range == null || structs == null) continue
+      // findIndexCleanStart splits structs in place, which changes their length. So we compute the
+      // clock range of these blocks before modifying them.
+      const firstClock = structs[0].id.clock
       const lastStruct = structs[structs.length - 1]
+      const endClock = lastStruct.id.clock + lastStruct.length
       const idranges = range.getIds()
       for (let i = 0; i < idranges.length; i++) {
         const range = idranges[i]
         let startIndex = 0
-        if (range.clock >= lastStruct.id.clock + lastStruct.length) continue
-        if (range.clock > firstStruct.id.clock) {
+        if (range.clock >= endClock) continue
+        if (range.clock > firstClock) {
           startIndex = findIndexCleanStart(null, structs, range.clock)
         }
         let endIndex = structs.length // must be set here, after structs is modified
-        if (range.clock + range.len <= firstStruct.id.clock) continue
-        if (range.clock + range.len < lastStruct.id.clock + lastStruct.length) {
+        if (range.clock + range.len <= firstClock) continue
+        if (range.clock + range.len < endClock) {
           endIndex = findIndexCleanStart(null, structs, range.clock + range.len)
         }
         if (startIndex < endIndex) {
