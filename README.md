@@ -150,6 +150,9 @@ editing for your IDE or custom editor
   and Hocuspocus.
 * [Oxynote](https://github.com/oxynote/oxynote) - Self-hosted documentation
   with live metric charts inside pages and pull-request-style reviews.
+* [Folio](https://github.com/Sall25/folio) - Open-source workspace for pages,
+  databases and team chat, on the web and desktop. Pages are co-edited in real
+  time with Tiptap over Yjs, synced through Hocuspocus.
 
 ## Table of Contents
 
