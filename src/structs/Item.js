@@ -327,6 +327,7 @@ export class Item extends AbstractStruct {
       this.id.client === right.id.client &&
       this.id.clock + this.length === right.id.clock &&
       this.deleted === right.deleted &&
+      this.keep === right.keep &&
       this.redone === null &&
       right.redone === null &&
       this.content.constructor === right.content.constructor &&
@@ -344,9 +345,6 @@ export class Item extends AbstractStruct {
             }
           }
         })
-      }
-      if (right.keep) {
-        this.keep = true
       }
       this.right = right.right
       if (this.right !== null) {
