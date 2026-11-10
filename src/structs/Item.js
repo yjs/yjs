@@ -1,5 +1,6 @@
 import * as error from 'lib0/error'
 import * as binary from 'lib0/binary'
+import * as math from 'lib0/math'
 import * as env from 'lib0/environment'
 import * as object from 'lib0/object'
 
@@ -17,11 +18,16 @@ import {
 const isDevMode = env.getVariable('node_env') === 'development'
 
 /**
- * @todo This should return several items
+ * Follows the redone chain of `id` and returns the item that currently holds its content, plus the
+ * offset (`diff`) of that content inside the item.
+ *
+ * `len` is how many consecutive clocks, starting at `id`, map to consecutive clocks starting at
+ * `item.id.clock + diff`. Items along the chain may have been split since they were redone, so
+ * the rest of the original range might end up somewhere else and needs its own lookup.
  *
  * @param {StructStore} store
  * @param {ID} id
- * @return {{item:Item, diff:number}}
+ * @return {{item:Item, diff:number, len:number}}
  */
 export const followRedone = (store, id) => {
   /**
@@ -29,6 +35,7 @@ export const followRedone = (store, id) => {
    */
   let nextID = id
   let diff = 0
+  let len = Infinity
   let item
   do {
     if (diff > 0) {
@@ -36,10 +43,11 @@ export const followRedone = (store, id) => {
     }
     item = store.getItem(nextID)
     diff = nextID.clock - item.id.clock
+    len = math.min(len, item.length - diff)
     nextID = item.redone
   } while (nextID !== null && item.isItem)
   return {
-    item, diff
+    item, diff, len
   }
 }
 
