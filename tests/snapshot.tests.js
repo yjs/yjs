@@ -31,6 +31,36 @@ export const testBasicXmlAttributes = _tc => {
 }
 
 /**
+ * Overwrites by one client merge into a single deleted item holding one write per clock. When such
+ * an item straddles the snapshot, the snapshot read must pick the write by clock rather than take
+ * the item's last value, or its first clock's deleted state.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testXmlAttributesMergedOverwrites = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const yxml = ydoc.get().setAttr('el', new Y.Node('div'))
+  yxml.setAttr('a', '1')
+  yxml.setAttr('a', '2')
+  const snapshot = Y.snapshot(ydoc)
+  yxml.setAttr('a', '3')
+  yxml.setAttr('a', '4')
+  yxml.setAttr('b', '1')
+  yxml.setAttr('b', '2')
+  yxml.deleteAttr('b')
+  const snapshotDeleted = Y.snapshot(ydoc)
+  yxml.setAttr('b', '3')
+  // the overwritten writes of `a` (1..3) merged into one deleted item that straddles `snapshot`
+  t.assert(/** @type {any} */ (yxml)._map.get('a').left.length === 3)
+  t.compare(yxml.getAttrs(), { a: '4', b: '3' })
+  t.compare(yxml.getAttrs(snapshot), { a: '2' })
+  t.compare(Y.nodeMapGetSnapshot(yxml, 'a', snapshot), '2')
+  // `b` was deleted in `snapshotDeleted`; its merged tombstone ('1', '2') must not resurface
+  t.compare(yxml.getAttrs(snapshotDeleted), { a: '4' })
+  t.assert(Y.nodeMapGetSnapshot(yxml, 'b', snapshotDeleted) === undefined)
+}
+
+/**
  * @param {t.TestCase} _tc
  */
 export const testBasicRestoreSnapshot = _tc => {

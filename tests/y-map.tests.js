@@ -587,6 +587,102 @@ export const testAttributedContent = _tc => {
 }
 
 /**
+ * A `SnapshotRenderer` hides content written after its snapshot. For a map key that content is the
+ * key's newest item, so the key's rendered value is the one it overwrote: the render must fall back
+ * through the key's item chain as `nodeMapGetSnapshot` does, instead of dropping the key
+ * (yjs/yjs#838).
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testSnapshotRendererOverwrittenKey = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  const cells = ydoc.get('cells')
+  const empty = Y.snapshot(ydoc)
+  cells.setAttr('A1', 'Maria wrote this')
+  const before = Y.snapshot(ydoc)
+  cells.setAttr('A1', 'Joe overwrote it')
+  cells.setAttr('B1', 'Joe added this')
+  const after = Y.snapshot(ydoc)
+  t.group('an overwritten key renders the value it held at the snapshot', () => {
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(before) }).toJSON(), { type: 'delta', attrs: { A1: { type: 'insert', value: 'Maria wrote this' } } })
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(after) }).toJSON().attrs, { A1: { type: 'insert', value: 'Joe overwrote it' }, B1: { type: 'insert', value: 'Joe added this' } })
+  })
+  t.group('the diff between the snapshots attributes the overwrite as an insert', () => {
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(before, after) }).toJSON().attrs, {
+      A1: { type: 'insert', value: 'Joe overwrote it', attribution: { insert: [] } },
+      B1: { type: 'insert', value: 'Joe added this', attribution: { insert: [] } }
+    })
+  })
+  t.group('a key written only after the snapshot stays absent', () => {
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(empty) }).toJSON(), { type: 'delta' })
+  })
+  t.group('overwritten by another client', () => {
+    const ydoc2 = new Y.Doc({ gc: false })
+    Y.applyUpdate(ydoc2, Y.encodeStateAsUpdate(ydoc))
+    ydoc2.get('cells').setAttr('A1', 'Ann overwrote it')
+    Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(ydoc2))
+    t.compare(cells.toDelta().toJSON().attrs, { A1: { type: 'insert', value: 'Ann overwrote it' }, B1: { type: 'insert', value: 'Joe added this' } })
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(before) }).toJSON().attrs, { A1: { type: 'insert', value: 'Maria wrote this' } })
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(after) }).toJSON().attrs, { A1: { type: 'insert', value: 'Joe overwrote it' }, B1: { type: 'insert', value: 'Joe added this' } })
+  })
+  t.group('a key deleted after the snapshot keeps its value there', () => {
+    cells.deleteAttr('B1')
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(after) }).toJSON().attrs, { A1: { type: 'insert', value: 'Joe overwrote it' }, B1: { type: 'insert', value: 'Joe added this' } })
+    t.compare(cells.toDelta({ renderer: Y.createSnapshotRenderer(after, Y.snapshot(ydoc)) }).toJSON().attrs, {
+      A1: { type: 'insert', value: 'Ann overwrote it', attribution: { insert: [] } },
+      B1: { type: 'insert', value: 'Joe added this', attribution: { delete: [] } }
+    })
+  })
+  t.group('overwrites by one client merge into an item straddling the snapshot', () => {
+    const ydoc = new Y.Doc({ gc: false })
+    const ymap = ydoc.get()
+    ymap.setAttr('k', 'v1')
+    ymap.setAttr('k', 'v2')
+    const mid = Y.snapshot(ydoc)
+    ymap.setAttr('k', 'v3')
+    ymap.setAttr('k', 'v4')
+    // the overwritten writes merged into one deleted item holding v1..v3
+    t.assert(/** @type {any} */ (ymap)._map.get('k').left.length === 3)
+    t.compare(ymap.toDelta({ renderer: Y.createSnapshotRenderer(mid) }).toJSON().attrs, { k: { type: 'insert', value: 'v2' } })
+    t.compare(ymap.toDelta({ renderer: Y.createSnapshotRenderer(mid, Y.snapshot(ydoc)) }).toJSON().attrs, { k: { type: 'insert', value: 'v4', attribution: { insert: [] } } })
+  })
+}
+
+/**
+ * An `AttributionsRenderer` with a custom `renderedContent` hides alive content omitted from it and
+ * restores deleted content in it (see `testAttributionsRendererRenderedContent` in the text tests).
+ * A key whose newest value is hidden holds the value it overwrote if that one is restored, and is
+ * absent otherwise.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testAttributionsRendererRenderedContentMap = _tc => {
+  const ydoc = new Y.Doc({ gc: false })
+  ydoc.clientID = 1
+  const ymap = ydoc.get()
+  ymap.setAttr('k', 'old') // clock 0
+  ymap.setAttr('k', 'new') // clock 1
+  ymap.setAttr('other', 1) // clock 2
+  const emptyAttributions = Y.createContentMap()
+  const hidden = Y.createIdSet()
+  hidden.add(1, 1, 1) // hide 'new'
+  const aliveSet = Y.createInsertSetFromStructStore(ydoc.store, true) // {1, 2}
+  const allContent = Y.createInsertSetFromStructStore(ydoc.store, false) // {0, 1, 2}
+  t.group('hide: a key whose alive value is hidden is absent', () => {
+    const renderer = new AttributionsRenderer(emptyAttributions, { renderedContent: Y.diffIdSet(aliveSet, hidden) })
+    t.compare(ymap.toDelta({ renderer }).toJSON().attrs, { other: { type: 'insert', value: 1 } })
+  })
+  t.group('hide + restore: the key holds the restored value it overwrote', () => {
+    const renderer = new AttributionsRenderer(emptyAttributions, { renderedContent: Y.diffIdSet(allContent, hidden) })
+    t.compare(ymap.toDelta({ renderer }).toJSON().attrs, { k: { type: 'insert', value: 'old' }, other: { type: 'insert', value: 1 } })
+  })
+  t.group('restore only: the newest value wins', () => {
+    const renderer = new AttributionsRenderer(emptyAttributions, { renderedContent: allContent })
+    t.compare(ymap.toDelta({ renderer }).toJSON().attrs, { k: { type: 'insert', value: 'new' }, other: { type: 'insert', value: 1 } })
+  })
+}
+
+/**
  * A key overwritten and then deleted by one change must render `deleteAttr`. The key's latest item
  * is churn (set and deleted by the change, hence excluded from `itemsToRender`), so the render has
  * to find the deleted earlier value: by the latest item's id range once the tombstones merged, or

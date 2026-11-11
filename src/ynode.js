@@ -2596,26 +2596,41 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
    * @param {string} key
    */
   const renderAttrs = (item, key) => {
-    if (item.deleted && itemsToRender != null) {
-      const i = mapKeyChangeItem(item, itemsToRender, insertedItems)
-      if (i === null) return
-      item = i
-    }
     /**
-     * @type {{ deleted: boolean, attrs: Array<ContentAttribute<any>>?, content: AbstractContent }}
+     * @type {{ deleted: boolean, attrs: Array<ContentAttribute<any>>?, content: AbstractContent }?}
      */
-    let piece
-    if (renderer === null || !renderer.hasItem(item)) {
-      // generic fast path — the item's own fields, no renderer involved
-      piece = { deleted: item.deleted, attrs: null, content: item.content }
-    } else {
-      /**
-       * @type {Array<AttributedContent<any>>}
-       */
-      const cs = []
-      renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-      if (cs.length === 0) return // the renderer surfaces nothing for this attribute (e.g. a diff renderer hiding an unchanged delete)
-      piece = cs[cs.length - 1]
+    let piece = null
+    // A key's rendered value is the newest item in its chain (`_map` entry, then `left` through the
+    // values it overwrote) that exists in the rendered state. The list walk visits every item and
+    // lets the renderer hide each one; the map walk must step over hidden items itself: content
+    // written after a `SnapshotRenderer`'s snapshot, alive content an `AttributionsRenderer` hides
+    // via `renderedContent`, churn inside a change render. A hidden newest item means the key holds
+    // the value that item overwrote (as `nodeMapGetSnapshot` reads it) — not that the key is gone.
+    while (piece === null) {
+      if (item.deleted && itemsToRender != null) {
+        const i = mapKeyChangeItem(item, itemsToRender, insertedItems)
+        if (i === null) return
+        item = i
+      }
+      if (renderer === null || !renderer.hasItem(item)) {
+        // generic fast path — the item's own fields, no renderer involved
+        piece = { deleted: item.deleted, attrs: null, content: item.content }
+      } else {
+        /**
+         * @type {Array<AttributedContent<any>>}
+         */
+        const cs = []
+        renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
+        if (cs.length > 0) {
+          // an item merged across a hidden boundary (e.g. a snapshot) surfaces only its visible
+          // writes, the newest of which is the last piece
+          piece = cs[cs.length - 1]
+        } else if (item.left === null) {
+          return // the renderer surfaces nothing for any value this key ever held
+        } else {
+          item = item.left
+        }
+      }
     }
     const { deleted, attrs, content } = piece
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
@@ -2694,6 +2709,26 @@ export const isVisible = (item, snapshot) => snapshot === undefined
   : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
 
 /**
+ * The value a map key holds in `snapshot`, read off the key's item chain (`v` is the key's newest
+ * item, `left` the values it overwrote): the newest write the snapshot contains, unless the
+ * snapshot deletes it. Overwrites by one client merge into a single deleted item holding one write
+ * per clock, and such an item may straddle the snapshot — only its first `sv − clock` writes exist
+ * there, so the write is picked by clock, not the item's last value.
+ *
+ * @param {Item?} v
+ * @param {Snapshot} snapshot
+ * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YNode<any>|undefined}
+ */
+const snapshotMapValue = (v, snapshot) => {
+  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
+    v = v.left
+  }
+  if (v === null) return undefined
+  const offset = math.min(v.length, /** @type {number} */ (snapshot.sv.get(v.id.client)) - v.id.clock) - 1
+  return snapshot.ds.has(v.id.client, v.id.clock + offset) ? undefined : v.content.getContent()[offset]
+}
+
+/**
  * @param {YNode<any>} parent
  * @param {string} key
  * @param {Snapshot} snapshot
@@ -2702,13 +2737,7 @@ export const isVisible = (item, snapshot) => snapshot === undefined
  * @private
  * @function
  */
-export const nodeMapGetSnapshot = (parent, key, snapshot) => {
-  let v = parent._map.get(key) || null
-  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
-    v = v.left
-  }
-  return v !== null && isVisible(v, snapshot) ? v.content.getContent()[v.length - 1] : undefined
-}
+export const nodeMapGetSnapshot = (parent, key, snapshot) => snapshotMapValue(parent._map.get(key) || null, snapshot)
 
 /**
  * @param {YNode<any>} parent
@@ -2724,15 +2753,9 @@ export const nodeMapGetAllSnapshot = (parent, snapshot) => {
    */
   const res = {}
   parent._map.forEach((value, key) => {
-    /**
-     * @type {Item|null}
-     */
-    let v = value
-    while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
-      v = v.left
-    }
-    if (v !== null && isVisible(v, snapshot)) {
-      res[key] = v.content.getContent()[v.length - 1]
+    const v = snapshotMapValue(value, snapshot)
+    if (v !== undefined) {
+      res[key] = v
     }
   })
   return res
