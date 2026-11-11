@@ -140,8 +140,8 @@ editing for your IDE or custom editor
 * [Obsidian Collab](https://github.com/filipesilva/obsidian-collab) - Real-time,
   end-to-end encrypted, peer-to-peer, collaborative editing across Obsidian vaults
   for files and folders.
-* [Onplana](https://onplana.com/) - Project and portfolio management. Wiki pages are
-  co-edited in real time with BlockNote over Yjs, synced through Hocuspocus.  
+* [Onplana](https://onplana.com/) - Project and portfolio management. Wiki pages
+  are co-edited in real time with BlockNote over Yjs, synced through Hocuspocus.
 * [Doory](https://doory.art/) - Open-source design editor (a Canva alternative).
   Designs are co-edited in real time with Yjs, synced by a pycrdt server.
   *[(source)](https://github.com/shaongitbd/doory)*
