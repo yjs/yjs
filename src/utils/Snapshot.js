@@ -1,18 +1,22 @@
-import * as map from 'lib0/map'
-import * as set from 'lib0/set'
+/**
+ * The v13 snapshot format: a state vector plus a delete set. Kept so stored snapshots can still be
+ * decoded, compared and converted (`createContentIdsFromSnapshot`). Reading or restoring content as
+ * of a point in time moved to `ContentIds` (`./meta.js`): `createContentIdsFromDoc` captures one,
+ * `intersectUpdateWithContentIds` (`./updates.js`) restores it, and an `AttributionsRenderer` with
+ * `renderedContent` renders the past state in place.
+ */
+
 import * as decoding from 'lib0/decoding'
-import * as encoding from 'lib0/encoding'
 
-import { createID } from './ID.js'
-import { createDeleteSetFromStructStore, createIdSet, iterateStructsByIdSet, equalIdSets, mergeIdSets, writeIdSet, readIdSet } from './ids.js'
+import { createDeleteSetFromStructStore, createIdSet, equalIdSets, writeIdSet, readIdSet } from './ids.js'
 import { getStateVector } from './StructStore.js'
-import { findIndexSS, getItemCleanStart } from './transaction-helpers.js'
-import { writeStateVector, readStateVector, applyUpdateV2 } from './encoding.js'
-import { UpdateDecoderV1, UpdateDecoderV2, IdSetDecoderV1, IdSetDecoderV2 } from './UpdateDecoder.js'
-import { UpdateEncoderV2, IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
-import { LazyStructReader } from './updates.js'
-import { Doc } from './Doc.js'
+import { writeStateVector, readStateVector } from './encoding.js'
+import { IdSetDecoderV1, IdSetDecoderV2 } from './UpdateDecoder.js'
+import { IdSetEncoderV1, IdSetEncoderV2 } from './UpdateEncoder.js'
 
+/**
+ * @deprecated use ContentIds instead (createContentIdsFromDoc; createContentIdsFromSnapshot converts a stored snapshot)
+ */
 export class Snapshot {
   /**
    * @param {IdSet} ds
@@ -32,6 +36,8 @@ export class Snapshot {
 }
 
 /**
+ * @deprecated use equalContentIds instead
+ *
  * @param {Snapshot} snap1
  * @param {Snapshot} snap2
  * @return {boolean}
@@ -51,6 +57,8 @@ export const equalSnapshots = (snap1, snap2) => {
 }
 
 /**
+ * @deprecated use encodeContentIds instead (not wire compatible)
+ *
  * @param {Snapshot} snapshot
  * @param {IdSetEncoderV1 | IdSetEncoderV2} [encoder]
  * @return {Uint8Array}
@@ -62,12 +70,16 @@ export const encodeSnapshotV2 = (snapshot, encoder = new IdSetEncoderV2()) => {
 }
 
 /**
+ * @deprecated use encodeContentIds instead (not wire compatible)
+ *
  * @param {Snapshot} snapshot
  * @return {Uint8Array}
  */
 export const encodeSnapshot = snapshot => encodeSnapshotV2(snapshot, new IdSetEncoderV1())
 
 /**
+ * @deprecated use decodeContentIds instead (not wire compatible)
+ *
  * @param {Uint8Array} buf
  * @param {IdSetDecoderV1 | IdSetDecoderV2} [decoder]
  * @return {Snapshot}
@@ -77,122 +89,31 @@ export const decodeSnapshotV2 = (buf, decoder = new IdSetDecoderV2(decoding.crea
 }
 
 /**
+ * @deprecated use decodeContentIds instead (not wire compatible)
+ *
  * @param {Uint8Array} buf
  * @return {Snapshot}
  */
 export const decodeSnapshot = buf => decodeSnapshotV2(buf, new IdSetDecoderV1(decoding.createDecoder(buf)))
 
 /**
+ * @deprecated use createContentIds instead
+ *
  * @param {IdSet} ds
  * @param {Map<number,number>} sm
  * @return {Snapshot}
  */
 export const createSnapshot = (ds, sm) => new Snapshot(ds, sm)
 
+/**
+ * @deprecated use createContentIds() instead
+ */
 export const emptySnapshot = createSnapshot(createIdSet(), new Map())
 
 /**
+ * @deprecated use createContentIdsFromDoc(doc, true) instead
+ *
  * @param {Doc} doc
  * @return {Snapshot}
  */
 export const snapshot = doc => createSnapshot(createDeleteSetFromStructStore(doc.store), getStateVector(doc.store))
-
-/**
- * @param {Transaction} transaction
- * @param {Snapshot} snapshot
- */
-export const splitSnapshotAffectedStructs = (transaction, snapshot) => {
-  const meta = map.setIfUndefined(transaction.meta, splitSnapshotAffectedStructs, set.create)
-  const store = transaction.doc.store
-  // check if we already split for this snapshot
-  if (!meta.has(snapshot)) {
-    snapshot.sv.forEach((clock, client) => {
-      if (clock < store.getClock(client)) {
-        getItemCleanStart(transaction, createID(client, clock))
-      }
-    })
-    iterateStructsByIdSet(transaction, snapshot.ds, _item => {})
-    meta.add(snapshot)
-  }
-}
-
-/**
- * @example
- *  const ydoc = new Y.Doc({ gc: false })
- *  ydoc.get().insert(0, 'world!')
- *  const snapshot = Y.snapshot(ydoc)
- *  ydoc.get().insert(0, 'hello ')
- *  const restored = Y.createDocFromSnapshot(ydoc, snapshot)
- *  assert(restored.get().toString() === 'world!')
- *
- * @param {Doc} originDoc
- * @param {Snapshot} snapshot
- * @param {Doc} [newDoc] Optionally, you may define the Yjs document that receives the data from originDoc
- * @return {Doc}
- */
-export const createDocFromSnapshot = (originDoc, snapshot, newDoc = new Doc()) => {
-  if (originDoc.gc) {
-    // we should not try to restore a GC-ed document, because some of the restored items might have their content deleted
-    throw new Error('Garbage-collection must be disabled in `originDoc`!')
-  }
-  const { sv, ds } = snapshot
-
-  const encoder = new UpdateEncoderV2()
-  originDoc.transact(transaction => {
-    let size = 0
-    sv.forEach(clock => {
-      if (clock > 0) {
-        size++
-      }
-    })
-    encoding.writeVarUint(encoder.restEncoder, size)
-    // splitting the structs before writing them to the encoder
-    for (const [client, clock] of sv) {
-      if (clock === 0) {
-        continue
-      }
-      if (clock < originDoc.store.getClock(client)) {
-        getItemCleanStart(transaction, createID(client, clock))
-      }
-      const structs = originDoc.store.clients.get(client) || []
-      const lastStructIndex = findIndexSS(structs, clock - 1)
-      // write # encoded structs
-      encoding.writeVarUint(encoder.restEncoder, lastStructIndex + 1)
-      encoder.writeClient(client)
-      // first clock written is 0
-      encoding.writeVarUint(encoder.restEncoder, 0)
-      for (let i = 0; i <= lastStructIndex; i++) {
-        structs[i].write(encoder, 0, 0)
-      }
-    }
-    writeIdSet(encoder, ds)
-  })
-
-  applyUpdateV2(newDoc, encoder.toUint8Array(), 'snapshot')
-  return newDoc
-}
-
-/**
- * @param {Snapshot} snapshot
- * @param {Uint8Array} update
- * @param {typeof UpdateDecoderV2 | typeof UpdateDecoderV1} [YDecoder]
- */
-export const snapshotContainsUpdateV2 = (snapshot, update, YDecoder = UpdateDecoderV2) => {
-  const structs = []
-  const updateDecoder = new YDecoder(decoding.createDecoder(update))
-  const lazyDecoder = new LazyStructReader(updateDecoder, false)
-  for (let curr = lazyDecoder.curr; curr !== null; curr = lazyDecoder.next()) {
-    structs.push(curr)
-    if ((snapshot.sv.get(curr.id.client) || 0) < curr.id.clock + curr.length) {
-      return false
-    }
-  }
-  const mergedDS = mergeIdSets([snapshot.ds, readIdSet(updateDecoder)])
-  return equalIdSets(snapshot.ds, mergedDS)
-}
-
-/**
- * @param {Snapshot} snapshot
- * @param {Uint8Array} update
- */
-export const snapshotContainsUpdate = (snapshot, update) => snapshotContainsUpdateV2(snapshot, update, UpdateDecoderV1)

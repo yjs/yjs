@@ -4,7 +4,7 @@ import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import * as delta from 'lib0/delta'
 import { createIdMapFromIdSet } from '../src/utils/ids.js'
-import { AttributionsRenderer, createSnapshotRenderer } from '../src/utils/Renderer.js'
+import { AttributionsRenderer } from '../src/utils/Renderer.js'
 
 const { init, compare } = Y
 
@@ -1459,28 +1459,28 @@ export const testTypesAsEmbed = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testSnapshot = tc => {
+export const testRenderPastState = tc => {
   const { text0 } = init(tc, { users: 1 })
   const doc0 = /** @type {Y.Doc} */ (text0.doc)
   doc0.gc = false
   text0.applyDelta(delta.create().insert('abcd').done())
-  const snapshot1 = Y.snapshot(doc0)
+  const snapshot1 = Y.capture(doc0)
   text0.applyDelta(delta.create()
     .retain(1)
     .insert('x')
     .delete(1))
-  const snapshot2 = Y.snapshot(doc0)
+  const snapshot2 = Y.capture(doc0)
   text0.applyDelta(delta.create()
     .retain(2)
     .delete(3)
     .insert('x')
     .delete(1)
   )
-  const state1 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1) })
+  const state1 = text0.toDelta({ renderer: Y.rendererAt(snapshot1) })
   t.compare(state1, delta.create().insert('abcd').done())
-  const state2 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot2) })
+  const state2 = text0.toDelta({ renderer: Y.rendererAt(snapshot2) })
   t.compare(state2, delta.create().insert('axcd').done())
-  const state2Diff = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1, snapshot2) })
+  const state2Diff = text0.toDelta({ renderer: Y.rendererDiff(snapshot1, snapshot2) })
   t.compare(
     state2Diff,
     delta.create()
@@ -1495,7 +1495,7 @@ export const testSnapshot = tc => {
 /**
  * @param {t.TestCase} tc
  */
-export const testSnapshotDeleteAfter = tc => {
+export const testRenderPastStateDeleteAfter = tc => {
   const { text0 } = init(tc, { users: 1 })
   const doc0 = /** @type {Y.Doc} */ (text0.doc)
   doc0.gc = false
@@ -1503,13 +1503,13 @@ export const testSnapshotDeleteAfter = tc => {
     .insert('abcd')
     .done()
   )
-  const snapshot1 = Y.snapshot(doc0)
+  const snapshot1 = Y.capture(doc0)
   text0.applyDelta(delta.create()
     .retain(4)
     .insert('e')
     .done()
   )
-  const state1 = text0.toDelta({ renderer: createSnapshotRenderer(snapshot1) })
+  const state1 = text0.toDelta({ renderer: Y.rendererAt(snapshot1) })
   t.compare(state1, delta.create().insert('abcd').done())
 }
 

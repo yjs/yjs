@@ -847,7 +847,9 @@ export const createInsertSetFromStructStore = (ss, filterDeleted) => {
       idset.clients.set(client, new IdRanges(iditems))
     }
   })
-  return idset
+  // `Skip` structs sit in the store as placeholders for ranges the store has not received
+  // (`ss.skips`), and they are not deleted — but they are not inserted content either
+  return ss.skips.isEmpty() ? idset : diffIdSet(idset, ss.skips)
 }
 
 /**

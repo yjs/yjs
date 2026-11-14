@@ -17,7 +17,29 @@ central component for the attribution feature: pass it to methods like
 
 Different implementations of Renderer are available for different use cases:
 - `DiffRenderer`: Highlights the differences between two Yjs documents
-- `SnapshotRenderer`: Highlights the differences between two snapshots
+- `AttributionsRenderer`: Renders content with the attributions of a
+  `ContentMap`. Its `renderedContent` option (an `IdSet`) decides what renders
+  normally: content in the set renders even if the document has since deleted
+  it (a restore), unattributed content outside it is ignored whether it is
+  alive or deleted (it never renders and never shows up as a deletion), and
+  attributed content always renders. Pass the `inserts` of a
+  `createContentIdsFromDoc(doc, false)` captured earlier to render the document
+  as it was at that point, and attribute
+  `createContentMapFromContentIds(excludeContentIds(later, earlier), [], [])`
+  to highlight what changed between two captures (`earlier` and `later` are
+  `createContentIdsFromDoc(doc, true)` captures). A live view
+  (`type.useRenderer(renderer)`) of such a capture stays frozen while the
+  document changes. This replaces the v13 snapshot API. Restoring deleted
+  content requires `gc: false`; how garbage-collected content renders is
+  unspecified.
+
+A renderer decides per item via `hasItem(item)`: `0` renders it as-is (the
+fast path), `1` renders it through the renderer, `2` ignores it, i.e. the item
+is not part of the rendered state in any render. A map key steps over ignored
+values to the value they overwrote. Deletes through a renderer
+(`type.useRenderer(renderer)`, or the `renderer` option of `applyDelta`) address
+the rendered state and step over ignored content, so deleting in a view of an
+older version leaves the content written since untouched.
 
 ### Attributed Content
 

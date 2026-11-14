@@ -687,11 +687,25 @@ export const createDocFromUpdateV2 = (update, opts = {}) => {
 }
 
 /**
+ * Create a copy of `ydoc` in exactly its state — including what it has received but cannot
+ * integrate yet.
+ *
+ * Only the integrated content is encoded and applied; the pending structs and deletes are carried
+ * over as they are. Encoding them into the same update (as `encodeStateAsUpdate` does) is not
+ * faithful: a pending struct that lies inside a gap of its client merges with that client's
+ * integrated structs behind the gap, and the clone would defer those too.
+ *
  * @param {Doc} ydoc
  * @param {import('./Doc.js').DocOpts} [opts]
  */
 export const cloneDoc = (ydoc, opts) => {
   const clone = new Doc(opts)
-  applyUpdate(clone, encodeStateAsUpdate(ydoc))
+  const encoder = new UpdateEncoderV2()
+  writeStateAsUpdate(encoder, ydoc)
+  applyUpdateV2(clone, encoder.toUint8Array())
+  const { pendingStructs, pendingDs } = ydoc.store
+  // the pending updates are never mutated, only replaced — share them; `missing` is mutated
+  if (pendingStructs !== null) clone.store.pendingStructs = { missing: new Map(pendingStructs.missing), update: pendingStructs.update }
+  if (pendingDs !== null) clone.store.pendingDs = pendingDs
   return clone
 }

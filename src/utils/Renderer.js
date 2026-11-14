@@ -2,7 +2,7 @@ import { ObservableV2 } from 'lib0/observable'
 import * as encoding from 'lib0/encoding'
 
 import { getItemCleanStart } from './transaction-helpers.js'
-import { diffIdSet, createInsertSetFromStructStore, createDeleteSetFromStructStore, insertIntoIdSet, mergeIdSets, intersectSets, createIdSet, createIdSetFromIdMap, writeIdSet, createIdMapFromIdSet, insertIntoIdMap, diffIdMap, createIdMap, mergeIdMaps, intersectMaps, createMaybeAttrRange, createContentAttribute } from './ids.js'
+import { diffIdSet, createInsertSetFromStructStore, createDeleteSetFromStructStore, insertIntoIdSet, mergeIdSets, intersectSets, createIdSet, createIdSetFromIdMap, writeIdSet, createIdMapFromIdSet, insertIntoIdMap, diffIdMap, mergeIdMaps, intersectMaps, createMaybeAttrRange } from './ids.js'
 import { ContentDeleted, ContentFormat, ContentType } from '../structs/Item.js'
 import { createID } from './ID.js'
 import { writeStructsFromIdSet } from './encoding-helpers.js'
@@ -27,18 +27,26 @@ export { AbstractRenderer, rendererContentLength, $renderer } from './renderer-h
  * @param {boolean} inRC - whether this piece is in `renderedContent`
  * @param {Array<ContentAttribute<any>>|null} attrs
  * @param {0|1|2|3} shouldRender - see {@link AbstractRenderer#readContent}
+ * @param {boolean} custom - whether `renderedContent` is a custom set (visibility is then fixed:
+ * `inRC || attrs != null`, independent of the doc's deleted state)
  */
-const pushAttributedPiece = (contents, c, clock, deleted, inRC, attrs, shouldRender) => {
+const pushAttributedPiece = (contents, c, clock, deleted, inRC, attrs, shouldRender, custom) => {
   if (inRC || attrs != null) {
     // Visible: rendered normally (in `renderedContent`) and/or attributed. A restored deletion
-    // (`inRC`) renders as alive, so its effective `deleted` flag is cleared.
-    contents.push(new AttributedContent(c, clock, deleted && !inRC, attrs, shouldRender))
-  } else if (deleted && shouldRender !== 0 && shouldRender !== 3) {
-    // Genuinely deleted, unattributed, not restored: preserve the legacy retain/delete-op
-    // behavior (mode 3 renders unattributed deleted content as nothing — see DiffRenderer).
+    // (`inRC`) renders as alive, so its effective `deleted` flag is cleared. A restored piece that
+    // this change deleted (mode 2) renders exactly as it did before the deletion, so it is
+    // retained (mode 0) rather than re-inserted. Only a custom set can restore (by default
+    // `inRC` ⟺ alive).
+    contents.push(new AttributedContent(c, clock, deleted && !inRC, attrs, (deleted && inRC && shouldRender === 2) ? 0 : shouldRender))
+  } else if (!custom && deleted && shouldRender !== 0 && shouldRender !== 3) {
+    // Tombstone (default set only): deleted, unattributed and visible while it was alive — keep the
+    // retain/delete-op behavior (mode 3 renders unattributed deleted content as nothing — see
+    // DiffRenderer).
     contents.push(new AttributedContent(c, clock, true, null, shouldRender))
   }
-  // else: hidden alive content (or invisible deleted content under mode 0/3) — emit nothing.
+  // else: ignored content — outside a custom `renderedContent` and unattributed (never visible,
+  // alive or deleted, so it never surfaces as a tombstone), or invisible deleted content under
+  // mode 0/3 — emit nothing.
 }
 
 /**
@@ -51,10 +59,12 @@ const pushAttributedPiece = (contents, c, clock, deleted, inRC, attrs, shouldRen
  *   deleted in the doc (a "restore"). It defaults to the doc's alive content (`inserts − deletes`),
  *   applied implicitly (a piece is in the default set ⟺ its item is not `deleted`), so the common
  *   "pure attribution overlay" case does no extra work. When a custom set is supplied it is
- *   authoritative: alive content omitted from it (and unattributed) is hidden.
+ *   authoritative: unattributed content omitted from it is ignored, alive or deleted — it never
+ *   renders and never surfaces as a tombstone, so a live view of a captured past state
+ *   (`renderedContent = createContentIdsFromDoc(doc, false).inserts`) stays frozen.
  *
  * Restoring deleted content requires `gc: false` on the doc (the renderer does not rehydrate
- * garbage-collected content, unlike {@link DiffRenderer}).
+ * garbage-collected content, unlike {@link DiffRenderer}); rendering gc'd content is unspecified.
  *
  * @implements AbstractRenderer
  *
@@ -100,17 +110,19 @@ export class AttributionsRenderer extends ObservableV2 {
 
   /**
    * @param {Item} item
-   * @return {boolean}
+   * @return {0|1|2}
    */
   hasItem (item) {
     const { client, clock } = item.id
-    if (this.attributed.intersects(client, clock, item.length)) return true
-    if (this.renderedContent === null) return false
-    // Custom renderedContent differs from the generic fast path for: deleted content that must be
-    // restored, and alive content that must be hidden (not fully covered).
-    return item.deleted
-      ? this.renderedContent.intersects(client, clock, item.length)
-      : !this.renderedContent.covers(client, clock, item.length)
+    if (this.attributed.intersects(client, clock, item.length)) return 1
+    const rc = this.renderedContent
+    if (rc === null) return 0
+    // Custom renderedContent: content outside it (and unattributed — checked above) is ignored,
+    // alive or deleted. Deleted content inside it is restored; alive content fully inside it renders
+    // as-is; an alive item that straddles the set renders piece-wise.
+    if (item.deleted) return rc.intersects(client, clock, item.length) ? 1 : 2
+    if (rc.covers(client, clock, item.length)) return 0
+    return rc.intersects(client, clock, item.length) ? 1 : 2
   }
 
   /**
@@ -123,6 +135,7 @@ export class AttributionsRenderer extends ObservableV2 {
    */
   readContent (contents, client, clock, deleted, content, shouldRender) {
     const total = content.getLength()
+    const custom = this.renderedContent !== null
     /**
      * Segments of the item partitioned by `renderedContent`, or `null` when `inRC` is uniform over
      * the whole item (the common case: default set, or a custom set that fully contains/excludes
@@ -146,7 +159,7 @@ export class AttributionsRenderer extends ObservableV2 {
         const s = slice[i]
         const c = rest
         if (i < slice.length - 1) rest = c.splice(s.len)
-        pushAttributedPiece(contents, c, s.clock, deleted, inRC, s.attrs, shouldRender)
+        pushAttributedPiece(contents, c, s.clock, deleted, inRC, s.attrs, shouldRender, custom)
       }
       return
     }
@@ -162,7 +175,7 @@ export class AttributionsRenderer extends ObservableV2 {
         const last = oi === outer.length - 1 && ii === slice.length - 1
         const c = rest
         if (!last) rest = c.splice(s.len)
-        pushAttributedPiece(contents, c, s.clock, deleted, rcSeg.exists, s.attrs, shouldRender)
+        pushAttributedPiece(contents, c, s.clock, deleted, rcSeg.exists, s.attrs, shouldRender, custom)
       }
     }
   }
@@ -468,10 +481,10 @@ export class DiffRenderer extends ObservableV2 {
 
   /**
    * @param {Item} item
-   * @return {boolean}
+   * @return {0|1}
    */
   hasItem (item) {
-    return this.attributed.intersects(item.id.client, item.id.clock, item.length)
+    return this.attributed.intersects(item.id.client, item.id.clock, item.length) ? 1 : 0
   }
 
   destroy () {
@@ -601,102 +614,3 @@ export class DiffRenderer extends ObservableV2 {
  * @param {ContentMap?} [options.attributions] - the attributions to apply to the diff
  */
 export const createDiffRenderer = (prevDoc, nextDoc, options) => new DiffRenderer(prevDoc, nextDoc, options)
-
-/**
- * Intended for projects that used the v13 snapshot feature. With this renderer you can
- * read content similar to the previous snapshot api. Requires that `ydoc.gc` is turned off.
- *
- * @implements AbstractRenderer
- *
- * @extends {ObservableV2<{change:(idset:IdSet,origin:any,local:boolean)=>void}>}
- */
-export class SnapshotRenderer extends ObservableV2 {
-  /**
-   * @param {Snapshot} prevSnapshot
-   * @param {Snapshot} nextSnapshot
-   * @param {Object} [options] - options for the renderer
-   * @param {Array<ContentAttribute>} [options.attrs] - the attributes to apply to the diff
-   */
-  constructor (prevSnapshot, nextSnapshot) {
-    super()
-    this.prevSnapshot = prevSnapshot
-    this.nextSnapshot = nextSnapshot
-    const inserts = createIdMap()
-    const deletes = createIdMapFromIdSet(diffIdSet(nextSnapshot.ds, prevSnapshot.ds), [createContentAttribute('change', '')])
-    nextSnapshot.sv.forEach((clock, client) => {
-      const prevClock = prevSnapshot.sv.get(client) || 0
-      inserts.add(client, 0, prevClock, []) // content is included in prevSnapshot is rendered without attributes
-      inserts.add(client, prevClock, clock - prevClock, [createContentAttribute('change', '')]) // content is rendered as "inserted"
-    })
-    this.attrs = mergeIdMaps([diffIdMap(inserts, prevSnapshot.ds), deletes])
-    /**
-     * Coverage of `attrs` (everything up to `nextSnapshot`). Content *after* the snapshot must be
-     * hidden rather than rendered normally, which a finite set cannot express — `hasItem`
-     * additionally claims all future content. See {@link AbstractRenderer#attributed}.
-     * @type {IdSet}
-     */
-    this.attributed = createIdSetFromIdMap(this.attrs)
-  }
-
-  get $type () { return $renderer }
-
-  /**
-   * @param {Item} item
-   * @return {boolean}
-   */
-  hasItem (item) {
-    // claim future content (item ids at/after the snapshot's state vector, including clients the
-    // snapshot has never seen) — `readContent` hides it, the generic path would render it
-    return (this.nextSnapshot.sv.get(item.id.client) ?? 0) < item.id.clock + item.length ||
-      this.attributed.intersects(item.id.client, item.id.clock, item.length)
-  }
-
-  /**
-   * @param {Array<AttributedContent<any>>} contents - where to write the result
-   * @param {number} client
-   * @param {number} clock
-   * @param {boolean} _deleted
-   * @param {AbstractContent} content
-   * @param {0|1|2|3} shouldRender - whether this should render or just result in a `retain` operation (see AbstractRenderer#readContent)
-   */
-  readContent (contents, client, clock, _deleted, content, shouldRender) {
-    if ((this.nextSnapshot.sv.get(client) ?? 0) <= clock) return // future item that should not be displayed
-    const slice = this.attrs.slice(client, clock, content.getLength())
-    content = slice.length === 1 ? content : content.copy()
-    slice.forEach(s => {
-      const deleted = this.nextSnapshot.ds.has(client, s.clock)
-      const nonExistend = (this.nextSnapshot.sv.get(client) ?? 0) <= s.clock
-      const c = content
-      if (s.len < c.getLength()) {
-        content = c.splice(s.len)
-      }
-      if (nonExistend) return
-      if (shouldRender || !deleted || (s.attrs != null && s.attrs.length > 0)) {
-        let attrsWithoutChange = s.attrs?.filter(attr => attr.name !== 'change') ?? null
-        if (s.attrs?.length === 0) {
-          attrsWithoutChange = null
-        }
-        contents.push(new AttributedContent(c, s.clock, deleted, attrsWithoutChange, shouldRender))
-      }
-    })
-  }
-
-  /**
-   * @param {Item} item
-   * @return {number}
-   */
-  contentLength (item) {
-    return item.content.isCountable()
-      ? (item.deleted
-          ? this.attrs.sliceId(item.id, item.length).reduce((len, s) => s.attrs != null ? len + s.len : len, 0)
-          : item.length
-        )
-      : 0
-  }
-}
-
-/**
- * @param {Snapshot} prevSnapshot
- * @param {Snapshot} nextSnapshot
- */
-export const createSnapshotRenderer = (prevSnapshot, nextSnapshot = prevSnapshot) => new SnapshotRenderer(prevSnapshot, nextSnapshot)

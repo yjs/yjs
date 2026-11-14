@@ -12,7 +12,7 @@ import * as prng from 'lib0/prng'
 import * as math from 'lib0/math'
 import { bind, $rdt } from 'lib0/delta/rdt'
 import { writeStructsFromIdSet } from '../src/utils/encoding-helpers.js'
-import { init } from './testHelper.js' // eslint-disable-line
+import { init, capture, rendererAt, rendererDiff } from './testHelper.js' // eslint-disable-line
 
 /**
  * @param {t.TestCase} _tc
@@ -275,7 +275,7 @@ export const testUntouchedRootChangeRender = () => {
       text.insert(0, 'hi')
       return tr.insertSet
     })
-    t.compare(text.toDelta({ deep: true, itemsToRender: changes }), delta.create().insert('hi'))
+    t.compare(text.toDelta({ deep: true, itemsToRender: changes }), delta.insert('hi'))
     t.assert(map.toDelta({ deep: true, itemsToRender: changes }).isEmpty())
   })
   t.group('renderer change through a renderer shared across roots', () => {
@@ -726,6 +726,87 @@ export const testRdtDeltaSuggestionConvergence = tc => {
     assertDeltaCacheFresh(d0.get('root'), `iter ${i} (d0)`)
     assertDeltaCacheFresh(d1.get('root'), `iter ${i} (d1)`)
   }
+}
+
+/**
+ * Fuzz: a live view of a captured past state — `rendererAt(c)`, or `rendererDiff(a, c)` between two
+ * captures — is frozen. Random edits (text, nested nodes, deletes, formats, attrs) arrive from an
+ * editor doc (the view itself is never edited); after each, the viewer's maintained `.delta` must
+ * equal a fresh deep render and the render recorded when the view was attached. A `rendererAt` view
+ * must also equal the plain state at its capture.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testRdtPastStateViewFuzz = tc => {
+  const gen = tc.prng
+  const editor = new Y.Doc({ gc: false })
+  const viewer = new Y.Doc({ gc: false })
+  editor.on('update', /** @param {Uint8Array} u */ u => Y.applyUpdate(viewer, u))
+  const root = editor.get('root')
+  const view = viewer.get('root')
+  /**
+   * @type {Array<import('./testHelper.js').Capture>}
+   */
+  const captures = []
+  /**
+   * @type {delta.DeltaAny?}
+   */
+  let frozen = null
+  for (let i = 0; i < 300; i++) {
+    applyRandomYNodeOp(gen, root)
+    if (prng.real53(gen) < 0.1) {
+      const plain = view.toDelta({ renderer: null, deep: true })
+      const c = capture(viewer)
+      const diff = captures.length > 0 && prng.bool(gen)
+      view.useRenderer(diff ? rendererDiff(prng.oneOf(gen, captures), c) : rendererAt(c))
+      captures.push(c)
+      frozen = view.toDelta({ deep: true })
+      if (!diff) t.assert(frozen.equals(plain), `iter ${i}: rendererAt renders the captured state`)
+      t.assert(view.delta.equals(frozen), `iter ${i}: useRenderer re-renders the cache`)
+    }
+    if (frozen !== null) {
+      assertDeltaCacheFresh(view, `iter ${i}`)
+      t.assert(view.delta.equals(frozen), `iter ${i}: the past-state view is frozen`)
+    }
+  }
+}
+
+/**
+ * A map key whose newest write is an unattributed tombstone is deleted in the rendered state — in
+ * full and change renders alike, even when an older write is attributed: a tombstone is not
+ * ignored, so the walk does not step past it to the attributed value.
+ */
+export const testRdtMapKeyTombstoneOverAttributedValue = () => {
+  t.group('attributions renderer: unattributed overwrite, then unattributed delete', () => {
+    const ydoc = new Y.Doc({ gc: false })
+    const m = ydoc.get('m')
+    let attributed = Y.createIdSet()
+    ydoc.transact(tr => {
+      m.setAttr('k', 'y')
+      attributed = tr.insertSet
+    })
+    m.setAttr('k', 'z')
+    m.useRenderer(Y.createAttributionsRenderer(Y.createContentMapFromContentIds(Y.createContentIds(attributed, Y.createIdSet()), [], [])))
+    t.compare(m.delta.toJSON().attrs, { k: { type: 'insert', value: 'z' } })
+    m.deleteAttr('k')
+    assertDeltaCacheFresh(m, 'after the delete')
+    t.compare(m.delta.toJSON().attrs, undefined)
+  })
+  t.group('diff renderer: a retracted suggestion over a base value', () => {
+    const doc = new Y.Doc({ gc: false })
+    doc.clientID = 1
+    const sdoc = new Y.Doc({ isSuggestionDoc: true, gc: false })
+    sdoc.clientID = 2
+    const renderer = Y.createDiffRenderer(doc, sdoc, { attributions: Y.createContentMap() })
+    doc.get('m').setAttr('k', 'v0')
+    const m = sdoc.get('m')
+    m.useRenderer(renderer)
+    m.applyDelta(delta.create().setAttr('k', 'v1').done())
+    t.compare(m.delta.toJSON().attrs, { k: { type: 'insert', value: 'v1', attribution: { insert: [] } } })
+    m.applyDelta(delta.create().deleteAttr('k').done())
+    assertDeltaCacheFresh(m, 'after the retraction')
+    t.compare(m.delta.toJSON().attrs, undefined)
+  })
 }
 
 /**

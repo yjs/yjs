@@ -27,7 +27,7 @@ import {
   ContentDoc,
   createContentDocFromDoc
 } from './structs/Item.js'
-import { AttributedContent, rendererContentLength } from './utils/renderer-helpers.js'
+import { AttributedContent, rendererContentLength, rendererMode } from './utils/renderer-helpers.js'
 import { removeEventHandlerListener, callEventHandlerListeners, addEventHandlerListener, createEventHandler } from './utils/EventHandler.js'
 import { createID } from './utils/ID.js'
 import { createIdSet, iterateStructsByIdSetWithoutSplits } from './utils/ids.js'
@@ -183,7 +183,7 @@ export class ItemTextListPosition {
           const item = this.right
           const rightLen = rendererContentLength(this.renderer, item)
           if (length < rightLen) {
-            if (this.renderer !== null && this.renderer.hasItem(item)) {
+            if (this.renderer !== null && rendererMode(this.renderer, item) === 1) {
               /**
                * @type {Array<AttributedContent<any>>}
                */
@@ -390,6 +390,18 @@ export const insertContentHelper = (transaction, parent, currPos, insert, format
 }
 
 /**
+ * Whether a piece read by {@link AbstractRenderer#readContent} occupies positions in the rendered
+ * state: countable, and alive (or restored) or deleted under an attribution.
+ *
+ * @param {AttributedContent<any>} c
+ */
+const isRenderedCountable = c => c.content.isCountable() && (!c.deleted || c.attrs != null)
+
+/**
+ * Deletes `length` positions of the rendered state (as `currPos.renderer` renders it) after
+ * `currPos`. Content the renderer ignores is not part of that state and is stepped over, so
+ * deleting through a view of a captured past state leaves the content written since untouched.
+ *
  * @param {Transaction} transaction
  * @param {ItemTextListPosition} currPos
  * @param {number} length
@@ -402,24 +414,61 @@ export const deleteText = (transaction, currPos, length) => {
   const startLength = length
   const startFormats = map.copy(currPos.currentFormats)
   const start = currPos.right
+  const renderer = currPos.renderer
   while (length > 0 && currPos.right !== null) {
     const item = currPos.right
-    if (!item.deleted && item.countable) {
-      if (length < item.length) {
-        getItemCleanStart(transaction, createID(item.id.client, item.id.clock + length))
+    const mode = rendererMode(renderer, item)
+    const r = /** @type {AbstractRenderer} */ (renderer) // used only if mode !== 0, which implies a renderer
+    if (mode === 2) {
+      // ignored (alive or deleted): not part of the rendered state the caller addresses — step
+      // over it
+    } else if (!item.deleted && item.countable) {
+      if (mode === 0 || r.contentLength(item) === item.length) {
+        // rendered in full
+        if (length < item.length) {
+          getItemCleanStart(transaction, createID(item.id.client, item.id.clock + length))
+        }
+        length -= item.length
+        item.delete(transaction)
+      } else {
+        // alive, but partly ignored (e.g. typing after a captured past state that merged into the
+        // captured item): delete only what renders. Handle the item's leading run — rendered or
+        // ignored — and leave the rest of the item to the next iteration.
+        /**
+         * @type {Array<AttributedContent<any>>}
+         */
+        const contents = []
+        r.readContent(contents, item.id.client, item.id.clock, false, item.content, 0)
+        let runEnd = item.id.clock
+        for (let i = 0; i < contents.length && contents[i].clock === runEnd && isRenderedCountable(contents[i]); i++) {
+          runEnd += contents[i].content.getLength()
+        }
+        if (runEnd > item.id.clock) {
+          // a leading rendered run: delete (a prefix of) it
+          const len = math.min(runEnd - item.id.clock, length)
+          if (len < item.length) {
+            getItemCleanStart(transaction, createID(item.id.client, item.id.clock + len))
+          }
+          length -= len
+          item.delete(transaction)
+        } else {
+          // a leading ignored part: split it off — the cursor steps over it (rendered length 0)
+          const next = contents.find(isRenderedCountable)
+          if (next !== undefined) {
+            getItemCleanStart(transaction, createID(item.id.client, next.clock))
+          }
+        }
       }
-      length -= item.length
-      item.delete(transaction)
-    } else if (currPos.renderer !== null && currPos.renderer.hasItem(item)) {
+    } else if (mode === 1) {
       /**
        * @type {Array<AttributedContent<any>>}
        */
       const contents = []
-      currPos.renderer.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
+      r.readContent(contents, item.id.client, item.id.clock, true, item.content, 0)
       let splitClock = -1
       for (let i = 0; i < contents.length; i++) {
         const c = contents[i]
-        if (c.content.isCountable() && c.attrs != null) {
+        if (isRenderedCountable(c)) {
           if (length === 0) {
             // the delete is exhausted but this item renders more content — split so the cursor
             // advances only past the consumed part (mirrors formatText's renderer branch);
@@ -427,8 +476,8 @@ export const deleteText = (transaction, currPos, length) => {
             splitClock = c.clock
             break
           }
-          // deleting already deleted content. store that information in a meta property, but do
-          // nothing
+          // deleting already deleted content (rendered under an attribution, or restored). store
+          // that information in a meta property, but do nothing
           const pieceLen = c.content.getLength()
           const contentLen = math.min(pieceLen, length)
           map.setIfUndefined(transaction.meta, 'attributedDeletes', createIdSet).add(item.id.client, c.clock, contentLen)
@@ -1415,7 +1464,10 @@ export class YNode extends ObservableV2 {
       }
       for (let item = this._start; item !== null; item = item.right) {
         const content = item.content
-        if (renderer === null || !renderer.hasItem(item)) {
+        const mode = rendererMode(renderer, item)
+        // ignored: not part of the rendered state in any render — no ops, no format state
+        if (mode === 2) continue
+        if (mode === 0) {
           // generic fast path: content the renderer doesn't claim renders as-is — no attribution
           // lookups, no AttributedContent wrappers and, in the common full-coverage case, no
           // content slicing
@@ -1504,6 +1556,7 @@ export class YNode extends ObservableV2 {
             }
           }
         } else {
+          const r = /** @type {AbstractRenderer} */ (renderer) // mode 1 implies a renderer
           cs.length = 0
           if (itemsToRender != null) {
             const rslice = itemsToRender.slice(item.id.client, item.id.clock, item.length)
@@ -1526,7 +1579,7 @@ export class YNode extends ObservableV2 {
                 itemContent = itemContent.splice(idrange.len)
               }
               if (!idrange.exists || !checkFresh) {
-                renderer.readContent(cs, item.id.client, idrange.clock, item.deleted, c,
+                r.readContent(cs, item.id.client, idrange.clock, item.deleted, c,
                   idrange.exists ? (freshFormat ? 0 : 2) : 0)
               } else {
                 // an exists range may itself straddle fresh and pre-existing ids (ranges from
@@ -1539,7 +1592,7 @@ export class YNode extends ObservableV2 {
                   if (fi !== fslice.length - 1) {
                     subContent = subContent.splice(frange.len)
                   }
-                  renderer.readContent(cs, item.id.client, frange.clock, item.deleted, c, frange.exists ? 3 : 2)
+                  r.readContent(cs, item.id.client, frange.clock, item.deleted, c, frange.exists ? 3 : 2)
                 }
               }
             }
@@ -1552,7 +1605,7 @@ export class YNode extends ObservableV2 {
               for (let i = 0; i < cs.length; i++) { cs[i].fresh = true }
             }
           } else {
-            renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, content, 1)
+            r.readContent(cs, item.id.client, item.id.clock, item.deleted, content, 1)
           }
           for (let i = 0; i < cs.length; i++) {
             processContent(cs[i])
@@ -1679,7 +1732,7 @@ export class YNode extends ObservableV2 {
         if (delta.$setAttrOp.check(op)) {
           nodeMapSet(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key), op.value)
         } else if (delta.$deleteAttrOp.check(op)) {
-          nodeMapDelete(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key))
+          nodeMapDelete(transaction, /** @type {any} */ (this), /** @type {any} */ (op.key), renderer)
         } else {
           // modifyAttr — locate the target renderer-aware: a deleted map value may still be rendered
           const mapItem = this._map.get(/** @type {any} */ (op.key))
@@ -1783,13 +1836,12 @@ export class YNode extends ObservableV2 {
   /**
    * Returns all attribute name/value pairs in a JSON Object.
    *
-   * @param {Snapshot} [snapshot]
    * @return {{ [Key in Extract<keyof delta.DeltaConfGetAttrs<DConf>,string>]?: delta.DeltaConfGetAttrs<DConf>[Key]}} A JSON Object that describes the attributes.
    *
    * @public
    */
-  getAttrs (snapshot) {
-    return /** @type {any} */ (snapshot ? nodeMapGetAllSnapshot(this, snapshot) : nodeMapGetAll(this))
+  getAttrs () {
+    return /** @type {any} */ (nodeMapGetAll(this))
   }
 
   /**
@@ -2451,18 +2503,23 @@ export const typeListDelete = (transaction, parent, index, length) => {
 }
 
 /**
+ * Deletes `key` as `renderer` renders it.
+ *
  * @todo inline this code
  *
  * @param {Transaction} transaction
  * @param {YNode} parent
  * @param {string} key
+ * @param {AbstractRenderer?} [renderer]
  *
  * @private
  * @function
  */
-export const nodeMapDelete = (transaction, parent, key) => {
+export const nodeMapDelete = (transaction, parent, key, renderer = null) => {
   const c = parent._map.get(key)
-  if (c !== undefined) {
+  // a newest write the renderer ignores (e.g. one written after a captured past state) is not part
+  // of the state the caller addresses: the value it shows was overwritten already — keep the write
+  if (c !== undefined && rendererMode(renderer, c) !== 2) {
     c.delete(transaction)
   }
 }
@@ -2597,69 +2654,78 @@ export const nodeMapGetDelta = (d, parent, attrsToRender, renderer, deep, modifi
    */
   const renderAttrs = (item, key) => {
     /**
+     * The key's rendered value: its newest write that the renderer does not ignore, if that write
+     * renders (alive, or deleted under an attribution — a diff view). `null` if that write is a
+     * tombstone (deleted, unattributed): the key is deleted in the rendered state.
+     *
+     * lrc: last rendered content
+     *
      * @type {{ deleted: boolean, attrs: Array<ContentAttribute<any>>?, content: AbstractContent }?}
      */
-    let piece = null
-    // A key's rendered value is the newest item in its chain (`_map` entry, then `left` through the
-    // values it overwrote) that exists in the rendered state. The list walk visits every item and
-    // lets the renderer hide each one; the map walk must step over hidden items itself: content
-    // written after a `SnapshotRenderer`'s snapshot, alive content an `AttributionsRenderer` hides
-    // via `renderedContent`, churn inside a change render. A hidden newest item means the key holds
-    // the value that item overwrote (as `nodeMapGetSnapshot` reads it) — not that the key is gone.
-    while (piece === null) {
+    let lrc = null
+    // Walk the key's item chain (`_map` entry, then `left` through the values it overwrote) to its
+    // newest write that is part of the rendered state. The list walk lets the renderer decide every
+    // item; the map walk only steps over writes the renderer ignores (`hasItem() === 2`, e.g.
+    // everything written after a captured past state) and churn inside a change render. Full and
+    // change renders walk identically — that keeps the maintained `delta` cache equal to a fresh
+    // render.
+    for (;;) {
       if (item.deleted && itemsToRender != null) {
-        const i = mapKeyChangeItem(item, itemsToRender, insertedItems)
-        if (i === null) return
-        item = i
+        const _item = mapKeyChangeItem(item, itemsToRender, insertedItems)
+        if (_item === null) return
+        item = _item
       }
-      if (renderer === null || !renderer.hasItem(item)) {
+      const mode = rendererMode(renderer, item)
+      if (mode === 2) {
+        // ignored: the key holds the value this write overwrote, if any
+        if (item.left === null) return
+        item = item.left
+        continue
+      }
+      if (mode === 0) {
         // generic fast path — the item's own fields, no renderer involved
-        piece = { deleted: item.deleted, attrs: null, content: item.content }
+        if (!item.deleted) lrc = { deleted: false, attrs: null, content: item.content }
       } else {
         /**
          * @type {Array<AttributedContent<any>>}
          */
         const cs = []
-        renderer.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
-        if (cs.length > 0) {
-          // an item merged across a hidden boundary (e.g. a snapshot) surfaces only its visible
-          // writes, the newest of which is the last piece
-          piece = cs[cs.length - 1]
-        } else if (item.left === null) {
-          return // the renderer surfaces nothing for any value this key ever held
-        } else {
-          item = item.left
-        }
+        const r = /** @type {AbstractRenderer} */ (renderer) // mode 1 implies a renderer
+        r.readContent(cs, item.id.client, item.id.clock, item.deleted, item.content, 1)
+        // The pieces are the item's writes in clock order (overwrites by one client merge into a
+        // single item), without the ignored ones. The newest decides: it renders, or it is a
+        // tombstone (`renderContent` in `toDelta` uses the same predicate).
+        const last = cs.length > 0 ? cs[cs.length - 1] : null
+        if (last !== null && last.render && (!last.deleted || last.attrs != null)) lrc = last
       }
+      break
     }
-    const { deleted, attrs, content } = piece
+    if (lrc === null) {
+      // Tombstone: the key is deleted in the rendered state. A change render emits the removal if
+      // this change deleted it, so consumers (the `YEvent` delta, RDT bindings, the maintained
+      // `delta` cache) can apply it; a full-state render omits the key.
+      if (itemsToRender != null && itemsToRender.intersects(item.id.client, item.id.clock, item.length)) d.deleteAttr(key)
+      return
+    }
+    const { deleted, attrs, content } = lrc
     const attribution = createAttributionFromAttributionItems(attrs, deleted)
     let c = array.last(content.getContent())
     if (deleted) {
-      if (attribution != null) {
-        // Item surfaced under attribution (suggestion view / diff renderer, either in snapshot mode
-        // or in an event-driven render). The attribute is still observable in the rendered state, so
-        // emit a positive `SetAttrOp` carrying the attribution metadata - matching how content
-        // children are rendered for the same case (positive `InsertOp` with attribution, never
-        // `DeleteOp`).
-        // also re-emit when the change happened *inside* the still-rendered value (`modified`
-        // contains the value type but the attr's own map item is not part of the change) — the
-        // deleted value has no modifyAttr path, and a full-state `setAttr` replace is idempotent
-        if (itemsToRender == null || itemsToRender.intersects(item.id.client, item.id.clock, item.length) || (c instanceof YNode && modified != null && modified.has(c))) {
-          if (deep && c instanceof YNode) {
-            // full-state value render: a positive `setAttr` *replaces* the attr value on the
-            // consuming side, so the nested type must render as its full attributed state
-            // (change-scoped opts like `itemsToRender` would render bare retains here)
-            c = /** @type {any} */(c).toDelta({ renderer, deep: true })
-          }
-          d.setAttr(key, c, attribution)
+      // A deleted write renders only under attribution (suggestion view / diff renderer, in a
+      // full-state or an event-driven render). The attribute is still observable in the rendered
+      // state, so emit a positive `SetAttrOp` carrying the attribution metadata — matching how
+      // content children are rendered for the same case (positive `InsertOp` with attribution,
+      // never `DeleteOp`). Also re-emit when the change happened *inside* the still-rendered value
+      // (`modified` contains the value type but the attr's own map item is not part of the change):
+      // the deleted value has no modifyAttr path, and a full-state `setAttr` replace is idempotent.
+      if (itemsToRender == null || itemsToRender.intersects(item.id.client, item.id.clock, item.length) || (c instanceof YNode && modified != null && modified.has(c))) {
+        if (deep && c instanceof YNode) {
+          // full-state value render: a positive `setAttr` *replaces* the attr value on the
+          // consuming side, so the nested type must render as its full attributed state
+          // (change-scoped opts like `itemsToRender` would render bare retains here)
+          c = /** @type {any} */(c).toDelta({ renderer, deep: true })
         }
-      } else if (itemsToRender != null && itemsToRender.intersects(item.id.client, item.id.clock, item.length)) {
-        // Hard-deleted attribute within a change render: emit the `deleteAttr` op so consumers (the
-        // `YEvent` delta, RDT bindings, the maintained `delta` cache) can apply the removal. In
-        // full-state mode (`itemsToRender == null`) the attribute is simply omitted (above renders
-        // run with `render === false` for such items, so nothing was emitted before either).
-        d.deleteAttr(key, attribution)
+        d.setAttr(key, c, attribution)
       }
     } else if (deep && c instanceof YNode && modified?.has(c)) {
       // the attr item itself may be part of the change too (e.g. its insert-suggestion was accepted
@@ -2695,70 +2761,6 @@ export const nodeMapHas = (parent, key) => {
   parent.doc ?? warnPrematureAccess()
   const val = parent._map.get(key)
   return val !== undefined && !val.deleted
-}
-
-/**
- * @param {Item} item
- * @param {Snapshot|undefined} snapshot
- *
- * @protected
- * @function
- */
-export const isVisible = (item, snapshot) => snapshot === undefined
-  ? !item.deleted
-  : snapshot.sv.has(item.id.client) && (snapshot.sv.get(item.id.client) || 0) > item.id.clock && !snapshot.ds.hasId(item.id)
-
-/**
- * The value a map key holds in `snapshot`, read off the key's item chain (`v` is the key's newest
- * item, `left` the values it overwrote): the newest write the snapshot contains, unless the
- * snapshot deletes it. Overwrites by one client merge into a single deleted item holding one write
- * per clock, and such an item may straddle the snapshot — only its first `sv − clock` writes exist
- * there, so the write is picked by clock, not the item's last value.
- *
- * @param {Item?} v
- * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YNode<any>|undefined}
- */
-const snapshotMapValue = (v, snapshot) => {
-  while (v !== null && (!snapshot.sv.has(v.id.client) || v.id.clock >= (snapshot.sv.get(v.id.client) || 0))) {
-    v = v.left
-  }
-  if (v === null) return undefined
-  const offset = math.min(v.length, /** @type {number} */ (snapshot.sv.get(v.id.client)) - v.id.clock) - 1
-  return snapshot.ds.has(v.id.client, v.id.clock + offset) ? undefined : v.content.getContent()[offset]
-}
-
-/**
- * @param {YNode<any>} parent
- * @param {string} key
- * @param {Snapshot} snapshot
- * @return {Object<string,any>|number|null|Array<any>|string|Uint8Array|YNode<any>|undefined}
- *
- * @private
- * @function
- */
-export const nodeMapGetSnapshot = (parent, key, snapshot) => snapshotMapValue(parent._map.get(key) || null, snapshot)
-
-/**
- * @param {YNode<any>} parent
- * @param {Snapshot} snapshot
- * @return {Object<string,Object<string,any>|number|null|Array<any>|string|Uint8Array|YNode<any>|undefined>}
- *
- * @private
- * @function
- */
-export const nodeMapGetAllSnapshot = (parent, snapshot) => {
-  /**
-   * @type {Object<string,any>}
-   */
-  const res = {}
-  parent._map.forEach((value, key) => {
-    const v = snapshotMapValue(value, snapshot)
-    if (v !== undefined) {
-      res[key] = v
-    }
-  })
-  return res
 }
 
 /**

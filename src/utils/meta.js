@@ -24,7 +24,8 @@ import {
   readIdMap,
   intersectMaps,
   intersectSets,
-  filterIdMap
+  filterIdMap,
+  equalIdSets
 } from './ids.js'
 import { IdSetEncoderV2 } from './UpdateEncoder.js'
 import { IdSetDecoderV2 } from './UpdateDecoder.js'
@@ -35,6 +36,12 @@ import { IdSetDecoderV2 } from './UpdateDecoder.js'
  * @return {ContentIds}
  */
 export const createContentIds = (inserts = createIdSet(), deletes = createIdSet()) => ({ inserts, deletes })
+
+/**
+ * @param {ContentIds} a
+ * @param {ContentIds} b
+ */
+export const equalContentIds = (a, b) => equalIdSets(a.inserts, b.inserts) && equalIdSets(a.deletes, b.deletes)
 
 /**
  * @param {ContentMap} contentMap
@@ -55,6 +62,24 @@ export const createContentIdsFromDoc = (ydoc, insertsContainDeletes) => createCo
   createInsertSetFromStructStore(ydoc.store, !insertsContainDeletes),
   createDeleteSetFromStructStore(ydoc.store)
 )
+
+/**
+ * Converts a (deprecated) v13 `Snapshot` — a state vector plus a delete set — into the ContentIds
+ * it describes, so stored snapshots keep working with the ContentIds API. For a doc without gaps,
+ * `createContentIdsFromSnapshot(snapshot(doc), x)` equals `createContentIdsFromDoc(doc, x)`.
+ *
+ * @param {Snapshot} snapshot
+ * @param {boolean} insertsContainDeletes - as in {@link createContentIdsFromDoc}: `true` yields
+ * every id the snapshot contains (`[0, clock)` per client of its state vector), `false` only the
+ * content visible in it (`inserts − deletes`).
+ */
+export const createContentIdsFromSnapshot = (snapshot, insertsContainDeletes) => {
+  const inserts = createIdSet()
+  snapshot.sv.forEach((clock, client) => {
+    if (clock > 0) inserts.add(client, 0, clock)
+  })
+  return createContentIds(insertsContainDeletes ? inserts : diffIdSet(inserts, snapshot.ds), snapshot.ds)
+}
 
 /**
  * @param {import('./Doc.js').Doc} ydocPrev

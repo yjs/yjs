@@ -454,7 +454,8 @@ export const compare = users => {
   // For each document, merge all received document updates with Y.mergeUpdates and create a new document which will be added to the list of "users"
   // This ensures that mergeUpdates works correctly
   const mergedDocs = users.map(user => {
-    const ydoc = new Y.Doc()
+    // same gc setting as the user: struct stores only match if deleted content is kept alike
+    const ydoc = new Y.Doc({ gc: user.gc })
     enc.applyUpdate(ydoc, enc.mergeUpdates(user.updates))
     return ydoc
   })
@@ -489,9 +490,8 @@ export const compare = users => {
       return true
     })
     t.compare(Y.encodeStateVector(users[i]), Y.encodeStateVector(users[i + 1]))
-    Y.equalIdSets(Y.createDeleteSetFromStructStore(users[i].store), Y.createDeleteSetFromStructStore(users[i + 1].store))
+    t.assert(Y.equalContentIds(Y.createContentIdsFromDoc(users[i], true), Y.createContentIdsFromDoc(users[i + 1], true)))
     compareStructStores(users[i].store, users[i + 1].store)
-    t.compare(Y.encodeSnapshot(Y.snapshot(users[i])), Y.encodeSnapshot(Y.snapshot(users[i + 1])))
   }
   users.forEach(user => {
     compareIdSets(user.store.ds, Y.createDeleteSetFromStructStore(user.store))
@@ -593,3 +593,32 @@ export const applyRandomTests = (tc, mods, iterations, initTestObject) => {
 /**
  * @typedef {ReturnType<typeof applyRandomTests>} ApplyRandomTestsResult
  */
+
+/**
+ * A point in time of `ydoc` as ContentIds (the v14 replacement for the v13 `Snapshot`): `full`
+ * (inserts include since-deleted content) restores and answers containment, `visible`
+ * (`inserts − deletes` as of now) defines what renders.
+ *
+ * @param {Y.Doc} ydoc
+ */
+export const capture = ydoc => ({ full: Y.createContentIdsFromDoc(ydoc, true), visible: Y.createContentIdsFromDoc(ydoc, false) })
+
+/**
+ * @typedef {ReturnType<typeof capture>} Capture
+ */
+
+/**
+ * Renders a doc as it was at `c`: content alive at `c` renders (restored if since deleted), content
+ * written after `c` is ignored. Requires `gc: false`.
+ *
+ * @param {Capture} c
+ */
+export const rendererAt = c => Y.createAttributionsRenderer(Y.createContentMap(), { renderedContent: c.visible.inserts })
+
+/**
+ * Renders a doc as it was at `b`, attributing what changed since `a`. Requires `gc: false`.
+ *
+ * @param {Capture} a
+ * @param {Capture} b
+ */
+export const rendererDiff = (a, b) => Y.createAttributionsRenderer(Y.createContentMapFromContentIds(Y.excludeContentIds(b.full, a.full), [], []), { renderedContent: b.visible.inserts })

@@ -122,12 +122,13 @@ deleted:
   listed locally within the transaction. (See below for more information about
 transactions.) When a transaction has been committed locally, the set of
 deleted items is appended to a transaction's update message.
-- A snapshot (a marked point in time in the Yjs history) is specified using
-  both the set of (clientID, clock) pairs *and* the set of all deleted item
-IDs. The deleted set is O(n), but because deletions usually happen in runs,
-this data set is usually tiny in practice. (The real world editing trace from
-the B4 benchmark document contains 182k inserts and 77k deleted characters. The
-deleted set size in a snapshot is only 4.5Kb).
+- A point in time in the Yjs history is described by a `ContentIds`: the set
+  of inserted item IDs *and* the set of deleted item IDs, both as `IdSet`s of
+(clientID, clock, length) ranges (`createContentIdsFromDoc`). The deleted set
+is O(n), but because deletions usually happen in runs, this data set is usually
+tiny in practice. (The real world editing trace from the B4 benchmark document
+contains 182k inserts and 77k deleted characters. The deleted set size is only
+4.5Kb).
 
 ## Transactions
 
@@ -167,13 +168,18 @@ An implementation of the syncing process is in
 
 ## Snapshots
 
-A snapshot can be used to restore an old document state. It is a `state vector`
-\+ `delete set`. A client can restore an old document state by iterating through
-the sequence CRDT and ignoring all Items that have an `id.clock >
-stateVector[id.client].clock`. Instead of using `item.deleted` the client will
-use the delete set to find out if an item was deleted or not.
+A snapshot can be used to restore an old document state. In v14 it is a
+`ContentIds`: an `insert set` + `delete set` (`createContentIdsFromDoc(doc,
+true)`); the v13 `Snapshot` of `state vector` + `delete set` is deprecated. A
+client can restore an old document state by iterating through the sequence CRDT
+and ignoring all Items whose id is not in the insert set. Instead of using
+`item.deleted` the client will use the delete set to find out if an item was
+deleted or not.
 
-It is not recommended to restore an old document state using snapshots,
-although that would certainly be possible. Instead, the old state should be
-computed by iterating through the newest state and using the additional
-information from the state vector.
+Restoring an old document state from a snapshot is possible
+(`intersectUpdateWithContentIds(encodeStateAsUpdate(doc), contentIds)`; the
+document must have `gc: false`), but not recommended. Instead, the old state
+should be computed by iterating through the newest state
+and using the additional information from the content ids: an
+`AttributionsRenderer` whose `renderedContent` is
+`createContentIdsFromDoc(doc, false).inserts` does exactly this.
