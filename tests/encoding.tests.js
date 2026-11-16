@@ -14,6 +14,7 @@ import {
 } from '../src/ynode.js'
 
 import * as Y from '../src/index.js'
+import * as encoding from 'lib0/encoding'
 
 /**
  * @param {t.TestCase} _tc
@@ -112,4 +113,63 @@ export const testCloneDocWithPendingStructsInsideAGap = _tc => {
   t.compare(read(clone), read(doc), 'both integrate the pending structs and deletes alike')
   t.compare(read(doc).list, { type: 'delta', children: [{ type: 'insert', insert: 'b' }] })
   t.assert(clone.store.pendingStructs === null && clone.store.pendingDs === null)
+}
+
+/**
+ * An update that overlaps with content the doc already has must integrate everything around the
+ * known ranges, even when they lie inside a single struct of the update. Before the fix, splitting
+ * that struct around the first known range shortened it in place. The bounds read from it were then
+ * stale: the rest of the update was replaced by a one-clock Skip and dropped (neither integrated nor
+ * pending), and later known ranges weren't excluded at all.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testApplyUpdateAroundKnownContent = _tc => {
+  /**
+   * Encodes dependency-free GC structs of client 1, with Skips in between.
+   *
+   * @param {Array<[number, number]>} ranges sorted, non-adjacent [clock, len] pairs
+   */
+  const gcUpdate = ranges => {
+    const enc = encoding.createEncoder()
+    encoding.writeVarUint(enc, 1) // number of clients
+    /**
+     * @type {Array<[number, number]>}
+     */
+    const structs = []
+    let clock = ranges[0][0]
+    ranges.forEach(([start, len]) => {
+      if (start > clock) structs.push([10, start - clock]) // Skip
+      structs.push([0, len]) // GC
+      clock = start + len
+    })
+    encoding.writeVarUint(enc, structs.length)
+    encoding.writeVarUint(enc, 1) // client
+    encoding.writeVarUint(enc, ranges[0][0]) // clock
+    structs.forEach(([info, len]) => {
+      encoding.writeUint8(enc, info)
+      encoding.writeVarUint(enc, len)
+    })
+    encoding.writeVarUint(enc, 0) // empty delete set
+    return encoding.toUint8Array(enc)
+  }
+  /**
+   * @param {Array<Array<[number, number]>>} updates
+   * @param {Array<[number, number]>} expected
+   */
+  const check = (updates, expected) => {
+    const doc = new Y.Doc()
+    updates.forEach(ranges => { Y.applyUpdate(doc, gcUpdate(ranges)) })
+    t.assert(doc.store.pendingStructs === null)
+    const inserts = Y.createContentIdsFromDoc(doc, true).inserts.clients.get(1)?.getIds().map(r => [r.clock, r.len])
+    t.compare(inserts, expected)
+  }
+  // the reported case: the known range lies inside the only struct of the update
+  check([[[102, 1]], [[70, 196]]], [[70, 196]])
+  // several known ranges inside the same struct
+  check([[[102, 1]], [[150, 10]], [[70, 196]]], [[70, 196]])
+  // known ranges that exceed the update on both ends
+  check([[[60, 20]], [[250, 30]], [[70, 196]]], [[60, 220]])
+  // updates that consist of several structs
+  check([[[80, 5], [100, 5]], [[70, 20], [95, 30]]], [[70, 20], [95, 30]])
 }

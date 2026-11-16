@@ -4,6 +4,7 @@ import * as map from 'lib0/map'
 import * as array from 'lib0/array'
 import * as encoding from 'lib0/encoding'
 import * as number from 'lib0/number'
+import * as math from 'lib0/math'
 
 import { createID, ID } from './ID.js'
 import { Item } from '../structs/Item.js'
@@ -146,28 +147,26 @@ export class BlockSet {
     for (const client of clientids) {
       const range = exclude.clients.get(client)
       const structs = this.clients.get(client)?.refs
-      if (range == null || structs == null) return
-      const firstStruct = structs[0]
-      const lastStruct = structs[structs.length - 1]
+      if (range == null || structs == null) continue
+      const startClock = structs[0].id.clock
       const idranges = range.getIds()
       for (let i = 0; i < idranges.length; i++) {
+        // Splitting a struct shortens it in place and inserts the remainder after it. Hence, the
+        // last struct must be read again in every iteration.
+        const lastStruct = structs[structs.length - 1]
+        const endClock = lastStruct.id.clock + lastStruct.length
         const range = idranges[i]
-        let startIndex = 0
-        if (range.clock >= lastStruct.id.clock + lastStruct.length) continue
-        if (range.clock > firstStruct.id.clock) {
-          startIndex = findIndexCleanStart(null, structs, range.clock)
-        }
-        let endIndex = structs.length // must be set here, after structs is modified
-        if (range.clock + range.len <= firstStruct.id.clock) continue
-        if (range.clock + range.len < lastStruct.id.clock + lastStruct.length) {
-          endIndex = findIndexCleanStart(null, structs, range.clock + range.len)
-        }
-        if (startIndex < endIndex) {
-          structs[startIndex] = new Skip(new ID(client, range.clock), range.len)
-          const d = endIndex - startIndex
-          if (d > 1) {
-            structs.splice(startIndex + 1, d - 1)
-          }
+        // only exclude the part of the range that overlaps with structs
+        const start = math.max(range.clock, startClock)
+        const end = math.min(range.clock + range.len, endClock)
+        if (start >= endClock) break // idranges are sorted, the remaining ranges don't overlap either
+        if (start >= end) continue
+        const startIndex = findIndexCleanStart(null, structs, start)
+        const endIndex = end < endClock ? findIndexCleanStart(null, structs, end) : structs.length
+        structs[startIndex] = new Skip(new ID(client, start), end - start)
+        const d = endIndex - startIndex
+        if (d > 1) {
+          structs.splice(startIndex + 1, d - 1)
         }
       }
     }
