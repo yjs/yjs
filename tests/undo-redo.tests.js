@@ -2,6 +2,7 @@ import * as Y from '../src/index.js'
 import { init } from './testHelper.js' // eslint-disable-line
 import * as t from 'lib0/testing'
 import * as delta from 'lib0/delta'
+import * as prng from 'lib0/prng'
 
 export const testInconsistentFormat = () => {
   /**
@@ -822,4 +823,594 @@ export const testUndoDoingStackItem = async (_tc) => {
   t.compare(metaUndo, '42', 'currStackItem is accessible while undoing')
   t.compare(metaRedo, '42', 'currStackItem is accessible while redoing')
   t.compare(undoManager.currStackItem, null, 'currStackItem is null after observe/transaction')
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @return {Array<Y.Item>}
+ */
+const getKeptItems = doc => {
+  /**
+   * @type {Array<Y.Item>}
+   */
+  const kept = []
+  doc.store.clients.forEach(structs => {
+    structs.forEach(struct => {
+      if (struct instanceof Y.Item && struct.keep) kept.push(struct)
+    })
+  })
+  return kept
+}
+
+/**
+ * A table with one row and one cell, created before any UndoManager exists.
+ *
+ * @param {boolean} gc
+ */
+const createTableDoc = gc => {
+  const doc = new Y.Doc({ gc })
+  doc.clientID = 1
+  const root = doc.get('root')
+  const table = new Y.Node('table')
+  const row = new Y.Node('row')
+  const cell = new Y.Node('cell')
+  root.insert(0, [table])
+  table.insert(0, [row])
+  row.insert(0, [cell])
+  cell.insert(0, 'cell text')
+  return { doc, root, table, cell }
+}
+
+/**
+ * Another client deletes all children of the root and the change is applied to doc.
+ *
+ * @param {Y.Doc} doc
+ */
+const deleteRootChildrenRemotely = doc => {
+  const remote = new Y.Doc({ gc: doc.gc })
+  remote.clientID = 2
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc))
+  const remoteRoot = remote.get('root')
+  remoteRoot.delete(0, remoteRoot.length)
+  Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote, Y.encodeStateVector(doc)), 'remote')
+}
+
+/**
+ * @param {Y.Doc} doc
+ */
+const encodedSizeAfterReload = doc => {
+  const reloaded = new Y.Doc({ gc: doc.gc })
+  Y.applyUpdate(reloaded, Y.encodeStateAsUpdate(doc))
+  return Y.encodeStateAsUpdate(reloaded).length
+}
+
+/**
+ * @type {Array<[string, function({ cell: Y.Node, um: Y.UndoManager }):void, string, any]>}
+ */
+const nestedUndoRedoFlows = [
+  ['insert text, undo, redo', ({ cell, um }) => { cell.insert(4, ' typed'); um.undo(); um.redo() }, 'cell typed text', {}],
+  ['delete text, undo', ({ cell, um }) => { cell.delete(1, 2); um.undo() }, 'cell text', {}],
+  ['delete text, undo, redo, undo', ({ cell, um }) => { cell.delete(1, 2); um.undo(); um.redo(); um.undo() }, 'cell text', {}],
+  ['set attribute, undo, redo', ({ cell, um }) => { cell.setAttr('k', 1); cell.setAttr('k', 2); um.undo(); um.redo() }, 'cell text', { k: 2 }],
+  ['set attribute, delete attribute, undo', ({ cell, um }) => { cell.setAttr('k', 1); cell.deleteAttr('k'); um.undo() }, 'cell text', { k: 1 }],
+  ['insert array content, undo, redo', ({ cell, um }) => { cell.insert(9, [1, 2]); um.undo(); um.redo() }, 'cell text12', {}],
+  ['delete child node, undo', ({ cell, um }) => {
+    const span = new Y.Node('span')
+    cell.insert(9, [span])
+    span.insert(0, 'xml')
+    um.stopCapturing()
+    cell.delete(9, 1)
+    um.undo()
+  }, 'cell text<span>xml</span>', {}]
+]
+
+/**
+ * After an undo or redo restored content inside a nested type, and the stacks are cleared, the
+ * UndoManager must not keep any item. Otherwise a nested type that a collaborator deletes later is
+ * never garbage-collected.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoRedoInNestedTypeReleasesKeptItems = _tc => {
+  for (const gc of [true, false]) {
+    for (const [name, flow, expectedText, expectedAttrs] of nestedUndoRedoFlows) {
+      const { doc, root, table, cell } = createTableDoc(gc)
+      const um = new Y.UndoManager(root, { captureTimeout: 0 })
+      flow({ cell, um })
+      t.compareStrings(cell.toString().replace(/^<cell[^>]*>|<\/cell>$/g, ''), expectedText, name)
+      t.compare(cell.getAttrs(), expectedAttrs, name)
+      um.clear()
+      t.compare(getKeptItems(doc).map(item => item.id), [], `${name}: nothing is kept after clear (gc: ${gc})`)
+      um.destroy()
+      deleteRootChildrenRemotely(doc)
+      if (gc) {
+        t.assert(/** @type {Y.Item} */ (table._item).content instanceof Y.ContentDeleted, `${name}: the deleted table is garbage-collected`)
+        t.assert(Y.encodeStateAsUpdate(doc).length === encodedSizeAfterReload(doc), `${name}: the document is as small as after a reload`)
+      }
+    }
+  }
+}
+
+/**
+ * A new change clears the redo stack. That releases what the undone stack item kept, and the content
+ * that its undo restored.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testNewChangeAfterUndoReleasesKeptItems = _tc => {
+  const { doc, root, table, cell } = createTableDoc(true)
+  const paragraph = new Y.Node('paragraph')
+  root.insert(1, [paragraph])
+  const um = new Y.UndoManager(root, { captureTimeout: 0 })
+  cell.delete(1, 2)
+  t.assert(um.undo() !== null)
+  t.compareStrings(cell.toString(), '<cell>cell text</cell>')
+  t.assert(getKeptItems(doc).length > 0)
+  paragraph.insert(0, 'new') // clears the redo stack
+  t.assert(um.canUndo() && !um.canRedo())
+  t.compare(getKeptItems(doc).map(item => item.id), [])
+  deleteRootChildrenRemotely(doc)
+  t.assert(/** @type {Y.Item} */ (table._item).content instanceof Y.ContentDeleted)
+  t.assert(um.undo() === null) // the paragraph was deleted by the collaborator
+}
+
+/**
+ * @param {Y.Item} item
+ */
+const isKeptWithParents = item => {
+  for (let it = /** @type {Y.Item|null} */ (item); it !== null; it = /** @type {Y.Node} */ (it.parent)._item) {
+    if (!it.keep) return false
+  }
+  return true
+}
+
+/**
+ * @param {Y.Doc} doc
+ * @param {string} str
+ */
+const findDeletedString = (doc, str) => getKeptItems(doc).find(item => item.deleted && item.content instanceof Y.ContentString && item.content.str === str)
+
+/**
+ * Clearing one stack must keep what the stack items on the other stack need, parents included.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoKeepsItemsOfRemainingStackItems = _tc => {
+  for (const [clearUndo, clearRedo] of [[false, false], [true, false], [false, true]]) {
+    const { doc, root, cell } = createTableDoc(true)
+    const um = new Y.UndoManager(root, { captureTimeout: 0 })
+    cell.delete(0, 1) // 'ell text'
+    cell.delete(4, 5) // 'ell '
+    cell.insert(0, 'x') // 'xell '
+    um.undo() // 'ell ' (the redo stack item keeps the deleted 'x')
+    um.undo() // 'ell text'
+    t.compareStrings(cell.toString(), '<cell>ell text</cell>')
+    t.assert(um.canUndo() && um.canRedo())
+    um.clear(clearUndo, clearRedo)
+    t.assert(um.canUndo() === !clearUndo && um.canRedo() === !clearRedo)
+    if (!clearUndo) {
+      // the first deletion is still on the undo stack: it is kept, parents included
+      const c = findDeletedString(doc, 'c')
+      t.assert(c !== undefined && isKeptWithParents(c))
+    }
+    if (!clearRedo) {
+      const x = findDeletedString(doc, 'x')
+      t.assert(x !== undefined && isKeptWithParents(x))
+    }
+    if (!clearUndo) {
+      t.assert(um.undo() !== null)
+      t.compareStrings(cell.toString(), '<cell>cell text</cell>')
+    }
+    if (!clearRedo) {
+      while (um.canRedo()) t.assert(um.redo() !== null)
+      t.compareStrings(cell.toString(), '<cell>xell </cell>')
+    }
+    um.clear()
+    t.compare(getKeptItems(doc).map(item => item.id), [])
+  }
+}
+
+/**
+ * clear() must not release what another UndoManager on the same document keeps, also where that
+ * UndoManager deleted an item that this UndoManager's undo or redo created, or a type around it.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testClearKeepsWhatAnotherUndoManagerDeleted = _tc => {
+  /**
+   * @type {Array<[string, function(Y.Doc, Y.Node, Y.Node, Y.UndoManager):void, string]>}
+   */
+  const cases = [
+    ['the re-created text', (doc, _root, cell, um1) => {
+      doc.transact(() => cell.insert(9, '!'), 'a')
+      um1.undo()
+      um1.redo() // re-creates '!'
+      doc.transact(() => cell.delete(9, 1), 'b')
+    }, '<cell>cell text!</cell>'],
+    ['the cell around re-created text', (doc, root, cell, um1) => {
+      doc.transact(() => cell.insert(9, '!'), 'a')
+      um1.undo()
+      um1.redo() // re-creates '!'
+      doc.transact(() => root.get(0).get(0).delete(0, 1), 'b')
+    }, '<cell>cell text!</cell>'],
+    ['a re-created cell', (doc, _root, _cell, um1) => {
+      const row = _root.get(0).get(0)
+      doc.transact(() => row.delete(0, 1), 'a')
+      um1.undo() // re-creates the cell and its text
+      doc.transact(() => row.delete(0, 1), 'b')
+    }, '<cell>cell text</cell>']
+  ]
+  for (const [name, edit, expected] of cases) {
+    const { doc, root, cell } = createTableDoc(true)
+    const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+    const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+    edit(doc, root, cell, um1)
+    um1.clear()
+    // collect everything that nothing keeps
+    doc.transact(tr => Y.tryGc(tr, Y.createDeleteSetFromStructStore(doc.store), () => true))
+    t.assert(um2.undo() !== null, name)
+    t.compareStrings(root.get(0).get(0).get(0).toString(), expected, name)
+  }
+}
+
+/**
+ * An undo of an insertion follows the inserted item through `redone` to the item that replaced it.
+ * clear() must not release what another UndoManager's undo still follows.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testClearKeepsWhatAnotherUndoManagerFollows = _tc => {
+  const { doc, root, cell } = createTableDoc(true)
+  const row = root.get(0).get(0)
+  const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+  const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+  doc.transact(() => cell.insert(0, [new Y.Node('n')]), 'a')
+  doc.transact(() => row.delete(0, 1), 'b') // deletes the cell with the inserted node
+  um2.undo() // re-creates the cell and the node
+  um2.clear()
+  // collect everything that nothing keeps
+  doc.transact(tr => Y.tryGc(tr, Y.createDeleteSetFromStructStore(doc.store), () => true))
+  t.assert(um1.undo() !== null) // follows the node to the re-created one and deletes it
+  t.compareStrings(row.get(0).toString(), '<cell>cell text</cell>')
+}
+
+/**
+ * The item an undo or redo re-created can be split and re-created again. Every deleted part that
+ * another UndoManager's undo follows stays kept until that UndoManager is cleared.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testClearKeepsSplitRedoneItems = _tc => {
+  const { doc, root, cell } = createTableDoc(true)
+  const row = root.get(0).get(0)
+  const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+  const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+  const um3 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['c']) })
+  doc.transact(() => cell.insert(0, 'ABCD'), 'a')
+  doc.transact(() => row.delete(0, 1), 'b')
+  um2.undo() // re-creates the cell and 'ABCD'
+  doc.transact(() => row.get(0).delete(1, 2), 'c') // splits the re-created 'ABCD'
+  um3.undo() // re-creates 'BC'
+  t.compareStrings(row.get(0).toString(), '<cell>ABCDcell text</cell>')
+  um2.clear()
+  um3.clear()
+  // what um1's undo follows from 'ABCD' and that is deleted stays kept: 'ABCD' and the re-created
+  // 'BC' that um3's step deleted. The live re-created 'A', 'D' and 'BC' can't be collected.
+  t.compare(getKeptItems(doc).filter(item => item.deleted && item.content instanceof Y.ContentString).map(item => /** @type {Y.ContentString} */ (item.content).str).filter(str => str !== 'cell text').sort(), ['ABCD', 'BC'])
+  doc.transact(tr => Y.tryGc(tr, Y.createDeleteSetFromStructStore(doc.store), () => true))
+  t.assert(um1.undo() !== null)
+  um1.clear()
+  t.compare(getKeptItems(doc).map(item => item.id), [])
+}
+
+/**
+ * redoItem can split the item it is redoing: when a neighbour was redone into the middle of it (a
+ * merged pair of re-created items). The part that was split off is redone too.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoRedoesWhatRedoItemSplitOff = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  const root = doc.get('root')
+  const cell = new Y.Node('cell')
+  doc.transact(() => {
+    root.insert(0, [cell])
+    cell.insert(0, 'e')
+    cell.insert(0, 'n')
+  })
+  const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+  const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+  const um3 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['c']) })
+  doc.transact(() => root.delete(0, 1), 'a')
+  um1.undo() // re-creates the cell, 'n' and 'e'
+  doc.transact(() => root.get(0).delete(1, 1), 'b')
+  um2.undo() // re-creates 'e', which merges with the re-created 'n'
+  doc.transact(() => root.delete(0, 1), 'c')
+  t.assert(um3.undo() !== null)
+  t.compareStrings(root.get(0).toString(), '<cell>ne</cell>')
+}
+
+/**
+ * undoContentIds with ids of a client that this document doesn't know does nothing, and the
+ * temporary UndoManager it leaves doesn't break later changes.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoContentIdsOfUnknownClient = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  const remote = new Y.Doc()
+  remote.clientID = 99
+  remote.get('root').insert(0, 'x')
+  Y.undoContentIds(doc, Y.createContentIdsFromUpdate(Y.encodeStateAsUpdate(remote)))
+  doc.get('root').insert(0, 'y')
+  t.compareStrings(doc.get('root').toString(), 'y')
+}
+
+/**
+ * clear() releases only what the UndoManager kept. An item that an undo took off the stack but
+ * didn't delete keeps the keep flag that something else set.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testClearDoesNotReleaseLiveInsertedItems = _tc => {
+  const doc = new Y.Doc()
+  const text = doc.get('text')
+  const um = new Y.UndoManager(text, { captureTimeout: 0, deleteFilter: () => false })
+  text.insert(0, 'x')
+  const item = /** @type {Y.Item} */ (text._start)
+  item.keep = true // kept by someone else
+  um.undo() // the deleteFilter keeps 'x'
+  text.insert(1, 'y') // clears the redo stack
+  um.clear()
+  t.assert(!item.deleted && item.keep)
+}
+
+/**
+ * clear() leaves alone a live item that another UndoManager's undo created, even when this
+ * UndoManager's undo follows it: that UndoManager, or something else, keeps it.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testClearLeavesLiveItemsOfAnotherUndoManager = _tc => {
+  const { doc, root, cell } = createTableDoc(true)
+  const row = root.get(0).get(0)
+  const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+  const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+  doc.transact(() => cell.insert(0, [new Y.Node('n')]), 'a')
+  doc.transact(() => row.delete(0, 1), 'b')
+  um2.undo() // re-creates the cell and the node, and keeps the new node
+  const node = /** @type {Y.Item} */ (row.get(0).get(0)._item)
+  t.assert(!node.deleted && node.keep)
+  um1.clear()
+  t.assert(node.keep)
+  um2.clear()
+  t.assert(!node.keep)
+}
+
+/**
+ * An undo inside a larger transaction records only what the undo created: clear() leaves alone
+ * an item the transaction inserted before the undo.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoInsideTransactionRecordsOnlyWhatItCreated = _tc => {
+  const doc = new Y.Doc()
+  const text = doc.get('text')
+  const um = new Y.UndoManager(text, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+  doc.transact(() => text.insert(0, 'a'), 'a')
+  doc.transact(() => text.delete(0, 1), 'a')
+  /**
+   * @type {Y.Item|null}
+   */
+  let x = null
+  doc.transact(() => {
+    text.insert(0, 'x') // not tracked
+    x = /** @type {Y.Item} */ (text._start)
+    while (x.deleted) x = /** @type {Y.Item} */ (x.right)
+    x.keep = true // kept by someone else
+    t.assert(um.undo() !== null) // re-creates 'a'
+  }, 'other')
+  t.compareStrings(text.toString(), 'ax')
+  um.clear()
+  t.assert(/** @type {any} */ (x).keep)
+}
+
+/**
+ * A kept item does not merge with an item that is not kept. Otherwise the merged item is kept, and
+ * releasing the first item leaves the second one kept.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testKeptItemDoesNotMergeWithUnkeptItem = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  const text = doc.get('text')
+  text.insert(0, 'a')
+  const a = /** @type {Y.Item} */ (text._start)
+  a.keep = true
+  text.insert(1, 'b')
+  t.assert(a.length === 1 && a.keep)
+  t.assert(a.right !== null && a.right.length === 1 && !a.right.keep)
+}
+
+/**
+ * Undo and redo on empty stacks record nothing, and clear() has nothing to release afterwards.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoOnEmptyStacksRecordsNothing = _tc => {
+  const { root } = createTableDoc(true)
+  const um = new Y.UndoManager(root, { captureTimeout: 0 })
+  for (let i = 0; i < 100; i++) {
+    t.assert(um.undo() === null)
+    t.assert(um.redo() === null)
+  }
+  t.assert(um.poppedStackItems.length === 0)
+  let cleared = false
+  um.on('stack-cleared', () => { cleared = true })
+  um.clear()
+  t.assert(!cleared)
+}
+
+/**
+ * One UndoManager releasing its keeps must not break the undo of another UndoManager on the same
+ * document.
+ *
+ * @param {t.TestCase} _tc
+ */
+export const testUndoRedoWithTwoUndoManagersInOneNestedType = _tc => {
+  for (const gc of [true, false]) {
+    const { doc, root, table, cell } = createTableDoc(gc)
+    const um1 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['a']) })
+    const um2 = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set(['b']) })
+    doc.transact(() => cell.delete(0, 4), 'b') // ' text'
+    doc.transact(() => cell.insert(5, '!'), 'a') // ' text!'
+    um1.undo()
+    um1.redo()
+    um1.undo()
+    um1.redo()
+    um1.clear()
+    um1.destroy()
+    t.compareStrings(cell.toString(), '<cell> text!</cell>')
+    t.assert(getKeptItems(doc).length > 0) // um2 still keeps its deletion
+    t.assert(um2.undo() !== null)
+    t.compareStrings(cell.toString(), '<cell>cell text!</cell>')
+    t.assert(um2.redo() !== null)
+    t.assert(um2.undo() !== null)
+    t.compareStrings(cell.toString(), '<cell>cell text!</cell>')
+    um2.clear()
+    t.compare(getKeptItems(doc).map(item => item.id), [])
+    deleteRootChildrenRemotely(doc)
+    if (gc) {
+      t.assert(/** @type {Y.Item} */ (table._item).content instanceof Y.ContentDeleted)
+    }
+  }
+}
+
+/**
+ * Undo must not throw when a type that an undo restored was deleted remotely and
+ * garbage-collected.
+ *
+ * @see https://github.com/yjs/yjs/issues/809
+ * @param {t.TestCase} _tc
+ */
+export const testUndoIntoGarbageCollectedRedoneParent = _tc => {
+  const doc = new Y.Doc()
+  doc.clientID = 1
+  const nodes = doc.get('nodes')
+  doc.transact(() => {
+    for (const id of ['n1', 'n2']) {
+      const node = new Y.Node()
+      node.setAttr('name', 'a')
+      nodes.setAttr(id, node)
+    }
+  })
+  const um = new Y.UndoManager(nodes, { trackedOrigins: new Set(['local']), captureTimeout: 0 })
+  doc.transact(() => nodes.getAttr('n1').setAttr('name', 'b'), 'local')
+  doc.transact(() => nodes.deleteAttr('n1'), 'local')
+  um.undo() // restores n1 as a new item
+  doc.transact(() => nodes.getAttr('n1').setAttr('name', 'c'), 'local')
+  um.undo()
+  doc.transact(() => nodes.getAttr('n2').setAttr('name', 'x'), 'local') // clears the redo stack
+  const remote = new Y.Doc()
+  remote.clientID = 2
+  Y.applyUpdate(remote, Y.encodeStateAsUpdate(doc))
+  remote.get('nodes').deleteAttr('n1')
+  Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote, Y.encodeStateVector(doc)))
+  t.assert(um.undo() !== null) // the change of n2
+  um.undo() // the change of n1, which the remote peer deleted: must not throw
+  t.compare(nodes.toJSON(), { attrs: { n2: { attrs: { name: 'a' } } } })
+}
+
+/**
+ * Random undo, redo, clear and destroy sessions on nested types with a collaborator. After every
+ * UndoManager is cleared, no item may be kept, and every item that is deleted afterwards must be
+ * garbage-collected.
+ *
+ * @param {t.TestCase} tc
+ */
+export const testRepeatUndoRedoReleasesKeptItems = tc => {
+  const gen = tc.prng
+  const gc = prng.bool(gen)
+  const doc = new Y.Doc({ gc })
+  doc.clientID = 1
+  const remote = new Y.Doc({ gc })
+  remote.clientID = 2
+  const root = doc.get('root')
+  const createNode = () => {
+    const node = new Y.Node(prng.oneOf(gen, ['table', 'row', 'cell']))
+    node.insert(0, prng.word(gen, 1, 4))
+    return node
+  }
+  root.insert(0, [createNode(), createNode()])
+  const sync = () => {
+    const update = Y.encodeStateAsUpdate(doc, Y.encodeStateVector(remote))
+    Y.applyUpdate(doc, Y.encodeStateAsUpdate(remote, Y.encodeStateVector(doc)))
+    Y.applyUpdate(remote, update)
+  }
+  /**
+   * @param {Y.Doc} ydoc
+   */
+  const liveTypes = ydoc => {
+    /**
+     * @type {Array<Y.Node>}
+     */
+    const types = [ydoc.get('root')]
+    for (let i = 0; i < types.length; i++) {
+      types[i].toArray().forEach(child => { if (child instanceof Y.Node) types.push(child) })
+    }
+    return types
+  }
+  const origins = ['a', 'b']
+  const ums = origins.map(origin => new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set([origin]) }))
+  const allUms = ums.slice()
+  for (let i = 0; i < 60; i++) {
+    const ui = prng.int32(gen, 0, 1)
+    const op = prng.int32(gen, 0, 9)
+    if (op <= 2) {
+      const type = prng.oneOf(gen, liveTypes(doc))
+      doc.transact(() => {
+        switch (prng.int32(gen, 0, 3)) {
+          case 0: type.insert(prng.int32(gen, 0, type.length), prng.word(gen, 1, 3)); break
+          case 1: if (type.length > 0) { const pos = prng.int32(gen, 0, type.length - 1); type.delete(pos, prng.int32(gen, 1, type.length - pos)) } break
+          case 2: type.insert(prng.int32(gen, 0, type.length), [createNode()]); break
+          default: type.setAttr(prng.oneOf(gen, ['x', 'y']), prng.int32(gen, 0, 9))
+        }
+      }, origins[ui])
+    } else if (op <= 4) {
+      ums[ui].undo()
+    } else if (op === 5) {
+      ums[ui].redo()
+    } else if (op === 6) {
+      ums[ui].clear(prng.bool(gen), prng.bool(gen))
+    } else if (op === 7) {
+      ums[ui].destroy()
+      ums[ui] = new Y.UndoManager(root, { captureTimeout: 0, trackedOrigins: new Set([origins[ui]]) })
+      allUms.push(ums[ui])
+    } else if (op === 8) {
+      const type = prng.oneOf(gen, liveTypes(remote))
+      if (type.length > 0) type.delete(prng.int32(gen, 0, type.length - 1), 1)
+    } else {
+      sync()
+    }
+  }
+  sync()
+  allUms.forEach(um => um.clear())
+  t.compare(getKeptItems(doc).map(item => item.id), [])
+  /**
+   * @type {Array<Y.ID>}
+   */
+  const live = []
+  doc.store.clients.forEach(structs => structs.forEach(struct => { if (struct instanceof Y.Item && !struct.deleted) live.push(struct.id) }))
+  const remoteRoot = remote.get('root')
+  remoteRoot.delete(0, remoteRoot.length)
+  sync()
+  if (gc) {
+    live.forEach(id => {
+      const struct = doc.store.getItem(id)
+      t.assert(!struct.deleted || !(struct instanceof Y.Item) || struct.content instanceof Y.ContentDeleted, 'deleted content is garbage-collected')
+    })
+  }
 }
