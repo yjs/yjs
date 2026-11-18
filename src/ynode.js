@@ -1244,7 +1244,7 @@ export class YNode extends ObservableV2 {
                 d.insert(c.content.getContent(), undefined, attribution)
               }
             } else if (renderDelete) {
-              d.delete(1)
+              d.delete(c.content.getLength())
             } else if (retainContent) {
               if (c.content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (c.content).type)) {
                 // @todo use current transaction instead
@@ -1252,7 +1252,7 @@ export class YNode extends ObservableV2 {
               } else {
                 d.useFormats(changedFormats)
                 usingChangedFormats = true
-                d.retain(1)
+                d.retain(c.content.getLength())
               }
             }
             break
@@ -1483,9 +1483,8 @@ export class YNode extends ObservableV2 {
               for (let ir = 0; ir < rslice.length; ir++) {
                 const idrange = rslice[ir]
                 if (idrange.exists) {
-                  // mirror the piece-wise op sizes of the renderer path: string-ish content
-                  // deletes by length, other content deletes one element per piece
-                  d.delete((content.constructor === ContentString || content.constructor === ContentDeleted) ? idrange.len : 1)
+                  // a list position per element: a multi-value ContentAny item spans `len` of them
+                  d.delete(idrange.len)
                 }
               }
             }
@@ -1527,8 +1526,8 @@ export class YNode extends ObservableV2 {
                 } else {
                   d.useFormats(changedFormats)
                   usingChangedFormats = true
-                  // mirror the piece-wise op sizes of the renderer path (see the delete branch)
-                  d.retain(content.constructor === ContentString ? idrange.len : 1)
+                  // a list position per element (see the delete branch)
+                  d.retain(idrange.len)
                 }
               } else if (retainInserts) {
                 if (content.constructor === ContentType && modified?.has(/** @type {ContentType} */ (content).type)) {
