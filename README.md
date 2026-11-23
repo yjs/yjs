@@ -364,6 +364,13 @@ An architecture to relay end-to-end encrypted CRDTs over a central service.
   <dd>
     Sync Yjs over <a href="https://github.com/nostr-protocol/">nostr</a>.
   </dd>
+  <dt><a href="https://github.com/precisit/y-jsflow">y-jsflow</a></dt>
+  <dd>
+Syncs a Yjs document and awareness between browsers in a
+<a href="https://jsflow.com">jsflow</a> room over WebRTC. Updates go directly
+between peers, and through jsflow's relay only when a network blocks a direct
+link. A late joiner gets the document from one peer.
+  </dd>
 </dl>
 
 #### Persistence Providers
