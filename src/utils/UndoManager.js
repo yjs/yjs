@@ -398,7 +398,7 @@ export class UndoManager extends ObservableV2 {
  */
 export const undoContentIds = (ydoc, contentIds, opts = {}) => {
   const um = new UndoManager(ydoc, opts)
-  um.undoStack.push(new StackItem(diffIdSet(contentIds.inserts, contentIds.deletes), diffIdSet(contentIds.deletes, contentIds.inserts)))
+  um.undoStack.push(new StackItem(contentIds.inserts, diffIdSet(contentIds.deletes, contentIds.inserts)))
   um.undo()
 }
 

@@ -267,6 +267,44 @@ export const testUndoEmbeddedTypeAttribute = tc => {
 }
 
 /**
+ * Regression for https://github.com/yjs/yjs/issues/814.
+ * @param {t.TestCase} _tc
+ */
+export const testUndoContentIdsOverwrittenMapAttribute = _tc => {
+  for (const overwrites of [1, 2, 5]) {
+    const doc = new Y.Doc({ gc: false })
+    const node = doc.get('root')
+    node.setAttr('left', 'v0')
+    node.setAttr('top', 't0')
+    const snapshot = Y.createContentIdsFromDoc(doc, true)
+    for (let k = 1; k <= overwrites; k++) {
+      doc.transact(() => node.setAttr('left', 'v' + k))
+    }
+    const since = Y.excludeContentIds(Y.createContentIdsFromDoc(doc, true), snapshot)
+    Y.undoContentIds(doc, since)
+    t.compare(node.getAttrs(), { left: 'v0', top: 't0' })
+  }
+}
+
+/**
+ * Regression for https://github.com/yjs/yjs/issues/814.
+ * @param {t.TestCase} _tc
+ */
+export const testUndoContentIdsDeletedOverwrittenMapAttribute = _tc => {
+  const doc = new Y.Doc({ gc: false })
+  const node = doc.get('root')
+  node.setAttr('left', 'v0')
+  node.setAttr('top', 't0')
+  const snapshot = Y.createContentIdsFromDoc(doc, true)
+  node.setAttr('left', 'v1')
+  node.setAttr('left', 'v2')
+  node.deleteAttr('left')
+  const since = Y.excludeContentIds(Y.createContentIdsFromDoc(doc, true), snapshot)
+  Y.undoContentIds(doc, since)
+  t.compare(node.getAttrs(), { left: 'v0', top: 't0' })
+}
+
+/**
  * @param {t.TestCase} tc
  */
 export const testUndoArray = tc => {
