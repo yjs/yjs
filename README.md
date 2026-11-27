@@ -153,6 +153,9 @@ editing for your IDE or custom editor
 * [Folio](https://github.com/Sall25/folio) - Open-source workspace for pages,
   databases and team chat, on the web and desktop. Pages are co-edited in real
   time with Tiptap over Yjs, synced through Hocuspocus.
+* [Magic Editor X](https://github.com/Schero94/Magic-Editor-X) - Open-source
+  block editor for the Strapi 5 CMS. Fields are co-edited in real time with
+  Editor.js over Yjs, synced through Socket.IO across several Strapi processes.
 
 ## Table of Contents
 
